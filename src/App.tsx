@@ -1,50 +1,71 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { PlayerProvider, usePlayer } from './context/PlayerContext';
+import Header from './components/Header';
+import Setup from './pages/Setup';
+import Dashboard from './pages/Dashboard';
+import MissionList from './pages/MissionList';
+import Hangar from './pages/Hangar';
+import Shop from './pages/Shop';
+import Airports from './pages/Airports';
+import './App.css';
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const AppContent: React.FC = () => {
+  const { player, loading } = usePlayer();
+  const [needsSetup, setNeedsSetup] = useState(true);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  useEffect(() => {
+    // Vérifier si le joueur a été initialisé
+    if (!loading) {
+      setNeedsSetup(!player || !player.currentAirportId || player.ownedAircraftIds.length === 0);
+    }
+  }, [player, loading]);
+
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="loading-spinner">✈️</div>
+        <div className="loading-text">Loading Flight Service...</div>
+      </div>
+    );
   }
 
+  // Si le joueur n'est pas configuré, rediriger vers Setup
+  if (needsSetup) {
+    return (
+      <Routes>
+        <Route path="/setup" element={<Setup />} />
+        <Route path="*" element={<Navigate to="/setup" replace />} />
+      </Routes>
+    );
+  }
+
+  // Sinon, afficher l'application normale avec Header
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="app">
+      <Header />
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/missions" element={<MissionList />} />
+          <Route path="/hangar" element={<Hangar />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/airports" element={<Airports />} />
+          <Route path="/setup" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
+};
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+function App() {
+  return (
+    <Router>
+      <PlayerProvider>
+        <AppContent />
+      </PlayerProvider>
+    </Router>
   );
 }
 
