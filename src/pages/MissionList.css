@@ -15,6 +15,24 @@
   margin: 0 0 0.5rem 0;
 }
 
+.back-to-current-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-to-current-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
 .warning-banner {
   background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
   color: white;
@@ -24,6 +42,113 @@
   text-align: center;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
+}
+
+.mission-search-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.mission-search-section h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.search-info {
+  color: #e67e22;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.search-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.search-results {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: white;
+}
+
+.airport-info {
+  flex: 1;
+}
+
+.airport-info strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.airport-location {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.search-mission-btn {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-mission-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+}
+
+.search-mission-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .missions-filters {

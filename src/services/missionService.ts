@@ -7,6 +7,17 @@ export const missionService = {
     return await invoke('get_missions_by_airport', { airportId });
   },
 
+  // Rechercher des missions depuis un aéroport spécifique (coûte 100$)
+  async searchMissionsFromAirport(
+    playerId: string,
+    airportId: string
+  ): Promise<Mission[]> {
+    return await invoke('search_missions_to_airport', {
+      playerId,
+      airportId,
+    });
+  },
+
   // Récupérer toutes les missions (utilise l'aéroport par défaut)
   async getAllMissions(): Promise<Mission[]> {
     // TODO: Récupérer l'aéroport actuel depuis le contexte

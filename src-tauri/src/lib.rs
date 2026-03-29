@@ -53,6 +53,7 @@ pub fn run() {
             commands::get_aircraft_by_type,
             // Commandes Mission
             commands::get_missions_by_airport,
+            commands::search_missions_to_airport,
             // Commandes Player
             commands::create_player,
             commands::get_player,

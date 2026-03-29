@@ -174,6 +174,35 @@ pub fn get_missions_by_airport(
     with_db(&db, |conn| queries::get_missions_by_airport(conn, &airport_id))
 }
 
+#[tauri::command]
+pub fn search_missions_to_airport(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    airport_id: String,
+) -> Result<Vec<Mission>, String> {
+    let db = db.lock()
+        .map_err(|e| format!("Failed to lock database: {}", e))?;
+
+    let conn = db.conn();
+
+    // Vérifier que le joueur a assez d'argent
+    let player = queries::get_player(conn, &player_id)
+        .map_err(|e| format!("Failed to get player: {}", e))?
+        .ok_or("Player not found")?;
+
+    if player.money < 100 {
+        return Err("Not enough money! Mission search costs $100".to_string());
+    }
+
+    // Débiter 100$ du joueur
+    queries::update_player_money(conn, &player_id, -100)
+        .map_err(|e| format!("Failed to update money: {}", e))?;
+
+    // Récupérer les missions depuis l'aéroport spécifique
+    queries::get_missions_by_airport(conn, &airport_id)
+        .map_err(|e| format!("Database error: {}", e))
+}
+
 // ============= Aircraft Commands =============
 
 #[tauri::command]

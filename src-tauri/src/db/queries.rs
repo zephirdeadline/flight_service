@@ -1,6 +1,9 @@
 use rusqlite::{params, Connection, Result, Row};
 use crate::models::*;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 // Calculer la distance entre deux points (formule haversine)
 fn calculate_distance(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
@@ -15,6 +18,22 @@ fn calculate_distance(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
     r * c
+}
+
+// Générer un seed déterministe basé sur l'heure actuelle et l'airport_id
+// Le seed change toutes les heures
+fn generate_mission_seed(airport_id: &str) -> u64 {
+    // Obtenir l'heure actuelle arrondie à l'heure
+    let now = chrono::Utc::now();
+    let hour_timestamp = now.timestamp() / 3600; // Arrondi à l'heure
+
+    // Hasher l'airport_id
+    let mut hasher = DefaultHasher::new();
+    airport_id.hash(&mut hasher);
+    let airport_hash = hasher.finish();
+
+    // Combiner les deux pour créer un seed unique
+    hour_timestamp as u64 ^ airport_hash
 }
 
 // ============= AIRPORTS =============
@@ -485,8 +504,7 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
          WHERE id != ?1
            AND latitude BETWEEN ?2 AND ?3
            AND longitude BETWEEN ?4 AND ?5
-         ORDER BY RANDOM()
-         LIMIT 10"
+        LIMIT 50"
     )?;
 
     let candidates = stmt.query_map(
@@ -494,17 +512,17 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
         map_airport_row
     )?.collect::<Result<Vec<_>>>()?;
 
-    // Filtrer pour ne garder que ceux à moins de 300 NM avec le calcul exact et >= 50 NM
-   
-
     if candidates.is_empty() {
         return Ok(Vec::new());
     }
 
-    let mut missions = Vec::new();
-    let mut rng = rand::thread_rng();
+    // Créer un RNG déterministe basé sur l'heure et l'airport_id
+    let seed = generate_mission_seed(airport_id);
+    let mut rng: StdRng = StdRng::seed_from_u64(seed);
 
-    // Générer entre 6 et 8 missions
+    let mut missions = Vec::new();
+
+    // Générer entre 4 et 10 missions
     let mission_count = rng.gen_range(4..=10);
 
     for i in 0..mission_count {
@@ -521,8 +539,8 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
         // 50% de chance pour passagers ou cargo
         if rng.gen_bool(0.5) {
             // Mission passagers
-            let passenger_count = ((distance / 10).max(20).min(200)) as i32;
-            let passenger_reward = (distance as i64) * 20;
+            let passenger_count = rng.gen_range(1..=8);
+            let passenger_reward = ((distance as i64) * 20) * (passenger_count as i64);
 
             missions.push(Mission::new_passenger(
                 format!("mission-{}-{}-pax-{}", airport_id, dest.id, i),
@@ -534,8 +552,34 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
             ));
         } else {
             // Mission cargo
-            let cargo_weight = ((distance / 5).max(1000).min(50000)) as i32;
-            let cargo_reward = (distance as i64) * 25;
+            let cargo_weight = rng.gen_range(20..=800) as i32;
+            let cargo_reward = (distance as i64) * 25 * (cargo_weight as i64 / 10);
+
+            // Liste de types de cargo
+            let cargo_types = [
+                "Electronics",
+                "Medical supplies",
+                "Automotive parts",
+                "Pharmaceuticals",
+                "Fresh produce",
+                "Perishable goods",
+                "Industrial equipment",
+                "Machinery",
+                "Documents",
+                "Mail & parcels",
+                "Textiles",
+                "Fashion goods",
+                "Sporting equipment",
+                "Musical instruments",
+                "Computer hardware",
+                "Food & beverages",
+                "Chemicals",
+                "Building materials",
+                "Scientific instruments",
+                "Emergency supplies",
+            ];
+
+            let cargo_description = cargo_types[rng.gen_range(0..cargo_types.len())].to_string();
 
             missions.push(Mission::new_cargo(
                 format!("mission-{}-{}-cargo-{}", airport_id, dest.id, i),
@@ -544,7 +588,7 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
                 distance,
                 cargo_reward,
                 cargo_weight,
-                "General cargo".to_string(),
+                cargo_description,
             ));
         }
     }
