@@ -277,6 +277,29 @@
   font-size: 1.3rem;
   text-align: center;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.dashboard-live-badge {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.dashboard-sim-badge {
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 .dashboard-grid {

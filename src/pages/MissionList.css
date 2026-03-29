@@ -4,6 +4,53 @@
   padding: 2rem;
 }
 
+.simconnect-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.simconnect-status.connected {
+  background: #eafaf1;
+  color: #1e8449;
+  border: 1px solid #a9dfbf;
+}
+
+.simconnect-status.disconnected {
+  background: #fdfefe;
+  color: #7f8c8d;
+  border: 1px solid #d5d8dc;
+}
+
+.simconnect-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.simconnect-status.connected .simconnect-dot {
+  background: #27ae60;
+}
+
+.simconnect-status.disconnected .simconnect-dot {
+  background: #95a5a6;
+}
+
+.simconnect-coords {
+  font-family: monospace;
+  opacity: 0.8;
+}
+
+.simconnect-distance {
+  margin-left: auto;
+  font-weight: 600;
+}
+
 .missions-header {
   text-align: center;
   margin-bottom: 2rem;

@@ -97,6 +97,8 @@ pub fn run() {
             commands::cheat_force_complete_mission,
             commands::cheat_set_aircraft_wear,
             commands::cheat_complete_maintenance,
+            // Commandes Geo
+            commands::is_within_3km,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

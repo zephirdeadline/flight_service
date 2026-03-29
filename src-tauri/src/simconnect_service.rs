@@ -16,23 +16,52 @@ pub struct AircraftPosition {
     pub airspeed_indicated: f64,
     pub vertical_speed: f64,
     pub sim_on_ground: bool,
+    pub ground_velocity: f64,
+    pub crash_flag: bool,
     // Fuel
     pub fuel_total_quantity: f64,
+    pub fuel_tank_left_main: f64,
+    pub fuel_tank_right_main: f64,
+    pub fuel_tank_center: f64,
     // Moteurs
     pub number_of_engines: f64,
     pub engine_1_rpm: f64,
     pub engine_2_rpm: f64,
     pub engine_3_rpm: f64,
     pub engine_4_rpm: f64,
+    pub engine_5_rpm: f64,
+    pub engine_6_rpm: f64,
+    pub engine_7_rpm: f64,
+    pub engine_8_rpm: f64,
+    pub engine_1_fuel_flow: f64,
+    pub engine_2_fuel_flow: f64,
+    pub engine_3_fuel_flow: f64,
+    pub engine_4_fuel_flow: f64,
+    pub engine_5_fuel_flow: f64,
+    pub engine_6_fuel_flow: f64,
+    pub engine_7_fuel_flow: f64,
+    pub engine_8_fuel_flow: f64,
     // Navigation/Vol
-    pub ground_velocity: f64,
     pub plane_alt_above_ground: f64,
     pub airspeed_true: f64,
     // Poids
     pub total_weight: f64,
     pub empty_weight: f64,
     pub fuel_weight: f64,
+    pub payload_station_count: f64,
+    pub payload_station_weight_1: f64,
+    pub payload_station_weight_2: f64,
+    pub payload_station_weight_3: f64,
+    pub payload_station_weight_4: f64,
+    pub payload_station_weight_5: f64,
+    pub payload_station_weight_6: f64,
+    pub payload_station_weight_7: f64,
+    pub payload_station_weight_8: f64,
+    pub payload_station_weight_9: f64,
+    pub payload_station_weight_10: f64,
     // Warnings
+    pub stall_warning: bool,
+    pub overspeed_warning: bool,
     pub gear_handle_position: bool,
 }
 
@@ -214,18 +243,30 @@ impl SimConnectService {
         sim.add_data_definition(DEF_ID, "AIRSPEED INDICATED", "knots", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "VERTICAL SPEED", "feet per minute", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "SIM ON GROUND", "number", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "FUEL TOTAL QUANTITY", "gallons", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "NUMBER OF ENGINES", "number", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "GENERAL ENG RPM:1", "rpm", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "GENERAL ENG RPM:2", "rpm", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "GENERAL ENG RPM:3", "rpm", f64_type, UNUSED, 0.0);
-        sim.add_data_definition(DEF_ID, "GENERAL ENG RPM:4", "rpm", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GROUND VELOCITY", "knots", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "CRASH FLAG", "number", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "FUEL TOTAL QUANTITY", "gallons", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "FUEL TANK LEFT MAIN QUANTITY", "gallons", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "FUEL TANK RIGHT MAIN QUANTITY", "gallons", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "FUEL TANK CENTER QUANTITY", "gallons", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "NUMBER OF ENGINES", "number", f64_type, UNUSED, 0.0);
+        for i in 1..=8 {
+            sim.add_data_definition(DEF_ID, &format!("GENERAL ENG RPM:{}", i), "rpm", f64_type, UNUSED, 0.0);
+        }
+        for i in 1..=8 {
+            sim.add_data_definition(DEF_ID, &format!("ENG FUEL FLOW GPH:{}", i), "gallons per hour", f64_type, UNUSED, 0.0);
+        }
         sim.add_data_definition(DEF_ID, "PLANE ALT ABOVE GROUND", "feet", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "AIRSPEED TRUE", "knots", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "TOTAL WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "EMPTY WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "FUEL TOTAL QUANTITY WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "PAYLOAD STATION COUNT", "number", f64_type, UNUSED, 0.0);
+        for i in 1..=10 {
+            sim.add_data_definition(DEF_ID, &format!("PAYLOAD STATION WEIGHT:{}", i), "kilograms", f64_type, UNUSED, 0.0);
+        }
+        sim.add_data_definition(DEF_ID, "STALL WARNING", "number", f64_type, UNUSED, 0.0);
+        sim.add_data_definition(DEF_ID, "OVERSPEED WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GEAR HANDLE POSITION", "number", f64_type, UNUSED, 0.0);
     }
 
@@ -237,26 +278,55 @@ impl SimConnectService {
 
 
         AircraftPosition {
-            latitude:             r(0),
-            longitude:            r(1),
-            altitude:             r(2),
-            heading:              r(3),
-            airspeed_indicated:   r(4),
-            vertical_speed:       r(5),
-            sim_on_ground:        r(6) != 0.0,
-            fuel_total_quantity:  r(7),
-            number_of_engines:    r(8),
-            engine_1_rpm:         r(9),
-            engine_2_rpm:         r(10),
-            engine_3_rpm:         r(11),
-            engine_4_rpm:         r(12),
-            ground_velocity:      r(13),
-            plane_alt_above_ground: r(14),
-            airspeed_true:        r(15),
-            total_weight:         r(16),
-            empty_weight:         r(17),
-            fuel_weight:          r(18),
-            gear_handle_position: r(19) != 0.0,
+            latitude:                   r(0),
+            longitude:                  r(1),
+            altitude:                   r(2),
+            heading:                    r(3),
+            airspeed_indicated:         r(4),
+            vertical_speed:             r(5),
+            sim_on_ground:              r(6) != 0.0,
+            ground_velocity:            r(7),
+            crash_flag:                 r(8) != 0.0,
+            fuel_total_quantity:        r(9),
+            fuel_tank_left_main:        r(10),
+            fuel_tank_right_main:       r(11),
+            fuel_tank_center:           r(12),
+            number_of_engines:          r(13),
+            engine_1_rpm:               r(14),
+            engine_2_rpm:               r(15),
+            engine_3_rpm:               r(16),
+            engine_4_rpm:               r(17),
+            engine_5_rpm:               r(18),
+            engine_6_rpm:               r(19),
+            engine_7_rpm:               r(20),
+            engine_8_rpm:               r(21),
+            engine_1_fuel_flow:         r(22),
+            engine_2_fuel_flow:         r(23),
+            engine_3_fuel_flow:         r(24),
+            engine_4_fuel_flow:         r(25),
+            engine_5_fuel_flow:         r(26),
+            engine_6_fuel_flow:         r(27),
+            engine_7_fuel_flow:         r(28),
+            engine_8_fuel_flow:         r(29),
+            plane_alt_above_ground:     r(30),
+            airspeed_true:              r(31),
+            total_weight:               r(32),
+            empty_weight:               r(33),
+            fuel_weight:                r(34),
+            payload_station_count:      r(35),
+            payload_station_weight_1:   r(36),
+            payload_station_weight_2:   r(37),
+            payload_station_weight_3:   r(38),
+            payload_station_weight_4:   r(39),
+            payload_station_weight_5:   r(40),
+            payload_station_weight_6:   r(41),
+            payload_station_weight_7:   r(42),
+            payload_station_weight_8:   r(43),
+            payload_station_weight_9:   r(44),
+            payload_station_weight_10:  r(45),
+            stall_warning:              r(46) != 0.0,
+            overspeed_warning:          r(47) != 0.0,
+            gear_handle_position:       r(48) != 0.0,
         }
     }
 

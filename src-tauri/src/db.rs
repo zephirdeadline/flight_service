@@ -58,6 +58,13 @@ impl Database {
         //     self.mark_migration_applied(4)?;
         // }
 
+        // Migration 5 : Correction de la FK active_missions.aircraft_id
+        if !self.migration_applied(5)? {
+            let fix_fk = include_str!("../migrations/005_fix_active_missions_fk.sql");
+            self.conn.execute_batch(fix_fk)?;
+            self.mark_migration_applied(5)?;
+        }
+
         Ok(())
     }
 

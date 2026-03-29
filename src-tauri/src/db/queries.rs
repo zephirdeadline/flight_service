@@ -5,6 +5,21 @@ use rand::rngs::StdRng;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+// Vérifier si deux positions sont à moins de 3 km l'une de l'autre
+pub fn is_within_3km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> bool {
+    let r = 6371.0; // Rayon de la Terre en km
+    let d_lat = (lat2 - lat1).to_radians();
+    let d_lon = (lon2 - lon1).to_radians();
+    let lat1_rad = lat1.to_radians();
+    let lat2_rad = lat2.to_radians();
+
+    let a = (d_lat / 2.0).sin().powi(2)
+        + lat1_rad.cos() * lat2_rad.cos() * (d_lon / 2.0).sin().powi(2);
+    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+
+    r * c < 3.0
+}
+
 // Calculer la distance entre deux points (formule haversine)
 fn calculate_distance(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     let r = 3440.0; // Rayon de la Terre en miles nautiques

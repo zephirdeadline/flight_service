@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { usePopup } from '../context/PopupContext';
-import { ActiveMission, Aircraft } from '../types';
+import { ActiveMission, Aircraft, AircraftPosition } from '../types';
 import { aircraftService } from '../services/aircraftService';
 import { activeMissionService } from '../services/activeMissionService';
+import { simConnectService } from '../services/simConnectService';
 import './ActiveMissions.css';
 
-// Calculer la distance entre deux points (formule haversine)
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 3440; // Rayon de la Terre en miles nautiques
+const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const lat1Rad = lat1 * Math.PI / 180;
-  const lat2Rad = lat2 * Math.PI / 180;
-
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
+
+const KM_TO_NM = 0.539957;
 
 const ActiveMissions: React.FC = () => {
   const { player, refreshPlayer, currentAirport } = usePlayer();
@@ -28,38 +25,89 @@ const ActiveMissions: React.FC = () => {
   const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
   const [aircraftMap, setAircraftMap] = useState<Record<string, Aircraft>>({});
   const [loading, setLoading] = useState(true);
+  const [simPosition, setSimPosition] = useState<AircraftPosition | null>(null);
+  const [simConnected, setSimConnected] = useState(false);
+  const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadActiveMissions();
   }, [player]);
 
-  const calculateMissionProgress = (activeMission: ActiveMission) => {
-    if (!currentAirport) return { progress: 0, distanceRemaining: activeMission.mission.distance };
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        let connected = await simConnectService.isConnected();
+        if (!connected) {
+          try {
+            await simConnectService.connect();
+            connected = true;
+          } catch {
+            // MSFS pas lancé
+          }
+        }
+        setSimConnected(connected);
+        if (connected) {
+          const pos = await simConnectService.getPosition();
+          setSimPosition(pos);
+        } else {
+          setSimPosition(null);
+        }
+      } catch {
+        setSimConnected(false);
+        setSimPosition(null);
+      }
+    };
 
+    poll();
+    simPollRef.current = setInterval(poll, 3000);
+    return () => {
+      if (simPollRef.current) clearInterval(simPollRef.current);
+    };
+  }, []);
+
+  const calculateMissionProgress = (activeMission: ActiveMission): { progress: number; distanceRemaining: number; canComplete: boolean } => {
     const mission = activeMission.mission;
 
-    // Si on est à l'aéroport de destination, mission terminée
+    // Priorité : position SimConnect réelle
+    if (simConnected && simPosition) {
+      const distToDestKm = haversineKm(
+        simPosition.latitude, simPosition.longitude,
+        mission.toAirport.latitude, mission.toAirport.longitude,
+      );
+
+      if (distToDestKm <= 3) {
+        return { progress: 100, distanceRemaining: 0, canComplete: true };
+      }
+
+      const distToDestNm = Math.round(distToDestKm * KM_TO_NM);
+      const progress = Math.max(0, Math.min(99, Math.round(
+        ((mission.distance - distToDestNm) / mission.distance) * 100
+      )));
+
+      return { progress, distanceRemaining: distToDestNm, canComplete: false };
+    }
+
+    // Fallback : aéroport actuel en DB
+    if (!currentAirport) return { progress: 0, distanceRemaining: mission.distance, canComplete: false };
+
     if (currentAirport.id === mission.toAirport.id) {
-      return { progress: 100, distanceRemaining: 0 };
+      return { progress: 100, distanceRemaining: 0, canComplete: true };
     }
 
-    // Si on est à l'aéroport de départ, mission non commencée
     if (currentAirport.id === mission.fromAirport.id) {
-      return { progress: 0, distanceRemaining: mission.distance };
+      return { progress: 0, distanceRemaining: mission.distance, canComplete: false };
     }
 
-    // Calculer la distance restante depuis la position actuelle
-    const distanceRemaining = calculateDistance(
-      currentAirport.latitude,
-      currentAirport.longitude,
-      mission.toAirport.latitude,
-      mission.toAirport.longitude
+    const distKm = haversineKm(
+      currentAirport.latitude, currentAirport.longitude,
+      mission.toAirport.latitude, mission.toAirport.longitude,
     );
+    const distNm = Math.round(distKm * KM_TO_NM);
+    const progress = Math.max(0, Math.min(99, Math.round(
+      ((mission.distance - distNm) / mission.distance) * 100
+    )));
 
-    // Calculer la progression en %
-    const progress = Math.max(0, Math.min(100, ((mission.distance - distanceRemaining) / mission.distance) * 100));
-
-    return { progress: Math.round(progress), distanceRemaining: Math.round(distanceRemaining) };
+    return { progress, distanceRemaining: distNm, canComplete: false };
   };
 
   const loadActiveMissions = async () => {
@@ -177,7 +225,7 @@ const ActiveMissions: React.FC = () => {
           {activeMissions.map((activeMission) => {
             const mission = activeMission.mission;
             const aircraft = aircraftMap[activeMission.aircraftId];
-            const { progress, distanceRemaining } = calculateMissionProgress(activeMission);
+            const { progress, distanceRemaining, canComplete } = calculateMissionProgress(activeMission);
 
             return (
               <div key={activeMission.id} className="active-mission-card">
@@ -234,31 +282,52 @@ const ActiveMissions: React.FC = () => {
 
                     {/* Aircraft Dashboard */}
                     <div className="aircraft-dashboard">
-                      <h3 className="dashboard-title">✈️ Aircraft Status</h3>
+                      <h3 className="dashboard-title">
+                        ✈️ Aircraft Status
+                        {simConnected
+                          ? <span className="dashboard-live-badge">📡 LIVE</span>
+                          : <span className="dashboard-sim-badge">🗺️ Estimated</span>}
+                      </h3>
 
                       <div className="dashboard-grid">
-                        {/* Performance Metrics */}
+                        {/* Performance — données SimConnect si dispo, sinon specs */}
                         <div className="dashboard-section">
                           <h4>Performance</h4>
                           <div className="metric">
-                            <span className="metric-label">Current Speed:</span>
-                            <span className="metric-value">{aircraft.cruiseSpeed} kts</span>
-                          </div>
-                          <div className="metric">
-                            <span className="metric-label">Max Speed:</span>
-                            <span className="metric-value">{aircraft.maxSpeed} kts</span>
+                            <span className="metric-label">Speed (IAS):</span>
+                            <span className="metric-value">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.airspeed_indicated)} kts`
+                                : `${aircraft.cruiseSpeed} kts`}
+                            </span>
                           </div>
                           <div className="metric">
                             <span className="metric-label">Altitude:</span>
-                            <span className="metric-value">{Math.round(aircraft.serviceCeiling * 0.7).toLocaleString()} ft</span>
+                            <span className="metric-value">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.altitude).toLocaleString()} ft`
+                                : `— ft`}
+                            </span>
                           </div>
                           <div className="metric">
-                            <span className="metric-label">Rate of Climb:</span>
-                            <span className="metric-value">{aircraft.rateOfClimb} ft/min</span>
+                            <span className="metric-label">Vertical Speed:</span>
+                            <span className="metric-value">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.vertical_speed)} ft/min`
+                                : `${aircraft.rateOfClimb} ft/min`}
+                            </span>
+                          </div>
+                          <div className="metric">
+                            <span className="metric-label">On Ground:</span>
+                            <span className="metric-value">
+                              {simConnected && simPosition
+                                ? (simPosition.sim_on_ground ? 'Yes' : 'No')
+                                : '—'}
+                            </span>
                           </div>
                         </div>
 
-                        {/* Fuel Status */}
+                        {/* Fuel — données SimConnect si dispo */}
                         <div className="dashboard-section">
                           <h4>Fuel</h4>
                           <div className="metric">
@@ -270,24 +339,28 @@ const ActiveMissions: React.FC = () => {
                             <span className="metric-value">{aircraft.fuelConsumption} L/h</span>
                           </div>
                           <div className="metric">
-                            <span className="metric-label">Flight Time:</span>
-                            <span className="metric-value">
-                              {Math.round(aircraft.fuelCapacity / aircraft.fuelConsumption * 10) / 10}h
+                            <span className="metric-label">Remaining:</span>
+                            <span className="metric-value fuel-remaining">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.fuel_total_quantity)} L`
+                                : `${Math.round(aircraft.fuelCapacity * (1 - progress / 100))} L`}
                             </span>
                           </div>
                           <div className="metric">
-                            <span className="metric-label">Remaining:</span>
-                            <span className="metric-value fuel-remaining">
-                              {Math.round(aircraft.fuelCapacity * (1 - progress / 100))} L ({Math.round(100 - progress)}%)
+                            <span className="metric-label">Endurance:</span>
+                            <span className="metric-value">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.fuel_total_quantity / aircraft.fuelConsumption * 10) / 10} h`
+                                : `${Math.round(aircraft.fuelCapacity / aircraft.fuelConsumption * 10) / 10} h`}
                             </span>
                           </div>
                         </div>
 
-                        {/* Weight Information */}
+                        {/* Weight */}
                         <div className="dashboard-section">
                           <h4>Weight</h4>
                           <div className="metric">
-                            <span className="metric-label">Empty Weight:</span>
+                            <span className="metric-label">Empty:</span>
                             <span className="metric-value">{aircraft.emptyWeight.toLocaleString()} kg</span>
                           </div>
                           <div className="metric">
@@ -301,9 +374,11 @@ const ActiveMissions: React.FC = () => {
                             </span>
                           </div>
                           <div className="metric">
-                            <span className="metric-label">Current Weight:</span>
+                            <span className="metric-label">Total:</span>
                             <span className="metric-value">
-                              {(aircraft.emptyWeight + (mission.cargo?.weight || (mission.passengers ? mission.passengers.count * 80 : 0))).toLocaleString()} kg
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.total_weight).toLocaleString()} kg`
+                                : `${(aircraft.emptyWeight + (mission.cargo?.weight || (mission.passengers ? mission.passengers.count * 80 : 0))).toLocaleString()} kg`}
                             </span>
                           </div>
                           <div className="metric">
@@ -312,9 +387,9 @@ const ActiveMissions: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Aircraft Dimensions */}
+                        {/* Dimensions */}
                         <div className="dashboard-section">
-                          <h4>Dimensions</h4>
+                          <h4>Specs</h4>
                           <div className="metric">
                             <span className="metric-label">Wingspan:</span>
                             <span className="metric-value">{aircraft.wingspan} m</span>
@@ -338,23 +413,25 @@ const ActiveMissions: React.FC = () => {
                 )}
 
                 <div className="mission-actions">
-                  {progress === 100 || activeMission.status === 'ready_to_complete' ? (
+                  {canComplete || activeMission.status === 'ready_to_complete' ? (
                     <button
                       className="complete-btn"
                       onClick={() => handleCompleteMission(activeMission.id)}
                     >
-                      Complete Mission
+                      ✅ Complete Mission
                     </button>
                   ) : (
                     <div className="mission-progress">
                       <div className="progress-info">
-                        <span>In Progress ({progress}%)</span>
+                        <span>
+                          {simConnected ? '📡' : '🗺️'} {progress}%
+                        </span>
                         <span className="distance-remaining">
                           {distanceRemaining} NM remaining
                         </span>
                       </div>
                       <div className="progress-bar-container">
-                        <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                        <div className="progress-bar" style={{ width: `${progress}%` }} />
                       </div>
                     </div>
                   )}

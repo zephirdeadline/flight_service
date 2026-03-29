@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS active_missions (
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
     FOREIGN KEY (from_airport_id) REFERENCES airports(id),
     FOREIGN KEY (to_airport_id) REFERENCES airports(id),
-    FOREIGN KEY (aircraft_id) REFERENCES aircraft_catalog(id),
+    FOREIGN KEY (aircraft_id) REFERENCES player_aircraft(id),
     CHECK (
         (type = 'cargo' AND cargo_weight IS NOT NULL AND cargo_description IS NOT NULL) OR
         (type = 'passenger' AND passenger_count IS NOT NULL)

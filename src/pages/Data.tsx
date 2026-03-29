@@ -11,15 +11,29 @@ export default function Data() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkConnection();
+    autoConnect();
+    return () => {
+      simConnectService.stopStreaming();
+    };
   }, []);
 
-  const checkConnection = async () => {
+  const autoConnect = async () => {
     try {
-      const connected = await simConnectService.isConnected();
-      setIsConnected(connected);
+      const already = await simConnectService.isConnected();
+      if (already) {
+        setIsConnected(true);
+        const streaming = await simConnectService.isStreaming();
+        if (!streaming) await simConnectService.startStreaming();
+        return;
+      }
+      setLoading(true);
+      await simConnectService.connect();
+      await simConnectService.startStreaming();
+      setIsConnected(true);
     } catch (err) {
-      console.error('Failed to check connection:', err);
+      setError(`MSFS not detected: ${err}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,12 +114,13 @@ export default function Data() {
     );
   };
 
-  const renderEngine = (engineNum: number, rpm: number) => {
-    if (rpm === 0) return null;
+  const renderEngine = (engineNum: number, rpm: number, fuelFlow: number) => {
+    if (rpm === 0 && fuelFlow === 0) return null;
     return (
       <div key={engineNum} className="engine-card">
         <h4>Engine {engineNum}</h4>
         {renderGauge(rpm, 3000, 'RPM', 'rpm')}
+        {renderGauge(fuelFlow, 30, 'Fuel Flow', 'gph')}
       </div>
     );
   };
@@ -205,6 +220,9 @@ export default function Data() {
               <div className={`status-badge ${data.sim_on_ground ? 'on-ground' : 'airborne'}`}>
                 {data.sim_on_ground ? '🛬 On Ground' : '✈️ Airborne'}
               </div>
+              <div className={`status-badge ${data.crash_flag ? 'crashed' : 'ok'}`}>
+                {data.crash_flag ? '💥 Crashed' : '✅ OK'}
+              </div>
               <div className={`status-badge ${data.gear_handle_position ? 'gear-down' : 'gear-up'}`}>
                 {data.gear_handle_position ? '⬇️ Gear Down' : '⬆️ Gear Up'}
               </div>
@@ -216,6 +234,9 @@ export default function Data() {
             <h2>⛽ Fuel</h2>
             <div className="fuel-gauges">
               {renderGauge(data.fuel_total_quantity, 100, 'Total', 'gal')}
+              {renderGauge(data.fuel_tank_left_main, 50, 'Left Tank', 'gal')}
+              {renderGauge(data.fuel_tank_right_main, 50, 'Right Tank', 'gal')}
+              {data.fuel_tank_center > 0 && renderGauge(data.fuel_tank_center, 100, 'Center Tank', 'gal')}
             </div>
             <div className="data-item">
               <span className="label">Fuel Weight</span>
@@ -227,10 +248,14 @@ export default function Data() {
           <section className="data-section">
             <h2>🔧 Engines ({data.number_of_engines.toFixed(0)})</h2>
             <div className="engines-grid">
-              {renderEngine(1, data.engine_1_rpm)}
-              {renderEngine(2, data.engine_2_rpm)}
-              {renderEngine(3, data.engine_3_rpm)}
-              {renderEngine(4, data.engine_4_rpm)}
+              {renderEngine(1, data.engine_1_rpm, data.engine_1_fuel_flow)}
+              {renderEngine(2, data.engine_2_rpm, data.engine_2_fuel_flow)}
+              {renderEngine(3, data.engine_3_rpm, data.engine_3_fuel_flow)}
+              {renderEngine(4, data.engine_4_rpm, data.engine_4_fuel_flow)}
+              {renderEngine(5, data.engine_5_rpm, data.engine_5_fuel_flow)}
+              {renderEngine(6, data.engine_6_rpm, data.engine_6_fuel_flow)}
+              {renderEngine(7, data.engine_7_rpm, data.engine_7_fuel_flow)}
+              {renderEngine(8, data.engine_8_rpm, data.engine_8_fuel_flow)}
             </div>
           </section>
 
@@ -249,6 +274,45 @@ export default function Data() {
               <div className="data-item">
                 <span className="label">Payload</span>
                 <span className="value">{(data.total_weight - data.empty_weight - data.fuel_weight).toFixed(0)} kg</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Payload Stations */}
+          {data.payload_station_count > 0 && (
+            <section className="data-section">
+              <h2>📦 Payload Stations ({data.payload_station_count.toFixed(0)})</h2>
+              <div className="payload-list">
+                {[
+                  data.payload_station_weight_1,
+                  data.payload_station_weight_2,
+                  data.payload_station_weight_3,
+                  data.payload_station_weight_4,
+                  data.payload_station_weight_5,
+                  data.payload_station_weight_6,
+                  data.payload_station_weight_7,
+                  data.payload_station_weight_8,
+                  data.payload_station_weight_9,
+                  data.payload_station_weight_10,
+                ].slice(0, data.payload_station_count).map((weight, i) => (
+                  <div key={i + 1} className="payload-station">
+                    <span className="station-name">Station {i + 1}</span>
+                    <span className="station-weight">{weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Warnings */}
+          <section className="data-section">
+            <h2>⚠️ Warnings</h2>
+            <div className="warnings-grid">
+              <div className={`warning-item ${data.stall_warning ? 'active' : 'inactive'}`}>
+                {data.stall_warning ? '🔴' : '🟢'} Stall Warning
+              </div>
+              <div className={`warning-item ${data.overspeed_warning ? 'active' : 'inactive'}`}>
+                {data.overspeed_warning ? '🔴' : '🟢'} Overspeed Warning
               </div>
             </div>
           </section>
