@@ -38,6 +38,52 @@
   font-weight: 700;
 }
 
+/* Delivery information banner */
+.shop-delivery-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.delivery-icon {
+  font-size: 1.8rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.delivery-text {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.delivery-text strong {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.delivery-airport {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .shop-filters {
   background: white;
   border-radius: 12px;
@@ -104,8 +150,60 @@
   margin-bottom: 2rem;
 }
 
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
 .aircraft-wrapper {
   position: relative;
+}
+
+/* Market Card Design */
+.market-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.market-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.market-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.condition-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.condition-badge.new {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.condition-badge.used {
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
 }
 
 .owned-badge {
@@ -120,6 +218,202 @@
   font-weight: 700;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4);
+}
+
+.discount-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.market-card-header {
+  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  padding: 2.5rem 1.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.aircraft-type-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.aircraft-info h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.aircraft-info p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* Condition Section */
+.condition-section {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.condition-bar-container {
+  width: 100%;
+  height: 12px;
+  background: #ecf0f1;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.condition-bar-fill {
+  height: 100%;
+  transition: width 0.3s, background 0.3s;
+  border-radius: 6px;
+}
+
+.condition-bar-fill.excellent {
+  background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+}
+
+.condition-bar-fill.good {
+  background: linear-gradient(90deg, #3498db 0%, #5dade2 100%);
+}
+
+.condition-bar-fill.fair {
+  background: linear-gradient(90deg, #f39c12 0%, #f1c40f 100%);
+}
+
+.condition-bar-fill.poor {
+  background: linear-gradient(90deg, #e74c3c 0%, #ec7063 100%);
+}
+
+.condition-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.condition-percent {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.flight-hours {
+  color: #7f8c8d;
+  font-weight: 600;
+}
+
+/* Specs Grid */
+.market-specs {
+  padding: 1rem 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spec-icon {
+  font-size: 1.5rem;
+}
+
+.spec-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-align: center;
+}
+
+/* Location */
+.market-location {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.location-icon {
+  font-size: 1.8rem;
+}
+
+.location-details {
+  flex: 1;
+}
+
+.location-name {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.location-distance {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Price */
+.market-price {
+  padding: 1rem 1.5rem;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.price-original {
+  text-decoration: line-through;
+  color: #95a5a6;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.price-current {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #27ae60;
+}
+
+/* Buy Button */
+.market-buy-button {
+  margin: 0 1.5rem 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.market-buy-button:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.market-buy-button.disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .no-aircraft {
@@ -204,7 +498,8 @@
     gap: 0.5rem;
   }
 
-  .aircraft-grid {
+  .aircraft-grid,
+  .market-grid {
     grid-template-columns: 1fr;
   }
 
@@ -214,5 +509,15 @@
 
   .filter-btn {
     width: 100%;
+  }
+
+  .market-specs {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .spec-item {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }

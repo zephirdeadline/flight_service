@@ -193,7 +193,302 @@
 .cheat-aircraft-price {
   color: #27ae60;
   font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.cheat-aircraft-owned-count {
+  color: #3498db;
+  font-weight: 600;
+  font-size: 0.9rem;
   margin-bottom: 1rem;
+}
+
+/* Active Missions Section */
+.cheat-missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cheat-mission-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cheat-mission-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cheat-mission-info strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.cheat-mission-info span {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.cheat-mission-reward {
+  color: #27ae60 !important;
+  font-weight: 600;
+}
+
+.cheat-btn.complete-mission {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.cheat-btn.complete-mission:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+}
+
+/* Teleport Aircraft Section */
+.cheat-teleport-aircraft-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cheat-owned-aircraft {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cheat-aircraft-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.cheat-current-location {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cheat-search.small {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.cheat-airport-mini-results {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.cheat-airport-mini-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.cheat-airport-mini-card strong {
+  color: #2c3e50;
+}
+
+.cheat-btn-mini {
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cheat-btn-mini:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+}
+
+.cheat-btn-mini:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.cheat-no-data {
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Aircraft Wear Section */
+.cheat-wear-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cheat-wear-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cheat-wear-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.cheat-wear-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.cheat-wear-current {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.wear-condition {
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+}
+
+.wear-condition.good {
+  background: #d4edda;
+  color: #155724;
+}
+
+.wear-condition.fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.wear-condition.poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.wear-hours {
+  color: #7f8c8d;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.cheat-wear-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.cheat-preset-btn {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.cheat-preset-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cheat-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cheat-preset-btn.excellent {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+.cheat-preset-btn.good {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.cheat-preset-btn.fair {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.cheat-preset-btn.poor {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+}
+
+.cheat-preset-btn.critical {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.cheat-wear-custom {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.wear-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wear-input-group label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.cheat-wear-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.cheat-wear-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid #2c3e50;
+}
+
+.cheat-wear-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid #2c3e50;
 }
 
 /* Buttons */
@@ -265,4 +560,65 @@
   .cheat-money-controls input {
     max-width: 100%;
   }
+}
+
+/* Maintenance Section */
+.cheat-maintenance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cheat-maintenance-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 2px solid #f39c12;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.cheat-maintenance-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.2);
+}
+
+.cheat-maintenance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cheat-maintenance-info strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.maintenance-status {
+  color: #e67e22;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cheat-btn.complete-maintenance {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cheat-btn.complete-maintenance:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.cheat-btn.complete-maintenance:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

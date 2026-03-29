@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { Aircraft } from '../types';
+import { Aircraft, OwnedAircraft } from '../types';
 
 export const aircraftService = {
   // Récupérer tous les avions disponibles à l'achat
@@ -16,6 +16,11 @@ export const aircraftService = {
   async getAircraftByIds(ids: string[]): Promise<Aircraft[]> {
     const allAircraft = await invoke<Aircraft[]>('get_all_aircraft');
     return allAircraft.filter(aircraft => ids.includes(aircraft.id));
+  },
+
+  // Récupérer les avions possédés par un joueur
+  async getOwnedAircraft(playerId: string): Promise<OwnedAircraft[]> {
+    return await invoke('get_owned_aircraft', { playerId });
   },
 
   // Filtrer les avions par type

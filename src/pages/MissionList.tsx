@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
+import { usePopup } from '../context/PopupContext';
 import { Mission, Airport } from '../types';
 import { missionService } from '../services/missionService';
 import { airportService } from '../services/airportService';
@@ -8,7 +9,8 @@ import MissionCard from '../components/MissionCard';
 import './MissionList.css';
 
 const MissionList: React.FC = () => {
-  const { player, currentAirport, selectedAircraft, updateMoney } = usePlayer();
+  const { player, currentAirport, selectedAircraft, updateMoney, getAircraftMaintenance } = usePlayer();
+  const popup = usePopup();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [filteredMissions, setFilteredMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,17 @@ const MissionList: React.FC = () => {
   };
 
   const handleAcceptMission = async (missionId: string) => {
-    if (!player || !selectedAircraft) {
+    if (!player || !selectedAircraft || !player.selectedAircraftId) {
+      return;
+    }
+
+    // Vérifier que l'avion n'est pas en maintenance
+    const maintenance = getAircraftMaintenance(player.selectedAircraftId);
+    if (maintenance && maintenance.isUnderMaintenance) {
+      popup.showError(
+        'Aircraft Under Maintenance',
+        `${selectedAircraft.name} is currently undergoing maintenance and cannot fly.\n\nPlease wait for the maintenance to complete or select another aircraft.`
+      );
       return;
     }
 
@@ -175,8 +187,8 @@ const MissionList: React.FC = () => {
     }
 
     try {
-      // Accepter la mission
-      await activeMissionService.acceptMission(player.id, mission, selectedAircraft.id);
+      // Accepter la mission avec l'ID de l'owned aircraft (player_aircraft.id)
+      await activeMissionService.acceptMission(player.id, mission, player.selectedAircraftId);
 
       // Retirer la mission de la liste
       setMissions(missions.filter(m => m.id !== missionId));

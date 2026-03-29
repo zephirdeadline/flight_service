@@ -110,43 +110,6 @@
   margin: 0;
 }
 
-.hangar-info {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.hangar-info h3 {
-  color: #2c3e50;
-  margin: 0 0 1rem 0;
-  font-size: 1.2rem;
-}
-
-.hangar-info ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.hangar-info li {
-  padding-left: 1.5rem;
-  position: relative;
-  color: #34495e;
-  line-height: 1.5;
-}
-
-.hangar-info li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #27ae60;
-  font-weight: 700;
-}
-
 .loading {
   display: flex;
   align-items: center;
@@ -169,4 +132,120 @@
   .aircraft-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Section titles */
+.hangar-section-title {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin: 2rem 0 1rem 0;
+  padding-left: 0.5rem;
+  border-left: 4px solid #3498db;
+}
+
+/* Aircraft card container */
+.aircraft-card-container {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Disabled state for remote aircraft */
+.aircraft-card-container.disabled {
+  opacity: 0.75;
+}
+
+.aircraft-card-container.disabled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.4) 0%, rgba(149, 165, 166, 0.4) 100%);
+  border-radius: 12px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Remote aircraft overlay */
+.aircraft-remote-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(52, 73, 94, 0.95) 0%, rgba(52, 73, 94, 0.85) 100%);
+  padding: 1rem;
+  border-radius: 0 0 12px 12px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.remote-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: white;
+  font-size: 0.85rem;
+}
+
+.remote-location {
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remote-distance {
+  color: #f39c12;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remote-hint {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Available badge for local aircraft */
+.aircraft-available-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4);
+  z-index: 10;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.hangar-info-box {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.hangar-info-box p {
+  margin: 0;
+  color: #856404;
+  font-weight: 500;
 }

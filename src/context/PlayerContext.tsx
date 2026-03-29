@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Player, Aircraft, Airport, AircraftMaintenance } from '../types';
+import { Player, Aircraft, Airport, AircraftMaintenance, OwnedAircraft } from '../types';
 import { playerService } from '../services/playerService';
 import { aircraftService } from '../services/aircraftService';
 import { airportService } from '../services/airportService';
@@ -9,7 +9,7 @@ interface PlayerContextType {
   player: Player | null;
   currentAirport: Airport | null;
   selectedAircraft: Aircraft | null;
-  ownedAircraft: Aircraft[];
+  ownedAircraft: OwnedAircraft[]; // Changé de Aircraft[] à OwnedAircraft[]
   loading: boolean;
   refreshPlayer: () => Promise<void>;
   updateMoney: (amount: number) => Promise<void>;
@@ -29,7 +29,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [player, setPlayer] = useState<Player | null>(null);
   const [currentAirport, setCurrentAirport] = useState<Airport | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
-  const [ownedAircraft, setOwnedAircraft] = useState<Aircraft[]>([]);
+  const [ownedAircraft, setOwnedAircraft] = useState<OwnedAircraft[]>([]); // Changé le type
   const [loading, setLoading] = useState(true);
 
   const refreshPlayer = async () => {
@@ -53,14 +53,21 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const airport = await airportService.getAirportById(playerData.currentAirportId);
       setCurrentAirport(airport);
 
-      // Charger les avions possédés
-      const aircraft = await aircraftService.getAircraftByIds(playerData.ownedAircraftIds);
-      setOwnedAircraft(aircraft);
+      // Charger les avions possédés (instances complètes avec détails du catalogue)
+      const ownedAircraftData = await aircraftService.getOwnedAircraft(playerData.id);
+      setOwnedAircraft(ownedAircraftData);
 
       // Charger l'avion sélectionné
       if (playerData.selectedAircraftId) {
-        const selected = await aircraftService.getAircraftById(playerData.selectedAircraftId);
-        setSelectedAircraft(selected);
+        // selectedAircraftId est maintenant l'ID d'un player_aircraft (instance unique)
+        const selectedOwned = ownedAircraftData.find(owned => owned.id === playerData.selectedAircraftId);
+        if (selectedOwned) {
+          setSelectedAircraft(selectedOwned.aircraft);
+        } else {
+          setSelectedAircraft(null);
+        }
+      } else {
+        setSelectedAircraft(null);
       }
     } catch (error) {
       console.error('Error refreshing player data:', error);
@@ -108,8 +115,17 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  const selectAircraft = async (aircraftId: string) => {
-    await playerService.selectAircraft(aircraftId);
+  const selectAircraft = async (playerAircraftId: string) => {
+    // Vérifier si l'avion est en maintenance
+    if (player) {
+      const maintenance = player.aircraftMaintenances[playerAircraftId];
+      if (maintenance && maintenance.isUnderMaintenance) {
+        console.warn('Cannot select aircraft under maintenance');
+        return;
+      }
+    }
+
+    await playerService.selectAircraft(playerAircraftId);
     await refreshPlayer();
   };
 
@@ -141,23 +157,29 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const startMaintenance = async (aircraftId: string, type: 'routine' | 'repair' | 'inspection'): Promise<boolean> => {
     if (!player) return false;
 
-    const aircraft = ownedAircraft.find(a => a.id === aircraftId);
+    const ownedAircraft_instance = ownedAircraft.find(a => a.id === aircraftId);
     const maintenance = player.aircraftMaintenances[aircraftId];
 
-    if (!aircraft || !maintenance) return false;
+    if (!ownedAircraft_instance || !maintenance) return false;
 
     // Calculer le coût et la durée
-    const cost = maintenanceService.calculateMaintenanceCost(aircraft, maintenance);
+    const cost = maintenanceService.calculateMaintenanceCost(ownedAircraft_instance.aircraft, maintenance);
 
     if (player.money < cost) {
       return false;
     }
 
     try {
-      const result = await maintenanceService.startMaintenance(aircraftId, player.id, type);
+      const result = await maintenanceService.startMaintenance(
+        aircraftId,
+        player.id,
+        type,
+        maintenance.flightHours,
+        cost
+      );
 
       if (result.success) {
-        await playerService.startMaintenance(aircraftId, result.endDate, result.cost);
+        await playerService.startMaintenance(player.id, aircraftId, result.endDate, result.cost);
 
         // Ajouter au historique
         const record = maintenanceService.createMaintenanceRecord(
@@ -167,7 +189,12 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           maintenance.flightHours,
           `${type} maintenance started`
         );
-        await playerService.addMaintenanceRecord(record);
+        await playerService.addMaintenanceRecord(player.id, record);
+
+        // Si cet avion est actuellement sélectionné, le désélectionner
+        if (player.selectedAircraftId === aircraftId) {
+          await playerService.selectAircraft(''); // Désélectionner (chaîne vide)
+        }
 
         await refreshPlayer();
         return true;

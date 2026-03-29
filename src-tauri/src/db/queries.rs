@@ -36,6 +36,15 @@ fn generate_mission_seed(airport_id: &str) -> u64 {
     hour_timestamp as u64 ^ airport_hash
 }
 
+// Générer un seed déterministe basé sur la date du jour
+// Le seed change chaque jour (utilisé pour le marché d'avions)
+fn generate_daily_market_seed() -> u64 {
+    let now = chrono::Utc::now();
+    // Arrondi au jour (timestamp du début de la journée)
+    let day_timestamp = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
+    day_timestamp as u64
+}
+
 // ============= AIRPORTS =============
 
 fn map_airport_row(row: &Row) -> Result<Airport> {
@@ -212,31 +221,43 @@ pub fn create_player(
         |row| row.get(0),
     )?;
 
-    // Créer le joueur avec selected_aircraft_id = aircraft du catalogue
-    conn.execute(
-        "INSERT INTO players (id, name, current_airport_id, selected_aircraft_id)
-         VALUES (?1, ?2, ?3, ?4)",
-        params![&player_id, name, starting_airport_id, starting_aircraft_id],
-    )?;
+    // Générer un ID unique pour l'avion possédé
+    let player_aircraft_id = uuid::Uuid::new_v4().to_string();
 
-    // Ajouter l'avion au joueur
+    // 1. Créer le joueur SANS selected_aircraft_id (on le mettra à jour après)
     conn.execute(
-        "INSERT INTO player_aircraft (player_id, aircraft_id, purchase_price)
+        "INSERT INTO players (id, name, current_airport_id)
          VALUES (?1, ?2, ?3)",
-        params![&player_id, starting_aircraft_id, aircraft_price],
+        params![&player_id, name, starting_airport_id],
     )?;
 
-    // Initialiser la maintenance
+    // 2. Ajouter l'avion au joueur (instance unique) à l'aéroport de départ
     conn.execute(
-        "INSERT INTO aircraft_maintenances (player_id, aircraft_id)
+        "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![&player_aircraft_id, &player_id, starting_aircraft_id, starting_airport_id, aircraft_price],
+    )?;
+
+    // 3. Initialiser la maintenance pour cette instance
+    conn.execute(
+        "INSERT INTO aircraft_maintenances (player_id, player_aircraft_id)
          VALUES (?1, ?2)",
-        params![&player_id, starting_aircraft_id],
+        params![&player_id, &player_aircraft_id],
+    )?;
+
+    // 4. Maintenant qu'on a créé l'avion, on peut le sélectionner
+    conn.execute(
+        "UPDATE players SET selected_aircraft_id = ?1 WHERE id = ?2",
+        params![&player_aircraft_id, &player_id],
     )?;
 
     Ok(player_id)
 }
 
 pub fn get_player(conn: &Connection, player_id: &str) -> Result<Option<Player>> {
+    // D'abord, compléter automatiquement les maintenances terminées
+    auto_complete_finished_maintenances(conn, player_id)?;
+
     let mut stmt = conn.prepare(
         "SELECT id, name, money, current_airport_id, selected_aircraft_id, total_flight_hours
          FROM players
@@ -279,11 +300,77 @@ pub fn get_player(conn: &Connection, player_id: &str) -> Result<Option<Player>> 
 
 fn get_player_aircraft_ids(conn: &Connection, player_id: &str) -> Result<Vec<String>> {
     let mut stmt = conn.prepare(
-        "SELECT aircraft_id FROM player_aircraft WHERE player_id = ?1 ORDER BY purchase_date"
+        "SELECT id FROM player_aircraft WHERE player_id = ?1 ORDER BY purchase_date"
     )?;
 
     let ids = stmt.query_map([player_id], |row| row.get(0))?;
     ids.collect()
+}
+
+// Récupérer les avions possédés avec leurs détails complets
+pub fn get_owned_aircraft(conn: &Connection, player_id: &str) -> Result<Vec<crate::models::OwnedAircraft>> {
+    let mut stmt = conn.prepare(
+        "SELECT
+            pa.id, pa.player_id, pa.current_airport_id, pa.purchase_date, pa.purchase_price,
+            ac.id, ac.name, ac.manufacturer, ac.type, ac.price, ac.capacity,
+            ac.range, ac.cruise_speed, ac.maintenance_cost_per_hour,
+            ac.max_flight_hours_before_maintenance, ac.image_url,
+            ac.max_speed, ac.fuel_capacity, ac.fuel_consumption,
+            ac.empty_weight, ac.max_takeoff_weight, ac.service_ceiling,
+            ac.rate_of_climb, ac.wingspan, ac.length
+         FROM player_aircraft pa
+         JOIN aircraft_catalog ac ON pa.aircraft_catalog_id = ac.id
+         WHERE pa.player_id = ?1
+         ORDER BY pa.purchase_date"
+    )?;
+
+    let owned = stmt.query_map([player_id], |row| {
+        use crate::models::{Aircraft, PlayerAircraft, OwnedAircraft, AircraftType};
+
+        let player_aircraft = PlayerAircraft {
+            id: row.get(0)?,
+            player_id: row.get(1)?,
+            aircraft_catalog_id: row.get(5)?,
+            current_airport_id: row.get(2)?,
+            purchase_date: row.get(3)?,
+            purchase_price: row.get(4)?,
+        };
+
+        let aircraft_type_str: String = row.get(8)?;
+        let aircraft_type = match aircraft_type_str.as_str() {
+            "passenger" => AircraftType::Passenger,
+            "cargo" => AircraftType::Cargo,
+            "both" => AircraftType::Both,
+            _ => AircraftType::Both,
+        };
+
+        let aircraft = Aircraft {
+            id: row.get(5)?,
+            name: row.get(6)?,
+            manufacturer: row.get(7)?,
+            aircraft_type,
+            price: row.get(9)?,
+            capacity: row.get(10)?,
+            range: row.get(11)?,
+            cruise_speed: row.get(12)?,
+            maintenance_cost_per_hour: row.get(13)?,
+            max_flight_hours_before_maintenance: row.get(14)?,
+            image_url: row.get(15)?,
+            max_speed: row.get(16)?,
+            fuel_capacity: row.get(17)?,
+            fuel_consumption: row.get(18)?,
+            empty_weight: row.get(19)?,
+            max_takeoff_weight: row.get(20)?,
+            service_ceiling: row.get(21)?,
+            rate_of_climb: row.get(22)?,
+            wingspan: row.get(23)?,
+            length: row.get(24)?,
+        };
+
+        Ok(OwnedAircraft::new(player_aircraft, aircraft))
+    })?;
+
+    owned.collect()
 }
 
 fn get_completed_mission_ids(conn: &Connection, player_id: &str) -> Result<Vec<String>> {
@@ -314,45 +401,60 @@ pub fn update_player_airport(conn: &Connection, player_id: &str, airport_id: &st
 pub fn add_player_aircraft(
     conn: &Connection,
     player_id: &str,
-    aircraft_id: &str,
+    aircraft_catalog_id: &str,
+    current_airport_id: &str,
     purchase_price: i64,
 ) -> Result<()> {
-    // Ajouter l'avion
+    // Générer un ID unique pour l'avion possédé
+    let player_aircraft_id = uuid::Uuid::new_v4().to_string();
+
+    // Ajouter l'avion (instance unique) à l'aéroport actuel
     conn.execute(
-        "INSERT INTO player_aircraft (player_id, aircraft_id, purchase_price)
-         VALUES (?1, ?2, ?3)",
-        params![player_id, aircraft_id, purchase_price],
+        "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![&player_aircraft_id, player_id, aircraft_catalog_id, current_airport_id, purchase_price],
     )?;
 
-    // Initialiser la maintenance
+    // Initialiser la maintenance pour cette instance
     conn.execute(
-        "INSERT INTO aircraft_maintenances (player_id, aircraft_id)
+        "INSERT INTO aircraft_maintenances (player_id, player_aircraft_id)
          VALUES (?1, ?2)",
-        params![player_id, aircraft_id],
+        params![player_id, &player_aircraft_id],
     )?;
 
     Ok(())
 }
 
-pub fn remove_player_aircraft(conn: &Connection, player_id: &str, aircraft_id: &str) -> Result<()> {
+pub fn remove_player_aircraft(conn: &Connection, player_id: &str, player_aircraft_id: &str) -> Result<()> {
+    // Supprimer l'avion possédé (cascade supprimera la maintenance grâce à ON DELETE CASCADE)
     conn.execute(
-        "DELETE FROM player_aircraft WHERE player_id = ?1 AND aircraft_id = ?2",
-        params![player_id, aircraft_id],
-    )?;
-
-    // Supprimer la maintenance
-    conn.execute(
-        "DELETE FROM aircraft_maintenances WHERE player_id = ?1 AND aircraft_id = ?2",
-        params![player_id, aircraft_id],
+        "DELETE FROM player_aircraft WHERE player_id = ?1 AND id = ?2",
+        params![player_id, player_aircraft_id],
     )?;
 
     Ok(())
 }
 
-pub fn select_player_aircraft(conn: &Connection, player_id: &str, aircraft_id: &str) -> Result<()> {
+pub fn select_player_aircraft(conn: &Connection, player_id: &str, player_aircraft_id: &str) -> Result<()> {
+    // Vérifier que l'avion appartient au joueur et est au même aéroport
+    let (aircraft_airport, player_airport): (String, String) = conn.query_row(
+        "SELECT pa.current_airport_id, p.current_airport_id
+         FROM player_aircraft pa
+         JOIN players p ON p.id = pa.player_id
+         WHERE pa.id = ?1 AND pa.player_id = ?2",
+        params![player_aircraft_id, player_id],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+
+    // Vérifier que l'avion est au même aéroport que le joueur
+    if aircraft_airport != player_airport {
+        return Err(rusqlite::Error::QueryReturnedNoRows); // Erreur: avion pas au bon aéroport
+    }
+
+    // Sélectionner l'avion
     conn.execute(
         "UPDATE players SET selected_aircraft_id = ?1 WHERE id = ?2",
-        params![aircraft_id, player_id],
+        params![player_aircraft_id, player_id],
     )?;
     Ok(())
 }
@@ -363,7 +465,7 @@ use std::collections::HashMap;
 
 fn get_aircraft_maintenances(conn: &Connection, player_id: &str) -> Result<AircraftMaintenances> {
     let mut stmt = conn.prepare(
-        "SELECT aircraft_id, flight_hours, condition, is_under_maintenance,
+        "SELECT player_aircraft_id, flight_hours, condition, is_under_maintenance,
                 maintenance_end_date, last_maintenance_date
          FROM aircraft_maintenances
          WHERE player_id = ?1"
@@ -373,7 +475,7 @@ fn get_aircraft_maintenances(conn: &Connection, player_id: &str) -> Result<Aircr
         Ok((
             row.get::<_, String>(0)?,
             AircraftMaintenance {
-                aircraft_id: row.get(0)?,
+                aircraft_id: row.get(0)?, // aircraft_id = player_aircraft_id maintenant
                 flight_hours: row.get(1)?,
                 condition: row.get(2)?,
                 is_under_maintenance: row.get(3)?,
@@ -394,7 +496,7 @@ fn get_aircraft_maintenances(conn: &Connection, player_id: &str) -> Result<Aircr
 
 fn get_maintenance_history(conn: &Connection, player_id: &str) -> Result<Vec<MaintenanceRecord>> {
     let mut stmt = conn.prepare(
-        "SELECT id, aircraft_id, date, type, cost, flight_hours_at_maintenance, description
+        "SELECT id, player_aircraft_id, date, type, cost, flight_hours_at_maintenance, description
          FROM maintenance_records
          WHERE player_id = ?1
          ORDER BY date DESC"
@@ -411,7 +513,7 @@ fn get_maintenance_history(conn: &Connection, player_id: &str) -> Result<Vec<Mai
 
         Ok(MaintenanceRecord {
             id: row.get(0)?,
-            aircraft_id: row.get(1)?,
+            aircraft_id: row.get(1)?, // Note: aircraft_id dans le modèle = player_aircraft_id en DB
             date: row.get(2)?,
             maintenance_type,
             cost: row.get(4)?,
@@ -426,15 +528,15 @@ fn get_maintenance_history(conn: &Connection, player_id: &str) -> Result<Vec<Mai
 pub fn update_aircraft_maintenance(
     conn: &Connection,
     player_id: &str,
-    aircraft_id: &str,
+    player_aircraft_id: &str,
     flight_hours: f64,
     condition: i32,
 ) -> Result<()> {
     conn.execute(
         "UPDATE aircraft_maintenances
          SET flight_hours = ?1, condition = ?2
-         WHERE player_id = ?3 AND aircraft_id = ?4",
-        params![flight_hours, condition, player_id, aircraft_id],
+         WHERE player_id = ?3 AND player_aircraft_id = ?4",
+        params![flight_hours, condition, player_id, player_aircraft_id],
     )?;
     Ok(())
 }
@@ -442,19 +544,19 @@ pub fn update_aircraft_maintenance(
 pub fn start_maintenance(
     conn: &Connection,
     player_id: &str,
-    aircraft_id: &str,
+    player_aircraft_id: &str,
     end_date: &str,
 ) -> Result<()> {
     conn.execute(
         "UPDATE aircraft_maintenances
          SET is_under_maintenance = 1, maintenance_end_date = ?1
-         WHERE player_id = ?2 AND aircraft_id = ?3",
-        params![end_date, player_id, aircraft_id],
+         WHERE player_id = ?2 AND player_aircraft_id = ?3",
+        params![end_date, player_id, player_aircraft_id],
     )?;
     Ok(())
 }
 
-pub fn complete_maintenance(conn: &Connection, player_id: &str, aircraft_id: &str) -> Result<()> {
+pub fn complete_maintenance(conn: &Connection, player_id: &str, player_aircraft_id: &str) -> Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
     conn.execute(
         "UPDATE aircraft_maintenances
@@ -463,9 +565,39 @@ pub fn complete_maintenance(conn: &Connection, player_id: &str, aircraft_id: &st
              last_maintenance_date = ?1,
              flight_hours = 0,
              condition = 100
-         WHERE player_id = ?2 AND aircraft_id = ?3",
-        params![now, player_id, aircraft_id],
+         WHERE player_id = ?2 AND player_aircraft_id = ?3",
+        params![now, player_id, player_aircraft_id],
     )?;
+    Ok(())
+}
+
+// Auto-compléter les maintenances dont la date de fin est passée
+fn auto_complete_finished_maintenances(conn: &Connection, player_id: &str) -> Result<()> {
+    let now = chrono::Utc::now();
+
+    // Récupérer toutes les maintenances en cours avec leur date de fin
+    let mut stmt = conn.prepare(
+        "SELECT player_aircraft_id, maintenance_end_date
+         FROM aircraft_maintenances
+         WHERE player_id = ?1 AND is_under_maintenance = 1 AND maintenance_end_date IS NOT NULL"
+    )?;
+
+    let maintenances: Vec<(String, String)> = stmt
+        .query_map([player_id], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?
+        .collect::<Result<Vec<_>>>()?;
+
+    // Compléter celles dont la date est passée
+    for (player_aircraft_id, end_date) in maintenances {
+        if let Ok(end_datetime) = chrono::DateTime::parse_from_rfc3339(&end_date) {
+            if end_datetime.with_timezone(&chrono::Utc) <= now {
+                // La maintenance est terminée, la compléter automatiquement
+                complete_maintenance(conn, player_id, &player_aircraft_id)?;
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -478,7 +610,7 @@ pub fn add_maintenance_record(conn: &Connection, player_id: &str, record: &Maint
 
     conn.execute(
         "INSERT INTO maintenance_records
-         (id, player_id, aircraft_id, date, type, cost, flight_hours_at_maintenance, description)
+         (id, player_id, player_aircraft_id, date, type, cost, flight_hours_at_maintenance, description)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             &record.id,
@@ -771,12 +903,12 @@ pub fn complete_active_mission(
 ) -> Result<i64> {
     // Récupérer la mission active
     let mut stmt = conn.prepare(
-        "SELECT reward, aircraft_id FROM active_missions WHERE id = ?1 AND player_id = ?2"
+        "SELECT reward, aircraft_id, to_airport_id FROM active_missions WHERE id = ?1 AND player_id = ?2"
     )?;
 
-    let (reward, _aircraft_id): (i64, String) = stmt.query_row(
+    let (reward, aircraft_id, to_airport_id): (i64, String, String) = stmt.query_row(
         params![active_mission_id, player_id],
-        |row| Ok((row.get(0)?, row.get(1)?))
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))
     )?;
 
     // Supprimer la mission active
@@ -787,6 +919,15 @@ pub fn complete_active_mission(
 
     // Ajouter à l'argent du joueur
     update_player_money(conn, player_id, reward)?;
+
+    // Déplacer le joueur vers l'aéroport de destination
+    update_player_airport(conn, player_id, &to_airport_id)?;
+
+    // Déplacer l'avion utilisé vers l'aéroport de destination
+    conn.execute(
+        "UPDATE player_aircraft SET current_airport_id = ?1 WHERE id = ?2 AND player_id = ?3",
+        params![&to_airport_id, &aircraft_id, player_id],
+    )?;
 
     // TODO: Mettre à jour les heures de vol et la maintenance de l'avion
 
@@ -835,6 +976,158 @@ pub fn mark_mission_ready_to_complete(
     Ok(())
 }
 
+// ============= MARKET (Shop d'occasion) =============
+
+pub fn get_market_aircraft(
+    conn: &Connection,
+    player_id: &str,
+) -> Result<Vec<MarketAircraft>> {
+    // 1. Récupérer la position du joueur
+    let player_airport = conn.query_row(
+        "SELECT a.id, a.icao, a.iata_code, a.name, a.type, a.city, a.country,
+                a.latitude, a.longitude, a.elevation, a.scheduled_service
+         FROM players p
+         JOIN airports a ON p.current_airport_id = a.id
+         WHERE p.id = ?1",
+        params![player_id],
+        |row| {
+            Ok(Airport {
+                id: row.get(0)?,
+                icao: row.get(1)?,
+                iata_code: row.get(2)?,
+                name: row.get(3)?,
+                airport_type: row.get(4)?,
+                city: row.get(5)?,
+                country: row.get(6)?,
+                latitude: row.get(7)?,
+                longitude: row.get(8)?,
+                elevation: row.get(9)?,
+                scheduled_service: row.get(10)?,
+            })
+        },
+    )?;
+
+    // 2. Générer le seed du jour
+    let seed = generate_daily_market_seed();
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    // 3. Trouver les aéroports dans un rayon de 1000 NM (bounding box)
+    let max_distance = 1000.0;
+    let lat_delta = max_distance / 60.0; // 1 degré ≈ 60 NM
+    let lon_delta = max_distance / (60.0 * player_airport.latitude.to_radians().cos().abs());
+
+    let min_lat = player_airport.latitude - lat_delta;
+    let max_lat = player_airport.latitude + lat_delta;
+    let min_lon = player_airport.longitude - lon_delta;
+    let max_lon = player_airport.longitude + lon_delta;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, icao, iata_code, name, type, city, country, latitude, longitude, elevation, scheduled_service
+         FROM airports
+         WHERE latitude BETWEEN ?1 AND ?2
+           AND longitude BETWEEN ?3 AND ?4
+           AND id != ?5
+         ORDER BY RANDOM()
+         LIMIT 20"
+    )?;
+
+    let nearby_airports: Vec<Airport> = stmt.query_map(
+        params![min_lat, max_lat, min_lon, max_lon, &player_airport.id],
+        |row| {
+            Ok(Airport {
+                id: row.get(0)?,
+                icao: row.get(1)?,
+                iata_code: row.get(2)?,
+                name: row.get(3)?,
+                airport_type: row.get(4)?,
+                city: row.get(5)?,
+                country: row.get(6)?,
+                latitude: row.get(7)?,
+                longitude: row.get(8)?,
+                elevation: row.get(9)?,
+                scheduled_service: row.get(10)?,
+            })
+        },
+    )?
+    .filter_map(|r| r.ok())
+    .filter(|airport| {
+        let dist = calculate_distance(
+            player_airport.latitude,
+            player_airport.longitude,
+            airport.latitude,
+            airport.longitude,
+        );
+        dist <= max_distance
+    })
+    .collect();
+
+    // 4. Récupérer tous les avions du catalogue
+    let all_aircraft = get_all_aircraft(conn)?;
+
+    // 5. Générer les offres du marché
+    let mut market_offers: Vec<MarketAircraft> = Vec::new();
+
+    for airport in nearby_airports {
+        // Nombre d'offres par aéroport: 1 à 3
+        let num_offers = (rng.gen::<u32>() % 3) + 1;
+
+        for _ in 0..num_offers {
+            // Sélectionner un avion aléatoire du catalogue
+            let aircraft_index = rng.gen_range(0..all_aircraft.len());
+            let aircraft = all_aircraft[aircraft_index].clone();
+
+            // 30% de chance d'avoir un avion neuf
+            let is_new = rng.gen::<f64>() < 0.3;
+
+            let (condition, flight_hours) = if is_new {
+                // Avion neuf: 100% condition, 0 heures de vol
+                (100, 0.0)
+            } else {
+                // Avion d'occasion: 60-99% condition
+                let cond = rng.gen_range(60..100);
+
+                // Générer heures de vol basées sur la condition
+                let max_hours = aircraft.max_flight_hours_before_maintenance as f64;
+                let flight_hours_ratio = (100 - cond) as f64 / 100.0;
+                let hours = max_hours * flight_hours_ratio * rng.gen::<f64>();
+
+                (cond, hours)
+            };
+
+            // Calculer le prix: réduction basée sur la condition
+            let condition_factor = condition as f64 / 100.0;
+            let price_factor = 0.5 + (condition_factor * 0.5); // 50% à 100% du prix
+            let price = (aircraft.price as f64 * price_factor) as i64;
+
+            // Calculer la distance
+            let distance = calculate_distance(
+                player_airport.latitude,
+                player_airport.longitude,
+                airport.latitude,
+                airport.longitude,
+            ) as i32;
+
+            // Générer un ID unique pour cette offre
+            let offer_id = format!("market-{}-{}-{}", seed, airport.id, aircraft.id);
+
+            market_offers.push(MarketAircraft {
+                id: offer_id,
+                aircraft,
+                location: airport.clone(),
+                distance,
+                price,
+                condition,
+                flight_hours,
+            });
+        }
+    }
+
+    // Trier par distance (plus proche en premier)
+    market_offers.sort_by_key(|offer| offer.distance);
+
+    Ok(market_offers)
+}
+
 // ============= CHEAT COMMANDS (Debug) =============
 
 pub fn cheat_teleport_to_airport(
@@ -865,15 +1158,70 @@ pub fn cheat_teleport_to_airport(
     Ok(())
 }
 
+pub fn cheat_teleport_aircraft(
+    conn: &Connection,
+    player_aircraft_id: &str,
+    airport_id: &str,
+) -> Result<()> {
+    // Vérifier que l'aéroport existe
+    let airport_exists: bool = conn.query_row(
+        "SELECT COUNT(*) FROM airports WHERE id = ?1",
+        params![airport_id],
+        |row| {
+            let count: i64 = row.get(0)?;
+            Ok(count > 0)
+        },
+    )?;
+
+    if !airport_exists {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    // Téléporter l'avion
+    conn.execute(
+        "UPDATE player_aircraft SET current_airport_id = ?1 WHERE id = ?2",
+        params![airport_id, player_aircraft_id],
+    )?;
+
+    Ok(())
+}
+
+pub fn cheat_force_complete_mission(
+    conn: &Connection,
+    player_id: &str,
+    active_mission_id: &str,
+) -> Result<i64> {
+    // Simplement utiliser la fonction complete_active_mission existante
+    // mais sans vérifier la position géographique
+    complete_active_mission(conn, player_id, active_mission_id)
+}
+
+pub fn cheat_set_aircraft_wear(
+    conn: &Connection,
+    player_aircraft_id: &str,
+    flight_hours: f64,
+    condition: i32,
+) -> Result<()> {
+    // Mettre à jour la maintenance de l'avion
+    conn.execute(
+        "UPDATE aircraft_maintenances
+         SET flight_hours = ?1, condition = ?2
+         WHERE player_aircraft_id = ?3",
+        params![flight_hours, condition, player_aircraft_id],
+    )?;
+
+    Ok(())
+}
+
 pub fn cheat_give_aircraft(
     conn: &Connection,
     player_id: &str,
-    aircraft_id: &str,
+    aircraft_catalog_id: &str,
 ) -> Result<()> {
-    // Vérifier que l'avion existe
+    // Vérifier que l'avion existe dans le catalogue
     let aircraft_exists: bool = conn.query_row(
         "SELECT COUNT(*) FROM aircraft_catalog WHERE id = ?1",
-        params![aircraft_id],
+        params![aircraft_catalog_id],
         |row| {
             let count: i64 = row.get(0)?;
             Ok(count > 0)
@@ -884,32 +1232,29 @@ pub fn cheat_give_aircraft(
         return Err(rusqlite::Error::QueryReturnedNoRows);
     }
 
-    // Vérifier si le joueur possède déjà cet avion
-    let already_owned: bool = conn.query_row(
-        "SELECT COUNT(*) FROM player_aircraft WHERE player_id = ?1 AND aircraft_id = ?2",
-        params![player_id, aircraft_id],
-        |row| {
-            let count: i64 = row.get(0)?;
-            Ok(count > 0)
-        },
+    // Récupérer l'aéroport actuel du joueur
+    let current_airport_id: String = conn.query_row(
+        "SELECT current_airport_id FROM players WHERE id = ?1",
+        params![player_id],
+        |row| row.get(0),
     )?;
 
-    if already_owned {
-        return Err(rusqlite::Error::QueryReturnedNoRows);
-    }
+    // Générer un ID unique pour l'avion possédé
+    let player_aircraft_id = uuid::Uuid::new_v4().to_string();
 
-    // Ajouter l'avion gratuitement (price = 0)
+    // Ajouter l'avion gratuitement (price = 0) à l'aéroport du joueur
+    // On peut avoir plusieurs fois le même modèle
     conn.execute(
-        "INSERT INTO player_aircraft (player_id, aircraft_id, purchase_price)
-         VALUES (?1, ?2, 0)",
-        params![player_id, aircraft_id],
+        "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
+         VALUES (?1, ?2, ?3, ?4, 0)",
+        params![&player_aircraft_id, player_id, aircraft_catalog_id, &current_airport_id],
     )?;
 
-    // Initialiser la maintenance
+    // Initialiser la maintenance pour cette instance
     conn.execute(
-        "INSERT INTO aircraft_maintenances (player_id, aircraft_id)
+        "INSERT INTO aircraft_maintenances (player_id, player_aircraft_id)
          VALUES (?1, ?2)",
-        params![player_id, aircraft_id],
+        params![player_id, &player_aircraft_id],
     )?;
 
     Ok(())

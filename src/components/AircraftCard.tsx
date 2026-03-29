@@ -6,10 +6,10 @@ interface AircraftCardProps {
   aircraft: Aircraft;
   isOwned?: boolean;
   isSelected?: boolean;
-  onSelect?: (aircraftId: string) => void;
-  onBuy?: (aircraftId: string) => void;
-  onSell?: (aircraftId: string) => void;
-  onMaintenance?: (aircraftId: string) => void;
+  onSelect?: () => void;
+  onBuy?: () => void;
+  onSell?: () => void;
+  onMaintenance?: () => void;
   canAfford?: boolean;
   maintenance?: AircraftMaintenance;
 }
@@ -132,18 +132,18 @@ const AircraftCard: React.FC<AircraftCardProps> = ({
       <div className="aircraft-actions">
         {isOwned && onSelect && (
           <button
-            className={`select-button ${isSelected ? 'selected' : ''}`}
-            onClick={() => onSelect(aircraft.id)}
-            disabled={isSelected}
+            className={`select-button ${isSelected ? 'selected' : ''} ${maintenance?.isUnderMaintenance ? 'disabled' : ''}`}
+            onClick={onSelect}
+            disabled={isSelected || maintenance?.isUnderMaintenance}
           >
-            {isSelected ? 'Selected' : 'Select'}
+            {maintenance?.isUnderMaintenance ? '🔧 In Maintenance' : isSelected ? 'Selected' : 'Select'}
           </button>
         )}
 
         {isOwned && onMaintenance && maintenance && !maintenance.isUnderMaintenance && (
           <button
             className="maintenance-button"
-            onClick={() => onMaintenance(aircraft.id)}
+            onClick={onMaintenance}
             disabled={maintenance.condition > 90}
           >
             🔧 Maintenance
@@ -153,7 +153,7 @@ const AircraftCard: React.FC<AircraftCardProps> = ({
         {isOwned && onSell && !isSelected && (
           <button
             className="sell-button"
-            onClick={() => onSell(aircraft.id)}
+            onClick={onSell}
           >
             Sell (${Math.floor(aircraft.price * 0.7).toLocaleString()})
           </button>
@@ -162,7 +162,7 @@ const AircraftCard: React.FC<AircraftCardProps> = ({
         {!isOwned && onBuy && (
           <button
             className="buy-button"
-            onClick={() => onBuy(aircraft.id)}
+            onClick={onBuy}
             disabled={!canAfford}
           >
             {canAfford ? 'Buy' : 'Not enough money'}

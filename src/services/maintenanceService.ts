@@ -28,26 +28,29 @@ export const maintenanceService = {
   async startMaintenance(
     aircraftId: string,
     playerId: string,
-    maintenanceType: 'routine' | 'repair' | 'inspection'
+    maintenanceType: 'routine' | 'repair' | 'inspection',
+    flightHours: number,
+    maintenanceCost: number
   ): Promise<{
     success: boolean;
     cost: number;
     endDate: string;
+    hours: number;
   }> {
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Simuler le calcul - sera implémenté côté backend
-    const maintenanceHours = Math.floor(Math.random() * 24) + 2;
+    // Calculer la durée de maintenance avec la vraie formule
+    const maintenanceHours = this.calculateMaintenanceTime(flightHours);
     const endDate = new Date(Date.now() + maintenanceHours * 60 * 60 * 1000).toISOString();
-    const cost = Math.floor(Math.random() * 5000) + 1000;
 
     console.log(`Started ${maintenanceType} maintenance for aircraft ${aircraftId}`);
-    console.log(`Player ${playerId} - Cost: $${cost} - End: ${endDate}`);
+    console.log(`Player ${playerId} - Duration: ${maintenanceHours}h - Cost: $${maintenanceCost} - End: ${endDate}`);
 
     return {
       success: true,
-      cost,
+      cost: maintenanceCost,
       endDate,
+      hours: maintenanceHours,
     };
   },
 

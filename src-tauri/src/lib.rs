@@ -51,6 +51,11 @@ pub fn run() {
             commands::get_all_aircraft,
             commands::get_aircraft_by_id,
             commands::get_aircraft_by_type,
+            commands::get_owned_aircraft,
+            commands::select_aircraft,
+            // Commandes Market
+            commands::get_market_aircraft,
+            commands::purchase_market_aircraft,
             // Commandes Mission
             commands::get_missions_by_airport,
             commands::search_missions_to_airport,
@@ -64,10 +69,18 @@ pub fn run() {
             commands::get_player,
             // Commandes Transactions
             commands::purchase_aircraft,
+            // Commandes Maintenance
+            commands::start_aircraft_maintenance,
+            commands::complete_aircraft_maintenance,
+            commands::add_maintenance_record,
             // Commandes Cheat (Debug)
             commands::cheat_teleport_to_airport,
             commands::cheat_give_aircraft,
             commands::cheat_add_money,
+            commands::cheat_teleport_aircraft,
+            commands::cheat_force_complete_mission,
+            commands::cheat_set_aircraft_wear,
+            commands::cheat_complete_maintenance,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

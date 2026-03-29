@@ -57,16 +57,19 @@ pub fn purchase_aircraft(
 
     // Transaction atomique
     db.transaction(|tx| {
-        // Vérifier que le joueur a assez d'argent
-        let player_money: i64 = tx.query_row(
-            "SELECT money FROM players WHERE id = ?1",
+        // Récupérer l'argent et l'aéroport du joueur
+        let (player_money, current_airport_id): (i64, String) = tx.query_row(
+            "SELECT money, current_airport_id FROM players WHERE id = ?1",
             [&player_id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
 
         if player_money < price {
             return Err(rusqlite::Error::InvalidQuery);
         }
+
+        // Générer un ID unique pour l'avion possédé
+        let player_aircraft_id = uuid::Uuid::new_v4().to_string();
 
         // Débiter l'argent
         tx.execute(
@@ -74,18 +77,18 @@ pub fn purchase_aircraft(
             rusqlite::params![price, &player_id],
         )?;
 
-        // Ajouter l'avion
+        // Ajouter l'avion (instance unique) à l'aéroport actuel du joueur
         tx.execute(
-            "INSERT INTO player_aircraft (player_id, aircraft_id, purchase_price)
-             VALUES (?1, ?2, ?3)",
-            rusqlite::params![&player_id, &aircraft_id, price],
+            "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![&player_aircraft_id, &player_id, &aircraft_id, &current_airport_id, price],
         )?;
 
-        // Initialiser la maintenance
+        // Initialiser la maintenance pour cette instance
         tx.execute(
-            "INSERT INTO aircraft_maintenances (player_id, aircraft_id)
+            "INSERT INTO aircraft_maintenances (player_id, player_aircraft_id)
              VALUES (?1, ?2)",
-            rusqlite::params![&player_id, &aircraft_id],
+            rusqlite::params![&player_id, &player_aircraft_id],
         )?;
 
         Ok(())
@@ -285,6 +288,138 @@ pub fn cancel_active_mission(
     })
 }
 
+// ============= Owned Aircraft Commands =============
+
+#[tauri::command]
+pub fn get_owned_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+) -> Result<Vec<crate::models::OwnedAircraft>, String> {
+    with_db(&db, |conn| {
+        queries::get_owned_aircraft(conn, &player_id)
+    })
+}
+
+#[tauri::command]
+pub fn select_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    player_aircraft_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::select_player_aircraft(conn, &player_id, &player_aircraft_id)
+    })
+}
+
+// ============= Market Aircraft Commands =============
+
+#[tauri::command]
+pub fn get_market_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+) -> Result<Vec<crate::models::MarketAircraft>, String> {
+    with_db(&db, |conn| {
+        queries::get_market_aircraft(conn, &player_id)
+    })
+}
+
+#[tauri::command]
+pub fn purchase_market_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    aircraft_id: String,
+    price: i64,
+    airport_id: String,
+    condition: i32,
+    flight_hours: f64,
+) -> Result<(), String> {
+    let mut db = db.lock()
+        .map_err(|e| format!("Failed to lock database: {}", e))?;
+
+    db.transaction(|tx| {
+        let player_money: i64 = tx.query_row(
+            "SELECT money FROM players WHERE id = ?1",
+            [&player_id],
+            |row| row.get(0),
+        )?;
+
+        if player_money < price {
+            return Err(rusqlite::Error::InvalidQuery);
+        }
+
+        let player_aircraft_id = uuid::Uuid::new_v4().to_string();
+
+        tx.execute(
+            "UPDATE players SET money = money - ?1 WHERE id = ?2",
+            rusqlite::params![price, &player_id],
+        )?;
+
+        tx.execute(
+            "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![&player_aircraft_id, &player_id, &aircraft_id, &airport_id, price],
+        )?;
+
+        tx.execute(
+            "INSERT INTO aircraft_maintenances (player_id, player_aircraft_id, flight_hours, condition)
+             VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![&player_id, &player_aircraft_id, flight_hours, condition],
+        )?;
+
+        Ok(())
+    })
+    .map_err(|e| format!("Transaction failed: {}", e))
+}
+
+// ============= Maintenance Commands =============
+
+#[tauri::command]
+pub fn start_aircraft_maintenance(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    player_aircraft_id: String,
+    end_date: String,
+    cost: i64,
+) -> Result<(), String> {
+    let mut db = db.lock()
+        .map_err(|e| format!("Failed to lock database: {}", e))?;
+
+    db.transaction(|tx| {
+        // Débiter le joueur
+        tx.execute(
+            "UPDATE players SET money = money - ?1 WHERE id = ?2",
+            rusqlite::params![cost, &player_id],
+        )?;
+
+        // Mettre à jour la maintenance
+        queries::start_maintenance(tx, &player_id, &player_aircraft_id, &end_date)?;
+
+        Ok(())
+    }).map_err(|e| format!("Database error: {}", e))
+}
+
+#[tauri::command]
+pub fn complete_aircraft_maintenance(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    player_aircraft_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::complete_maintenance(conn, &player_id, &player_aircraft_id)
+    })
+}
+
+#[tauri::command]
+pub fn add_maintenance_record(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    record: crate::models::MaintenanceRecord,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::add_maintenance_record(conn, &player_id, &record)
+    })
+}
+
 // ============= CHEAT Commands (Debug) =============
 
 #[tauri::command]
@@ -317,6 +452,51 @@ pub fn cheat_add_money(
 ) -> Result<(), String> {
     with_db(&db, |conn| {
         queries::update_player_money(conn, &player_id, amount)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_teleport_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_aircraft_id: String,
+    airport_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::cheat_teleport_aircraft(conn, &player_aircraft_id, &airport_id)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_force_complete_mission(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    active_mission_id: String,
+) -> Result<i64, String> {
+    with_db(&db, |conn| {
+        queries::cheat_force_complete_mission(conn, &player_id, &active_mission_id)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_set_aircraft_wear(
+    db: tauri::State<Mutex<Database>>,
+    player_aircraft_id: String,
+    flight_hours: f64,
+    condition: i32,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::cheat_set_aircraft_wear(conn, &player_aircraft_id, flight_hours, condition)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_complete_maintenance(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    player_aircraft_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::complete_maintenance(conn, &player_id, &player_aircraft_id)
     })
 }
 

@@ -35,6 +35,25 @@ export interface Aircraft {
   length: number; // longueur en mètres
 }
 
+export interface OwnedAircraft {
+  id: string; // ID unique de l'avion possédé
+  playerId: string;
+  currentAirportId: string; // Où se trouve l'avion
+  purchaseDate: string;
+  purchasePrice: number;
+  aircraft: Aircraft; // Informations complètes du catalogue
+}
+
+export interface MarketAircraft {
+  id: string; // ID unique de l'offre (généré depuis seed)
+  aircraft: Aircraft; // Informations du catalogue
+  location: Airport; // Où se trouve l'avion
+  distance: number; // Distance depuis la position du joueur (NM)
+  price: number; // Prix de vente (peut être réduit si occasion)
+  condition: number; // État 60-100% (100 = neuf)
+  flightHours: number; // Heures de vol accumulées
+}
+
 export interface Mission {
   id: string;
   type: 'passenger' | 'cargo';
@@ -97,4 +116,20 @@ export interface MaintenanceRecord {
   cost: number;
   flightHoursAtMaintenance: number;
   description: string;
+}
+
+export type PopupType = 'info' | 'warning' | 'error' | 'success' | 'confirm';
+
+export interface PopupButton {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+}
+
+export interface PopupConfig {
+  type: PopupType;
+  title: string;
+  message: string;
+  buttons?: PopupButton[];
+  onClose?: () => void;
 }

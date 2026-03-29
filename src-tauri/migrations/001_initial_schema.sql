@@ -48,28 +48,34 @@ CREATE TABLE IF NOT EXISTS players (
     total_flight_hours REAL NOT NULL DEFAULT 0.0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (current_airport_id) REFERENCES airports(id),
-    FOREIGN KEY (selected_aircraft_id) REFERENCES aircraft_catalog(id)
+    FOREIGN KEY (current_airport_id) REFERENCES airports(id)
+    -- Note: selected_aircraft_id référencera player_aircraft(id) mais on ne peut pas
+    -- définir la FOREIGN KEY ici car player_aircraft est défini après players
+    -- SQLite permettra quand même l'insertion si la référence existe
 );
 
--- Avions possédés par le joueur
+-- Avions possédés par le joueur (instances uniques)
 CREATE TABLE IF NOT EXISTS player_aircraft (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY, -- UUID unique pour chaque avion possédé
     player_id TEXT NOT NULL,
-    aircraft_id TEXT NOT NULL,
+    aircraft_catalog_id TEXT NOT NULL, -- Référence au catalogue
+    current_airport_id TEXT NOT NULL, -- Où se trouve l'avion actuellement
     purchase_date TEXT DEFAULT CURRENT_TIMESTAMP,
     purchase_price INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (aircraft_id) REFERENCES aircraft_catalog(id)
+    FOREIGN KEY (aircraft_catalog_id) REFERENCES aircraft_catalog(id),
+    FOREIGN KEY (current_airport_id) REFERENCES airports(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_player_aircraft_player ON player_aircraft(player_id);
+CREATE INDEX IF NOT EXISTS idx_player_aircraft_catalog ON player_aircraft(aircraft_catalog_id);
+CREATE INDEX IF NOT EXISTS idx_player_aircraft_airport ON player_aircraft(current_airport_id);
 
 -- Maintenance des avions
 CREATE TABLE IF NOT EXISTS aircraft_maintenances (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_id TEXT NOT NULL,
-    aircraft_id TEXT NOT NULL,
+    player_aircraft_id TEXT NOT NULL, -- Référence à l'avion possédé (instance unique)
     flight_hours REAL NOT NULL DEFAULT 0.0,
     condition INTEGER NOT NULL DEFAULT 100 CHECK(condition >= 0 AND condition <= 100),
     is_under_maintenance BOOLEAN NOT NULL DEFAULT 0,
@@ -78,29 +84,29 @@ CREATE TABLE IF NOT EXISTS aircraft_maintenances (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (aircraft_id) REFERENCES aircraft_catalog(id),
-    UNIQUE(player_id, aircraft_id)
+    FOREIGN KEY (player_aircraft_id) REFERENCES player_aircraft(id) ON DELETE CASCADE,
+    UNIQUE(player_id, player_aircraft_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_maintenance_player ON aircraft_maintenances(player_id);
-CREATE INDEX IF NOT EXISTS idx_maintenance_aircraft ON aircraft_maintenances(aircraft_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_aircraft ON aircraft_maintenances(player_aircraft_id);
 
 -- Historique de maintenance
 CREATE TABLE IF NOT EXISTS maintenance_records (
     id TEXT PRIMARY KEY,
     player_id TEXT NOT NULL,
-    aircraft_id TEXT NOT NULL,
+    player_aircraft_id TEXT NOT NULL, -- Référence à l'avion possédé
     date TEXT NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('routine', 'repair', 'inspection')),
     cost INTEGER NOT NULL,
     flight_hours_at_maintenance REAL NOT NULL,
     description TEXT NOT NULL,
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (aircraft_id) REFERENCES aircraft_catalog(id)
+    FOREIGN KEY (player_aircraft_id) REFERENCES player_aircraft(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_maintenance_records_player ON maintenance_records(player_id);
-CREATE INDEX IF NOT EXISTS idx_maintenance_records_aircraft ON maintenance_records(aircraft_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_records_aircraft ON maintenance_records(player_aircraft_id);
 CREATE INDEX IF NOT EXISTS idx_maintenance_records_date ON maintenance_records(date);
 
 -- Missions

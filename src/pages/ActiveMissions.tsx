@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
+import { usePopup } from '../context/PopupContext';
 import { ActiveMission, Aircraft } from '../types';
 import { aircraftService } from '../services/aircraftService';
 import { activeMissionService } from '../services/activeMissionService';
@@ -23,6 +24,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 const ActiveMissions: React.FC = () => {
   const { player, refreshPlayer, currentAirport } = usePlayer();
+  const popup = usePopup();
   const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
   const [aircraftMap, setAircraftMap] = useState<Record<string, Aircraft>>({});
   const [loading, setLoading] = useState(true);
@@ -110,28 +112,45 @@ const ActiveMissions: React.FC = () => {
 
     // Confirmation avec affichage de la pénalité
     const confirmMessage = progress > 0
-      ? `Cancel this mission?\n\nPenalty: $${penalty.toLocaleString()} (${progress}% of reward)`
-      : 'Cancel this mission?\n\nNo penalty (mission not started yet)';
+      ? `You will lose $${penalty.toLocaleString()} (${progress}% of the $${activeMission.mission.reward.toLocaleString()} reward)\n\nThis action cannot be undone.`
+      : 'No penalty since you haven\'t started the mission yet.';
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    const title = progress > 0 ? 'Cancel Mission with Penalty?' : 'Cancel Mission?';
 
-    try {
-      const actualPenalty = await activeMissionService.cancelMission(
-        player.id,
-        activeMissionId,
-        progress
-      );
+    popup.showConfirm(
+      title,
+      confirmMessage,
+      async () => {
+        try {
+          const actualPenalty = await activeMissionService.cancelMission(
+            player.id,
+            activeMissionId,
+            progress
+          );
 
-      console.log('Mission cancelled. Penalty:', actualPenalty);
+          console.log('Mission cancelled. Penalty:', actualPenalty);
 
-      // Recharger les missions et le joueur
-      await loadActiveMissions();
-      await refreshPlayer();
-    } catch (error) {
-      console.error('Error cancelling mission:', error);
-    }
+          if (actualPenalty > 0) {
+            popup.showWarning(
+              'Mission Cancelled',
+              `Penalty of $${actualPenalty.toLocaleString()} has been deducted from your balance.`
+            );
+          } else {
+            popup.showInfo('Mission Cancelled', 'The mission has been cancelled without penalty.');
+          }
+
+          // Recharger les missions et le joueur
+          await loadActiveMissions();
+          await refreshPlayer();
+        } catch (error) {
+          console.error('Error cancelling mission:', error);
+          popup.showError(
+            'Cancellation Failed',
+            'Failed to cancel the mission. Please try again.'
+          );
+        }
+      }
+    );
   };
 
   if (loading) {

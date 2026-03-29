@@ -87,12 +87,12 @@ export const playerService = {
   },
 
   // Sélectionner un avion
-  async selectAircraft(aircraftId: string): Promise<Player> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    if (mockPlayer.ownedAircraftIds.includes(aircraftId)) {
-      mockPlayer.selectedAircraftId = aircraftId;
-    }
-    return { ...mockPlayer };
+  async selectAircraft(playerAircraftId: string): Promise<void> {
+    const playerId = '1'; // ID fixe pour mode solo
+    await invoke('select_aircraft', {
+      playerId,
+      playerAircraftId
+    });
   },
 
   // Ajouter une mission complétée
@@ -155,38 +155,29 @@ export const playerService = {
   },
 
   // Démarrer une maintenance
-  async startMaintenance(aircraftId: string, endDate: string, cost: number): Promise<Player> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    if (mockPlayer.aircraftMaintenances[aircraftId]) {
-      mockPlayer.aircraftMaintenances[aircraftId].isUnderMaintenance = true;
-      mockPlayer.aircraftMaintenances[aircraftId].maintenanceEndDate = endDate;
-      mockPlayer.money -= cost;
-    }
-
-    return { ...mockPlayer };
+  async startMaintenance(playerId: string, aircraftId: string, endDate: string, cost: number): Promise<void> {
+    await invoke('start_aircraft_maintenance', {
+      playerId,
+      playerAircraftId: aircraftId,
+      endDate,
+      cost,
+    });
   },
 
   // Terminer une maintenance
-  async completeMaintenance(aircraftId: string): Promise<Player> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    if (mockPlayer.aircraftMaintenances[aircraftId]) {
-      mockPlayer.aircraftMaintenances[aircraftId].isUnderMaintenance = false;
-      mockPlayer.aircraftMaintenances[aircraftId].maintenanceEndDate = undefined;
-      mockPlayer.aircraftMaintenances[aircraftId].lastMaintenanceDate = new Date().toISOString();
-      mockPlayer.aircraftMaintenances[aircraftId].flightHours = 0;
-      mockPlayer.aircraftMaintenances[aircraftId].condition = 100;
-    }
-
-    return { ...mockPlayer };
+  async completeMaintenance(playerId: string, aircraftId: string): Promise<void> {
+    await invoke('complete_aircraft_maintenance', {
+      playerId,
+      playerAircraftId: aircraftId,
+    });
   },
 
   // Ajouter un record de maintenance à l'historique
-  async addMaintenanceRecord(record: MaintenanceRecord): Promise<Player> {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    mockPlayer.maintenanceHistory.push(record);
-    return { ...mockPlayer };
+  async addMaintenanceRecord(playerId: string, record: MaintenanceRecord): Promise<void> {
+    await invoke('add_maintenance_record', {
+      playerId,
+      record,
+    });
   },
 
   // Récupérer la maintenance d'un avion
