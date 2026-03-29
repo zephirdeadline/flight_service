@@ -417,6 +417,29 @@ pub fn simconnect_get_available_events() -> Result<std::collections::HashMap<Str
     Ok(SimConnectService::get_available_events())
 }
 
+#[tauri::command]
+pub fn simconnect_start_streaming(
+    simconnect: tauri::State<SimConnectService>,
+    app_handle: tauri::AppHandle
+) -> Result<(), String> {
+    simconnect.inner().start_streaming(app_handle)
+}
+
+#[tauri::command]
+pub fn simconnect_stop_streaming(
+    simconnect: tauri::State<SimConnectService>
+) -> Result<(), String> {
+    simconnect.inner().stop_streaming();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn simconnect_is_streaming(
+    simconnect: tauri::State<SimConnectService>
+) -> Result<bool, String> {
+    Ok(simconnect.inner().is_streaming())
+}
+
 // ============= Maintenance Commands =============
 
 #[tauri::command]

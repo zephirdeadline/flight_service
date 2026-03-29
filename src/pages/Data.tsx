@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { simConnectService } from '../services/simConnectService';
 import type { AircraftPosition } from '../types';
 import './Data.css';
@@ -27,6 +28,7 @@ export default function Data() {
     setError(null);
     try {
       await simConnectService.connect();
+      await simConnectService.startStreaming();
       setIsConnected(true);
     } catch (err) {
       setError(`Failed to connect: ${err}`);
@@ -37,6 +39,7 @@ export default function Data() {
 
   const handleDisconnect = async () => {
     try {
+      await simConnectService.stopStreaming();
       await simConnectService.disconnect();
       setIsConnected(false);
       setData(null);
@@ -59,16 +62,25 @@ export default function Data() {
     }
   };
 
-  // Auto-refresh toutes les 2 secondes si connecté
+  // Écouter les événements de données depuis le backend
   useEffect(() => {
-    if (!isConnected) return;
+    let unlisten: (() => void) | undefined;
 
-    const interval = setInterval(() => {
-      handleRefresh();
-    }, 2000);
+    const setupListener = async () => {
+      unlisten = await listen<AircraftPosition>('simconnect-data', (event) => {
+        setData(event.payload);
+        setError(null);
+      });
+    };
 
-    return () => clearInterval(interval);
-  }, [isConnected]);
+    setupListener();
+
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, []);
 
   const renderGauge = (value: number, max: number, label: string, unit: string) => {
     const percentage = Math.min((value / max) * 100, 100);

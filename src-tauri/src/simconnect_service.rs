@@ -1,7 +1,11 @@
 // Service SimConnect pour interagir avec Flight Simulator 2024
 use simconnect;
-use std::sync::Mutex;
+use std::sync::{Mutex, Arc};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::HashMap;
+use std::thread;
+use std::time::Duration;
+use tauri::Emitter;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AircraftPosition {
@@ -95,6 +99,7 @@ pub struct AircraftPosition {
 
 pub struct SimConnectService {
     connection: Mutex<Option<simconnect::SimConnector>>,
+    streaming: Arc<AtomicBool>,
 }
 
 unsafe impl Send for SimConnectService {}
@@ -104,7 +109,68 @@ impl SimConnectService {
     pub fn new() -> Self {
         Self {
             connection: Mutex::new(None),
+            streaming: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub fn is_streaming(&self) -> bool {
+        self.streaming.load(Ordering::Relaxed)
+    }
+
+    pub fn start_streaming(&self, app_handle: tauri::AppHandle) -> Result<(), String> {
+        if self.streaming.load(Ordering::Relaxed) {
+            return Err("Already streaming".to_string());
+        }
+
+        if !self.is_connected() {
+            return Err("Not connected to SimConnect".to_string());
+        }
+
+        self.streaming.store(true, Ordering::Relaxed);
+        let streaming = self.streaming.clone();
+
+        thread::spawn(move || {
+            while streaming.load(Ordering::Relaxed) {
+                // Créer une connexion locale pour ce thread
+                let mut sim = simconnect::SimConnector::new();
+
+                // Setup definitions
+                const DEF_ID: u32 = 0;
+                const REQ_ID: u32 = 0;
+                Self::setup_data_definitions(&mut sim);
+
+                // Requête
+                if sim.request_data_on_sim_object(REQ_ID, DEF_ID, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_ONCE, 0, 0, 0, 0) {
+                    // Attendre réponse (max 500ms)
+                    for _ in 0..50 {
+                        match sim.get_next_message() {
+                            Ok(simconnect::DispatchResult::SimObjectData(data)) => {
+                                unsafe {
+                                    let data_ptr = std::ptr::addr_of!(data.dwData) as *const u8;
+                                    let position = Self::parse_data(data_ptr);
+
+                                    // Émettre l'événement Tauri
+                                    let _ = app_handle.emit("simconnect-data", position);
+                                }
+                                break;
+                            }
+                            Ok(_) => {}
+                            Err(_) => {}
+                        }
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                }
+
+                // Attendre 1 seconde avant la prochaine itération
+                thread::sleep(Duration::from_secs(1));
+            }
+        });
+
+        Ok(())
+    }
+
+    pub fn stop_streaming(&self) {
+        self.streaming.store(false, Ordering::Relaxed);
     }
 
     pub fn get_available_events() -> HashMap<String, String> {

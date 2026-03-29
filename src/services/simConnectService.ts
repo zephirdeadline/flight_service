@@ -51,4 +51,26 @@ export const simConnectService = {
   async getAvailableEvents(): Promise<Record<string, string>> {
     return await invoke('simconnect_get_available_events');
   },
+
+  /**
+   * Démarrer le streaming de données (push depuis le backend)
+   * Les données seront émises via l'événement "simconnect-data"
+   */
+  async startStreaming(): Promise<void> {
+    await invoke('simconnect_start_streaming');
+  },
+
+  /**
+   * Arrêter le streaming de données
+   */
+  async stopStreaming(): Promise<void> {
+    await invoke('simconnect_stop_streaming');
+  },
+
+  /**
+   * Vérifier si le streaming est actif
+   */
+  async isStreaming(): Promise<boolean> {
+    return await invoke('simconnect_is_streaming');
+  },
 };

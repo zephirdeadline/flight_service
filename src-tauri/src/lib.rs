@@ -86,6 +86,9 @@ pub fn run() {
             commands::simconnect_get_position,
             commands::simconnect_send_event,
             commands::simconnect_get_available_events,
+            commands::simconnect_start_streaming,
+            commands::simconnect_stop_streaming,
+            commands::simconnect_is_streaming,
             // Commandes Cheat (Debug)
             commands::cheat_teleport_to_airport,
             commands::cheat_give_aircraft,
