@@ -29,6 +29,9 @@ impl Database {
         let seed = include_str!("../migrations/002_seed_data.sql");
         self.conn.execute_batch(seed)?;
 
+        let aircraft_specs = include_str!("../migrations/003_aircraft_specs.sql");
+        self.conn.execute_batch(aircraft_specs)?;
+
         Ok(())
     }
 

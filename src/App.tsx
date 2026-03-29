@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Setup from './pages/Setup';
 import Dashboard from './pages/Dashboard';
 import MissionList from './pages/MissionList';
+import ActiveMissions from './pages/ActiveMissions';
 import Hangar from './pages/Hangar';
 import Shop from './pages/Shop';
 import Airports from './pages/Airports';
@@ -48,6 +49,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/missions" element={<MissionList />} />
+          <Route path="/active-missions" element={<ActiveMissions />} />
           <Route path="/hangar" element={<Hangar />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/airports" element={<Airports />} />

@@ -54,6 +54,11 @@ pub fn run() {
             // Commandes Mission
             commands::get_missions_by_airport,
             commands::search_missions_to_airport,
+            // Commandes Active Mission
+            commands::accept_mission,
+            commands::get_active_missions,
+            commands::complete_active_mission,
+            commands::cancel_active_mission,
             // Commandes Player
             commands::create_player,
             commands::get_player,

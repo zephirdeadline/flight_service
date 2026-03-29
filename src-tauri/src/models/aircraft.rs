@@ -20,6 +20,22 @@ pub struct Aircraft {
     pub range: i32,
     #[serde(rename = "cruiseSpeed")]
     pub cruise_speed: i32,
+    #[serde(rename = "maxSpeed")]
+    pub max_speed: i32,
+    #[serde(rename = "fuelCapacity")]
+    pub fuel_capacity: i32,
+    #[serde(rename = "fuelConsumption")]
+    pub fuel_consumption: f64,
+    #[serde(rename = "emptyWeight")]
+    pub empty_weight: i32,
+    #[serde(rename = "maxTakeoffWeight")]
+    pub max_takeoff_weight: i32,
+    #[serde(rename = "serviceCeiling")]
+    pub service_ceiling: i32,
+    #[serde(rename = "rateOfClimb")]
+    pub rate_of_climb: i32,
+    pub wingspan: f64,
+    pub length: f64,
     #[serde(rename = "maintenanceCostPerHour")]
     pub maintenance_cost_per_hour: i32,
     #[serde(rename = "maxFlightHoursBeforeMaintenance")]
@@ -28,32 +44,3 @@ pub struct Aircraft {
     pub image_url: Option<String>,
 }
 
-impl Aircraft {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        id: String,
-        name: String,
-        manufacturer: String,
-        aircraft_type: AircraftType,
-        price: i64,
-        capacity: i32,
-        range: i32,
-        cruise_speed: i32,
-        maintenance_cost_per_hour: i32,
-        max_flight_hours_before_maintenance: i32,
-    ) -> Self {
-        Self {
-            id,
-            name,
-            manufacturer,
-            aircraft_type,
-            price,
-            capacity,
-            range,
-            cruise_speed,
-            maintenance_cost_per_hour,
-            max_flight_hours_before_maintenance,
-            image_url: None,
-        }
-    }
-}

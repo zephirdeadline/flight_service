@@ -24,6 +24,15 @@ export interface Aircraft {
   imageUrl?: string;
   maintenanceCostPerHour: number; // coût de maintenance par heure de vol
   maxFlightHoursBeforeMaintenance: number; // heures max avant révision obligatoire
+  maxSpeed: number; // vitesse maximale en knots
+  fuelCapacity: number; // capacité de carburant en litres
+  fuelConsumption: number; // consommation de carburant en litres/heure
+  emptyWeight: number; // poids à vide en kg
+  maxTakeoffWeight: number; // poids max au décollage en kg
+  serviceCeiling: number; // plafond de service en pieds
+  rateOfClimb: number; // taux de montée en pieds/minute
+  wingspan: number; // envergure en mètres
+  length: number; // longueur en mètres
 }
 
 export interface Mission {
@@ -61,6 +70,14 @@ export interface MissionCompletion {
   missionId: string;
   reward: number;
   completedAt: string;
+}
+
+export interface ActiveMission {
+  id: string;
+  mission: Mission;
+  aircraftId: string;
+  acceptedAt: string; // ISO date
+  status: 'in_progress' | 'ready_to_complete';
 }
 
 export interface AircraftMaintenance {

@@ -221,6 +221,70 @@ pub fn get_aircraft_by_type(
     with_db(&db, |conn| queries::get_aircraft_by_type(conn, &aircraft_type))
 }
 
+// ============= Active Mission Commands =============
+
+#[tauri::command]
+pub fn accept_mission(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    from_airport_id: String,
+    to_airport_id: String,
+    mission_type: String,
+    distance: i32,
+    reward: i64,
+    cargo_weight: Option<i32>,
+    cargo_description: Option<String>,
+    passenger_count: Option<i32>,
+    aircraft_id: String,
+) -> Result<String, String> {
+    with_db(&db, |conn| {
+        queries::accept_mission(
+            conn,
+            &player_id,
+            &from_airport_id,
+            &to_airport_id,
+            &mission_type,
+            distance,
+            reward,
+            cargo_weight,
+            cargo_description,
+            passenger_count,
+            &aircraft_id,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn get_active_missions(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+) -> Result<Vec<ActiveMission>, String> {
+    with_db(&db, |conn| queries::get_active_missions(conn, &player_id))
+}
+
+#[tauri::command]
+pub fn complete_active_mission(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    active_mission_id: String,
+) -> Result<i64, String> {
+    with_db(&db, |conn| {
+        queries::complete_active_mission(conn, &player_id, &active_mission_id)
+    })
+}
+
+#[tauri::command]
+pub fn cancel_active_mission(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    active_mission_id: String,
+    progress_percentage: i32,
+) -> Result<i64, String> {
+    with_db(&db, |conn| {
+        queries::cancel_active_mission(conn, &player_id, &active_mission_id, progress_percentage)
+    })
+}
+
 // ============= NOTE : Enregistrement des commandes =============
 
 /*

@@ -3,11 +3,12 @@ import { usePlayer } from '../context/PlayerContext';
 import { Mission, Airport } from '../types';
 import { missionService } from '../services/missionService';
 import { airportService } from '../services/airportService';
+import { activeMissionService } from '../services/activeMissionService';
 import MissionCard from '../components/MissionCard';
 import './MissionList.css';
 
 const MissionList: React.FC = () => {
-  const { player, currentAirport, selectedAircraft, refreshPlayer, updateMoney } = usePlayer();
+  const { player, currentAirport, selectedAircraft, updateMoney } = usePlayer();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [filteredMissions, setFilteredMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,24 @@ const MissionList: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Airport[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchingMissions, setSearchingMissions] = useState(false);
+
+  // Check for active missions
+  const [hasActiveMission, setHasActiveMission] = useState(false);
+
+  useEffect(() => {
+    checkActiveMissions();
+  }, [player]);
+
+  const checkActiveMissions = async () => {
+    if (!player) return;
+
+    try {
+      const activeMissions = await activeMissionService.getActiveMissions(player.id);
+      setHasActiveMission(activeMissions.length > 0);
+    } catch (error) {
+      console.error('Error checking active missions:', error);
+    }
+  };
 
   useEffect(() => {
     if (!skipAutoReloadRef.current) {
@@ -126,6 +145,11 @@ const MissionList: React.FC = () => {
       return;
     }
 
+    // Vérifier qu'il n'y a pas déjà une mission active
+    if (hasActiveMission) {
+      return;
+    }
+
     const mission = missions.find(m => m.id === missionId);
     if (!mission) return;
 
@@ -150,8 +174,18 @@ const MissionList: React.FC = () => {
       return;
     }
 
-    // TODO: Accepter la mission (à implémenter plus tard avec un système de missions en cours)
-    console.log('Mission accepted:', missionId, mission);
+    try {
+      // Accepter la mission
+      await activeMissionService.acceptMission(player.id, mission, selectedAircraft.id);
+
+      // Retirer la mission de la liste
+      setMissions(missions.filter(m => m.id !== missionId));
+
+      // Marquer qu'on a maintenant une mission active
+      setHasActiveMission(true);
+    } catch (error) {
+      console.error('Error accepting mission:', error);
+    }
   };
 
   if (!currentAirport) {
@@ -181,6 +215,12 @@ const MissionList: React.FC = () => {
       {displayedAirport && displayedAirport.id !== currentAirport?.id && (
         <div className="warning-banner" style={{ background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)' }}>
           ℹ️ Viewing missions from {displayedAirport.icao}. You must be at this airport to accept missions.
+        </div>
+      )}
+
+      {hasActiveMission && (
+        <div className="warning-banner" style={{ background: 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)' }}>
+          ⚠️ You already have an active mission! Complete or cancel it before accepting a new one.
         </div>
       )}
 
@@ -256,7 +296,7 @@ const MissionList: React.FC = () => {
               key={mission.id}
               mission={mission}
               onAccept={handleAcceptMission}
-              disabled={!selectedAircraft || (displayedAirport?.id !== currentAirport?.id)}
+              disabled={!selectedAircraft || (displayedAirport?.id !== currentAirport?.id) || hasActiveMission}
             />
           ))}
         </div>
