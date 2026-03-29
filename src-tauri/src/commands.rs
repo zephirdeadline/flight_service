@@ -285,6 +285,41 @@ pub fn cancel_active_mission(
     })
 }
 
+// ============= CHEAT Commands (Debug) =============
+
+#[tauri::command]
+pub fn cheat_teleport_to_airport(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    airport_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::cheat_teleport_to_airport(conn, &player_id, &airport_id)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_give_aircraft(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    aircraft_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::cheat_give_aircraft(conn, &player_id, &aircraft_id)
+    })
+}
+
+#[tauri::command]
+pub fn cheat_add_money(
+    db: tauri::State<Mutex<Database>>,
+    player_id: String,
+    amount: i64,
+) -> Result<(), String> {
+    with_db(&db, |conn| {
+        queries::update_player_money(conn, &player_id, amount)
+    })
+}
+
 // ============= NOTE : Enregistrement des commandes =============
 
 /*
@@ -298,5 +333,9 @@ Dans lib.rs, enregistrer les commandes :
     create_player,
     get_player,
     purchase_aircraft,
+    // Cheat commands
+    cheat_teleport_to_airport,
+    cheat_give_aircraft,
+    cheat_add_money,
 ])
 */

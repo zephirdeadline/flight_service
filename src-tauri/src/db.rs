@@ -22,16 +22,53 @@ impl Database {
 
     /// Initialise la base de données avec les migrations
     pub fn init(&self) -> Result<()> {
-        // Lire et exécuter les migrations
-        let schema = include_str!("../migrations/001_initial_schema.sql");
-        self.conn.execute_batch(schema)?;
+        // Créer une table de versioning des migrations si elle n'existe pas
+        self.conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );"
+        )?;
 
-        let seed = include_str!("../migrations/002_seed_data.sql");
-        self.conn.execute_batch(seed)?;
+        // Migration 1 : Schéma initial
+        if !self.migration_applied(1)? {
+            let schema = include_str!("../migrations/001_initial_schema.sql");
+            self.conn.execute_batch(schema)?;
+            self.mark_migration_applied(1)?;
+        }
 
-        let aircraft_specs = include_str!("../migrations/003_aircraft_specs.sql");
-        self.conn.execute_batch(aircraft_specs)?;
+        // Migration 2 : Données de seed
+        if !self.migration_applied(2)? {
+            let seed = include_str!("../migrations/002_seed_data.sql");
+            self.conn.execute_batch(seed)?;
+            self.mark_migration_applied(2)?;
+        }
 
+        // Migration 3 : Spécifications des avions
+        if !self.migration_applied(3)? {
+            let aircraft_specs = include_str!("../migrations/003_aircraft_specs.sql");
+            self.conn.execute_batch(aircraft_specs)?;
+            self.mark_migration_applied(3)?;
+        }
+
+        Ok(())
+    }
+
+    /// Vérifie si une migration a déjà été appliquée
+    fn migration_applied(&self, version: i32) -> Result<bool> {
+        let mut stmt = self.conn.prepare(
+            "SELECT 1 FROM schema_migrations WHERE version = ?1"
+        )?;
+        let exists = stmt.exists([version])?;
+        Ok(exists)
+    }
+
+    /// Marque une migration comme appliquée
+    fn mark_migration_applied(&self, version: i32) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO schema_migrations (version) VALUES (?1)",
+            [version],
+        )?;
         Ok(())
     }
 

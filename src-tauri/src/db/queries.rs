@@ -834,3 +834,83 @@ pub fn mark_mission_ready_to_complete(
 
     Ok(())
 }
+
+// ============= CHEAT COMMANDS (Debug) =============
+
+pub fn cheat_teleport_to_airport(
+    conn: &Connection,
+    player_id: &str,
+    airport_id: &str,
+) -> Result<()> {
+    // Vérifier que l'aéroport existe
+    let airport_exists: bool = conn.query_row(
+        "SELECT COUNT(*) FROM airports WHERE id = ?1",
+        params![airport_id],
+        |row| {
+            let count: i64 = row.get(0)?;
+            Ok(count > 0)
+        },
+    )?;
+
+    if !airport_exists {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    // Téléporter le joueur
+    conn.execute(
+        "UPDATE players SET current_airport_id = ?1 WHERE id = ?2",
+        params![airport_id, player_id],
+    )?;
+
+    Ok(())
+}
+
+pub fn cheat_give_aircraft(
+    conn: &Connection,
+    player_id: &str,
+    aircraft_id: &str,
+) -> Result<()> {
+    // Vérifier que l'avion existe
+    let aircraft_exists: bool = conn.query_row(
+        "SELECT COUNT(*) FROM aircraft_catalog WHERE id = ?1",
+        params![aircraft_id],
+        |row| {
+            let count: i64 = row.get(0)?;
+            Ok(count > 0)
+        },
+    )?;
+
+    if !aircraft_exists {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    // Vérifier si le joueur possède déjà cet avion
+    let already_owned: bool = conn.query_row(
+        "SELECT COUNT(*) FROM player_aircraft WHERE player_id = ?1 AND aircraft_id = ?2",
+        params![player_id, aircraft_id],
+        |row| {
+            let count: i64 = row.get(0)?;
+            Ok(count > 0)
+        },
+    )?;
+
+    if already_owned {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    // Ajouter l'avion gratuitement (price = 0)
+    conn.execute(
+        "INSERT INTO player_aircraft (player_id, aircraft_id, purchase_price)
+         VALUES (?1, ?2, 0)",
+        params![player_id, aircraft_id],
+    )?;
+
+    // Initialiser la maintenance
+    conn.execute(
+        "INSERT INTO aircraft_maintenances (player_id, aircraft_id)
+         VALUES (?1, ?2)",
+        params![player_id, aircraft_id],
+    )?;
+
+    Ok(())
+}

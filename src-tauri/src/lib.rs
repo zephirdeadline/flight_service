@@ -64,6 +64,10 @@ pub fn run() {
             commands::get_player,
             // Commandes Transactions
             commands::purchase_aircraft,
+            // Commandes Cheat (Debug)
+            commands::cheat_teleport_to_airport,
+            commands::cheat_give_aircraft,
+            commands::cheat_add_money,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,268 @@
+.cheat-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.cheat-page h1 {
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.cheat-warning {
+  color: #e67e22;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  padding: 0.75rem;
+  background-color: #fff3cd;
+  border-left: 4px solid #e67e22;
+  border-radius: 4px;
+}
+
+.cheat-message {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+.cheat-message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.cheat-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cheat-section {
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cheat-section h2 {
+  margin-bottom: 1rem;
+  color: #2c3e50;
+  font-size: 1.5rem;
+}
+
+.current-location {
+  margin-bottom: 1rem;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+/* Money Section */
+.cheat-money-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.cheat-money-controls input {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.75rem;
+  border: 2px solid #dfe6e9;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.cheat-money-controls input:focus {
+  outline: none;
+  border-color: #27ae60;
+}
+
+/* Search Input */
+.cheat-search {
+  width: 100%;
+  max-width: 500px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #dfe6e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cheat-search:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+/* Airport Results */
+.cheat-airport-results {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #dfe6e9;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.cheat-airport-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #dfe6e9;
+  transition: background-color 0.2s;
+}
+
+.cheat-airport-card:hover {
+  background-color: #f0f3f5;
+}
+
+.cheat-airport-card:last-child {
+  border-bottom: none;
+}
+
+.cheat-airport-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cheat-airport-info strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.cheat-airport-location {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+/* Aircraft Grid */
+.cheat-aircraft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.cheat-aircraft-card {
+  padding: 1.5rem;
+  border: 2px solid #dfe6e9;
+  border-radius: 12px;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.cheat-aircraft-card:hover {
+  border-color: #3498db;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.cheat-aircraft-card h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.cheat-aircraft-manufacturer {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.cheat-aircraft-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.cheat-aircraft-price {
+  color: #27ae60;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Buttons */
+.cheat-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.cheat-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cheat-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cheat-btn.money {
+  background-color: #27ae60;
+  color: white;
+}
+
+.cheat-btn.money:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.cheat-btn.teleport {
+  background-color: #3498db;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.cheat-btn.teleport:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.cheat-btn.aircraft {
+  width: 100%;
+  background-color: #9b59b6;
+  color: white;
+}
+
+.cheat-btn.aircraft:hover:not(:disabled) {
+  background-color: #8e44ad;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cheat-page {
+    padding: 1rem;
+  }
+
+  .cheat-aircraft-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cheat-money-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cheat-money-controls input {
+    max-width: 100%;
+  }
+}
