@@ -3,7 +3,7 @@
 use std::sync::Mutex;
 use crate::db::{Database, queries};
 use crate::models::*;
-use crate::simconnect_service::SimConnectService;
+use crate::simconnect_service::{SimConnectService, AircraftPosition};
 
 // ============= EXEMPLE : Get All Airports =============
 
@@ -376,50 +376,45 @@ pub fn purchase_market_aircraft(
 
 #[tauri::command]
 pub fn simconnect_connect(
-    simconnect: tauri::State<Mutex<SimConnectService>>
+    simconnect: tauri::State<SimConnectService>
 ) -> Result<(), String> {
-    let sim = simconnect.lock()
-        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
-
-    sim.connect()
+    simconnect.inner().connect()
 }
 
 #[tauri::command]
 pub fn simconnect_is_connected(
-    simconnect: tauri::State<Mutex<SimConnectService>>
+    simconnect: tauri::State<SimConnectService>
 ) -> Result<bool, String> {
-    let sim = simconnect.lock()
-        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
-
-    Ok(sim.is_connected())
+    Ok(simconnect.inner().is_connected())
 }
 
 #[tauri::command]
 pub fn simconnect_disconnect(
-    simconnect: tauri::State<Mutex<SimConnectService>>
+    simconnect: tauri::State<SimConnectService>
 ) -> Result<(), String> {
-    let sim = simconnect.lock()
-        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
-
-    sim.disconnect();
+    simconnect.inner().disconnect();
     Ok(())
 }
 
 #[tauri::command]
 pub fn simconnect_get_position(
-    simconnect: tauri::State<Mutex<SimConnectService>>
-) -> Result<serde_json::Value, String> {
-    let sim = simconnect.lock()
-        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
+    simconnect: tauri::State<SimConnectService>
+) -> Result<AircraftPosition, String> {
+    simconnect.inner().get_aircraft_position()
+}
 
-    let position = sim.get_aircraft_position()?;
+#[tauri::command]
+pub fn simconnect_send_event(
+    simconnect: tauri::State<SimConnectService>,
+    event_name: String,
+    value: u32
+) -> Result<(), String> {
+    simconnect.inner().send_event(&event_name, value)
+}
 
-    Ok(serde_json::json!({
-        "latitude": position.latitude,
-        "longitude": position.longitude,
-        "altitude": position.altitude,
-        "heading": position.heading,
-    }))
+#[tauri::command]
+pub fn simconnect_get_available_events() -> Result<std::collections::HashMap<String, String>, String> {
+    Ok(SimConnectService::get_available_events())
 }
 
 // ============= Maintenance Commands =============

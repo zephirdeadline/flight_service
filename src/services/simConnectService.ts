@@ -1,11 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-
-export interface AircraftPosition {
-  latitude: number;
-  longitude: number;
-  altitude: number;
-  heading: number;
-}
+import type { AircraftPosition } from '../types';
 
 export const simConnectService = {
   /**
@@ -34,5 +28,27 @@ export const simConnectService = {
    */
   async getPosition(): Promise<AircraftPosition> {
     return await invoke('simconnect_get_position');
+  },
+
+  /**
+   * Envoyer un événement au simulateur
+   * @param eventName - Nom de l'événement SimConnect (ex: "AP_MASTER", "HEADING_BUG_SET")
+   * @param value - Valeur de l'événement (0 pour toggle, ou valeur spécifique)
+   *
+   * Exemples:
+   * - sendEvent("AP_MASTER", 1) - Active l'autopilot
+   * - sendEvent("HEADING_BUG_SET", 270) - Set heading à 270°
+   * - sendEvent("PARKING_BRAKES", 1) - Active le frein de parking
+   */
+  async sendEvent(eventName: string, value: number = 0): Promise<void> {
+    await invoke('simconnect_send_event', { eventName, value });
+  },
+
+  /**
+   * Récupérer la liste des événements SimConnect disponibles
+   * @returns Map avec clé = nom de l'événement, valeur = description friendly
+   */
+  async getAvailableEvents(): Promise<Record<string, string>> {
+    return await invoke('simconnect_get_available_events');
   },
 };

@@ -622,3 +622,103 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* SimConnect Events */
+.cheat-info {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.cheat-event-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.event-selector,
+.event-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-selector {
+  flex: 1;
+  min-width: 300px;
+}
+
+.event-value {
+  min-width: 150px;
+}
+
+.event-selector label,
+.event-value label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.event-dropdown,
+.event-input {
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.event-dropdown:focus,
+.event-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.event-dropdown {
+  cursor: pointer;
+}
+
+.event-input {
+  width: 100%;
+}
+
+.cheat-btn.event {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.cheat-btn.event:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.cheat-btn.event:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.event-info {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.event-info strong {
+  color: #2c3e50;
+}

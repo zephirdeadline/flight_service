@@ -4,6 +4,7 @@ import { airportService } from '../services/airportService';
 import { aircraftService } from '../services/aircraftService';
 import { activeMissionService } from '../services/activeMissionService';
 import { cheatService } from '../services/cheatService';
+import { simConnectService } from '../services/simConnectService';
 import type { Airport, Aircraft, ActiveMission } from '../types';
 import './Cheat.css';
 
@@ -18,6 +19,11 @@ export default function Cheat() {
   const [moneyAmount, setMoneyAmount] = useState(10000);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // SimConnect Events
+  const [availableEvents, setAvailableEvents] = useState<Record<string, string>>({});
+  const [selectedEvent, setSelectedEvent] = useState('');
+  const [eventValue, setEventValue] = useState(0);
 
   // Rechercher des aéroports (debounced)
   useEffect(() => {
@@ -49,6 +55,22 @@ export default function Cheat() {
       }
     }
     loadAircraft();
+  }, []);
+
+  // Charger les événements SimConnect disponibles
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const events = await simConnectService.getAvailableEvents();
+        setAvailableEvents(events);
+        // Sélectionner le premier événement par défaut
+        const firstEvent = Object.keys(events)[0];
+        if (firstEvent) setSelectedEvent(firstEvent);
+      } catch (error) {
+        console.error('Failed to load SimConnect events:', error);
+      }
+    }
+    loadEvents();
   }, []);
 
   // Charger les missions actives
@@ -189,6 +211,23 @@ export default function Cheat() {
       showMessage('success', `${aircraftName} maintenance completed instantly!`);
     } catch (error) {
       showMessage('error', `Failed to complete maintenance: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendEvent = async () => {
+    if (!selectedEvent) {
+      showMessage('error', 'Please select an event');
+      return;
+    }
+    setLoading(true);
+    try {
+      await simConnectService.sendEvent(selectedEvent, eventValue);
+      const eventDescription = availableEvents[selectedEvent];
+      showMessage('success', `Event sent: ${eventDescription} (value: ${eventValue})`);
+    } catch (error) {
+      showMessage('error', `Failed to send event: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -473,6 +512,58 @@ export default function Cheat() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* Section SimConnect Events */}
+      <section className="cheat-section">
+        <h2>🎮 SimConnect Events</h2>
+        <p className="cheat-info">Send events to Flight Simulator 2024</p>
+        <div className="cheat-event-controls">
+          <div className="event-selector">
+            <label htmlFor="event-select">Event:</label>
+            <select
+              id="event-select"
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              className="event-dropdown"
+            >
+              {Object.entries(availableEvents).map(([eventName, description]) => (
+                <option key={eventName} value={eventName}>
+                  {description}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="event-value">
+            <label htmlFor="event-value">Value:</label>
+            <input
+              id="event-value"
+              type="number"
+              value={eventValue}
+              onChange={(e) => setEventValue(Number(e.target.value))}
+              min="0"
+              step="1"
+              className="event-input"
+            />
+          </div>
+
+          <button
+            onClick={handleSendEvent}
+            disabled={loading || !selectedEvent}
+            className="cheat-btn event"
+          >
+            📤 Send Event
+          </button>
+        </div>
+
+        {selectedEvent && (
+          <div className="event-info">
+            <strong>Selected:</strong> {availableEvents[selectedEvent]}
+            <br />
+            <strong>Command:</strong> {selectedEvent}
           </div>
         )}
       </section>

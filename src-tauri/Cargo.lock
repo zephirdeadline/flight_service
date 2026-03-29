@@ -3584,8 +3584,21 @@ checksum = "e802134678508179c4fdb28636026322590dd86613e36bd3ab37de8128a612b6"
 dependencies = [
  "bindgen",
  "num_enum",
+ "simconnect-sdk-derive",
  "thiserror 2.0.18",
  "tracing",
+]
+
+[[package]]
+name = "simconnect-sdk-derive"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cdccd7b9af27ec04a8b1aae442c64054fc9b0358b85f9c1c4b57b11f5515f0d"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]

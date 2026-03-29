@@ -43,7 +43,7 @@ pub fn run() {
 
             // Initialiser le service SimConnect
             let simconnect = SimConnectService::new();
-            app.manage(Mutex::new(simconnect));
+            app.manage(simconnect);
 
             Ok(())
         })
@@ -84,6 +84,8 @@ pub fn run() {
             commands::simconnect_is_connected,
             commands::simconnect_disconnect,
             commands::simconnect_get_position,
+            commands::simconnect_send_event,
+            commands::simconnect_get_available_events,
             // Commandes Cheat (Debug)
             commands::cheat_teleport_to_airport,
             commands::cheat_give_aircraft,

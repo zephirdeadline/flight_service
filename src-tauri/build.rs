@@ -10,6 +10,12 @@ fn main() {
 }
 
 fn copy_simconnect_dll() {
+    // Créer le chemin depuis la variable d'environnement (doit vivre assez longtemps)
+    let env_path = format!(
+        "{}\\lib\\SimConnect.dll",
+        env::var("SIMCONNECT_SDK").unwrap_or_default()
+    );
+
     // Chemins possibles pour SimConnect.dll
     let possible_paths = vec![
         // Flight Simulator 2024
@@ -18,7 +24,7 @@ fn copy_simconnect_dll() {
         r"C:\MSFS SDK\SimConnect SDK\lib\SimConnect.dll",
         r"C:\Program Files (x86)\Microsoft Flight Simulator X SDK\SDK\Core Utilities Kit\SimConnect SDK\lib\SimConnect.dll",
         // Variable d'environnement personnalisée
-        &format!("{}\\lib\\SimConnect.dll", env::var("SIMCONNECT_SDK").unwrap_or_default()),
+        env_path.as_str(),
     ];
 
     // Trouver le premier chemin valide
