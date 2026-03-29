@@ -3,6 +3,7 @@
 use std::sync::Mutex;
 use crate::db::{Database, queries};
 use crate::models::*;
+use crate::simconnect_service::SimConnectService;
 
 // ============= EXEMPLE : Get All Airports =============
 
@@ -369,6 +370,56 @@ pub fn purchase_market_aircraft(
         Ok(())
     })
     .map_err(|e| format!("Transaction failed: {}", e))
+}
+
+// ============= SimConnect Commands =============
+
+#[tauri::command]
+pub fn simconnect_connect(
+    simconnect: tauri::State<Mutex<SimConnectService>>
+) -> Result<(), String> {
+    let sim = simconnect.lock()
+        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
+
+    sim.connect()
+}
+
+#[tauri::command]
+pub fn simconnect_is_connected(
+    simconnect: tauri::State<Mutex<SimConnectService>>
+) -> Result<bool, String> {
+    let sim = simconnect.lock()
+        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
+
+    Ok(sim.is_connected())
+}
+
+#[tauri::command]
+pub fn simconnect_disconnect(
+    simconnect: tauri::State<Mutex<SimConnectService>>
+) -> Result<(), String> {
+    let sim = simconnect.lock()
+        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
+
+    sim.disconnect();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn simconnect_get_position(
+    simconnect: tauri::State<Mutex<SimConnectService>>
+) -> Result<serde_json::Value, String> {
+    let sim = simconnect.lock()
+        .map_err(|e| format!("Failed to lock SimConnect: {}", e))?;
+
+    let position = sim.get_aircraft_position()?;
+
+    Ok(serde_json::json!({
+        "latitude": position.latitude,
+        "longitude": position.longitude,
+        "altitude": position.altitude,
+        "heading": position.heading,
+    }))
 }
 
 // ============= Maintenance Commands =============

@@ -2,9 +2,11 @@
 pub mod models;
 pub mod db;
 pub mod commands;
+pub mod simconnect_service;
 
 use std::sync::Mutex;
 use db::Database;
+use simconnect_service::SimConnectService;
 use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -38,6 +40,10 @@ pub fn run() {
 
             // Ajouter la DB au State Tauri (accessible dans toutes les commandes)
             app.manage(Mutex::new(db));
+
+            // Initialiser le service SimConnect
+            let simconnect = SimConnectService::new();
+            app.manage(Mutex::new(simconnect));
 
             Ok(())
         })
@@ -73,6 +79,11 @@ pub fn run() {
             commands::start_aircraft_maintenance,
             commands::complete_aircraft_maintenance,
             commands::add_maintenance_record,
+            // Commandes SimConnect
+            commands::simconnect_connect,
+            commands::simconnect_is_connected,
+            commands::simconnect_disconnect,
+            commands::simconnect_get_position,
             // Commandes Cheat (Debug)
             commands::cheat_teleport_to_airport,
             commands::cheat_give_aircraft,
