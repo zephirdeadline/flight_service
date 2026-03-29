@@ -353,6 +353,133 @@
   color: #27ae60;
 }
 
+/* Payload Setup */
+.payload-setup {
+  margin-top: 1rem;
+  border: 2px solid #e67e22;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.payload-setup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #e67e22 0%, #ca6f1e 100%);
+}
+
+.payload-setup-title {
+  margin: 0;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.payload-sent-badge {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.payload-setup-body {
+  padding: 0.75rem 1rem;
+  background: #fff8f2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.payload-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.payload-label {
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.payload-value {
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+.payload-stations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.payload-station-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  background: white;
+  border: 1px solid #f0d9c8;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.station-label {
+  color: #7f8c8d;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.station-weight {
+  color: #e67e22;
+  font-weight: 700;
+}
+
+.payload-station-item--empty {
+  opacity: 0.45;
+}
+
+.payload-station-item--empty .station-weight {
+  color: #bdc3c7;
+}
+
+.payload-send-btn {
+  margin-top: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #e67e22 0%, #ca6f1e 100%);
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.payload-send-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(230, 126, 34, 0.35);
+}
+
+.payload-send-btn--sent {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+.payload-send-btn--sent:hover {
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.35);
+}
+
+.payload-no-sim {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .active-missions-container {
     padding: 1rem;

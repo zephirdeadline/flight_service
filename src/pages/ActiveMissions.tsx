@@ -27,6 +27,7 @@ const ActiveMissions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [simPosition, setSimPosition] = useState<AircraftPosition | null>(null);
   const [simConnected, setSimConnected] = useState(false);
+  const [payloadSentMap, setPayloadSentMap] = useState<Record<string, boolean>>({});
   const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -201,6 +202,42 @@ const ActiveMissions: React.FC = () => {
     );
   };
 
+  const calculatePayloadWeights = (activeMission: ActiveMission, stationCount: number): number[] => {
+    const mission = activeMission.mission;
+    if (stationCount <= 0) return [];
+
+    if (mission.passengers) {
+      // 1 passager = 1 station, chaque station = 80 kg
+      const usedStations = Math.min(mission.passengers.count, stationCount, 10);
+      return Array.from({ length: usedStations }, () => 80);
+    }
+
+    if (mission.cargo) {
+      // Cargo : poids réparti équitablement sur tous les slots
+      const perStation = Math.round((mission.cargo.weight / stationCount) * 10) / 10;
+      return Array.from({ length: stationCount }, () => perStation);
+    }
+
+    return [];
+  };
+
+  const handleSendPayload = async (activeMissionId: string, activeMission: ActiveMission) => {
+    if (!simConnected || !simPosition) return;
+    const stationCount = Math.max(1, Math.floor(simPosition.payload_station_count));
+    const weights = calculatePayloadWeights(activeMission, stationCount);
+    // Remettre à 0 les stations inutilisées (jusqu'à stationCount)
+    const paddedWeights = [
+      ...weights,
+      ...Array(Math.max(0, stationCount - weights.length)).fill(0),
+    ];
+    try {
+      await simConnectService.setPayload(paddedWeights);
+      setPayloadSentMap(prev => ({ ...prev, [activeMissionId]: true }));
+    } catch (error) {
+      console.error('Error sending payload to MSFS:', error);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading active missions...</div>;
   }
@@ -272,6 +309,68 @@ const ActiveMissions: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Payload Setup */}
+                {(mission.passengers || mission.cargo) && (() => {
+                  const stationCount = simConnected && simPosition
+                    ? Math.max(1, Math.floor(simPosition.payload_station_count))
+                    : 0;
+                  const totalKg = mission.cargo
+                    ? mission.cargo.weight
+                    : (mission.passengers ? mission.passengers.count * 80 : 0);
+                  const activeWeights = stationCount > 0
+                    ? calculatePayloadWeights(activeMission, stationCount)
+                    : [];
+                  // Stations affichées = actives + vides pour compléter jusqu'à stationCount
+                  const displayWeights = [
+                    ...activeWeights,
+                    ...Array(Math.max(0, stationCount - activeWeights.length)).fill(0),
+                  ];
+                  const wasSent = payloadSentMap[activeMission.id] ?? false;
+
+                  return (
+                    <div className="payload-setup">
+                      <div className="payload-setup-header">
+                        <h3 className="payload-setup-title">
+                          {mission.type === 'passenger' ? '👥' : '📦'} Payload Setup
+                        </h3>
+                        {wasSent && <span className="payload-sent-badge">✓ Loaded</span>}
+                      </div>
+
+                      <div className="payload-setup-body">
+                        <div className="payload-total-row">
+                          <span className="payload-label">Total payload:</span>
+                          <span className="payload-value">{totalKg.toLocaleString()} kg</span>
+                        </div>
+
+                        {simConnected && simPosition ? (
+                          <>
+                            <div className="payload-total-row">
+                              <span className="payload-label">Stations:</span>
+                              <span className="payload-value">{stationCount}</span>
+                            </div>
+                            <div className="payload-stations-grid">
+                              {displayWeights.map((w, i) => (
+                                <div key={i} className={`payload-station-item${w === 0 ? ' payload-station-item--empty' : ''}`}>
+                                  <span className="station-label">Sta. {i + 1}</span>
+                                  <span className="station-weight">{w} kg</span>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              className={`payload-send-btn${wasSent ? ' payload-send-btn--sent' : ''}`}
+                              onClick={() => handleSendPayload(activeMission.id, activeMission)}
+                            >
+                              {wasSent ? '✓ Re-send to MSFS' : '📤 Load in MSFS'}
+                            </button>
+                          </>
+                        ) : (
+                          <p className="payload-no-sim">Connect MSFS to auto-configure payload stations</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {aircraft && (
                   <>

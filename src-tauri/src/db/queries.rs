@@ -413,6 +413,52 @@ pub fn update_player_airport(conn: &Connection, player_id: &str, airport_id: &st
     Ok(())
 }
 
+pub fn set_player_airport(conn: &Connection, player_id: &str, airport_id: &str) -> Result<()> {
+    // Mettre à jour l'aéroport du joueur
+    update_player_airport(conn, player_id, airport_id)?;
+
+    // Mettre à jour l'aéroport de l'avion sélectionné
+    let selected_aircraft_id: Option<String> = conn.query_row(
+        "SELECT selected_aircraft_id FROM players WHERE id = ?1",
+        params![player_id],
+        |row| row.get(0),
+    ).ok().flatten();
+
+    if let Some(aircraft_id) = selected_aircraft_id {
+        if !aircraft_id.is_empty() {
+            conn.execute(
+                "UPDATE player_aircraft SET current_airport_id = ?1 WHERE id = ?2 AND player_id = ?3",
+                params![airport_id, &aircraft_id, player_id],
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn find_airport_near_position(conn: &Connection, lat: f64, lon: f64) -> Result<Option<Airport>> {
+    // Bounding box ±0.05° ≈ 5km pour pré-filtrer
+    let lat_delta = 0.05_f64;
+    let lon_delta = 0.05_f64;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, icao, iata_code, name, type, city, country, latitude, longitude, elevation, scheduled_service
+         FROM airports
+         WHERE latitude BETWEEN ?1 AND ?2
+           AND longitude BETWEEN ?3 AND ?4
+         LIMIT 10"
+    )?;
+
+    let candidates = stmt.query_map(
+        params![lat - lat_delta, lat + lat_delta, lon - lon_delta, lon + lon_delta],
+        map_airport_row,
+    )?.collect::<Result<Vec<_>>>()?;
+
+    Ok(candidates.into_iter().find(|airport| {
+        is_within_3km(lat, lon, airport.latitude, airport.longitude)
+    }))
+}
+
 pub fn add_player_aircraft(
     conn: &Connection,
     player_id: &str,

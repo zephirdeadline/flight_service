@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { usePopup } from '../context/PopupContext';
 import { MarketAircraft } from '../types';
@@ -9,7 +9,6 @@ const Shop: React.FC = () => {
   const { player, currentAirport, refreshPlayer } = usePlayer();
   const popup = usePopup();
   const [allMarketAircraft, setAllMarketAircraft] = useState<MarketAircraft[]>([]);
-  const [filteredAircraft, setFilteredAircraft] = useState<MarketAircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'passenger' | 'cargo' | 'both'>('all');
   const [budgetFilter, setBudgetFilter] = useState<'all' | 'affordable'>('all');
@@ -19,8 +18,24 @@ const Shop: React.FC = () => {
     loadMarketAircraft();
   }, [player]);
 
-  useEffect(() => {
-    applyFilters();
+  const filteredAircraft = useMemo(() => {
+    let filtered = [...allMarketAircraft];
+
+    if (filter !== 'all') {
+      filtered = filtered.filter(a => a.aircraft.type === filter);
+    }
+
+    if (budgetFilter === 'affordable' && player) {
+      filtered = filtered.filter(a => a.price <= player.money);
+    }
+
+    if (conditionFilter === 'new') {
+      filtered = filtered.filter(a => a.condition === 100 && a.flightHours < 0.01);
+    } else if (conditionFilter === 'used') {
+      filtered = filtered.filter(a => a.condition < 100 || a.flightHours >= 0.01);
+    }
+
+    return filtered;
   }, [allMarketAircraft, filter, budgetFilter, conditionFilter, player]);
 
   const loadMarketAircraft = async () => {
@@ -35,35 +50,6 @@ const Shop: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const applyFilters = () => {
-    let filtered = [...allMarketAircraft];
-
-    // Filtre par type
-    if (filter !== 'all') {
-      filtered = filtered.filter(a => a.aircraft.type === filter);
-    }
-
-    // Filtre par budget
-    if (budgetFilter === 'affordable' && player) {
-      filtered = filtered.filter(a => a.price <= player.money);
-    }
-
-    // Filtre par condition
-    if (conditionFilter === 'new') {
-      filtered = filtered.filter(a => {
-        const isNew = a.condition === 100 && a.flightHours < 0.01;
-        return isNew;
-      });
-    } else if (conditionFilter === 'used') {
-      filtered = filtered.filter(a => {
-        const isUsed = a.condition < 100 || a.flightHours >= 0.01;
-        return isUsed;
-      });
-    }
-
-    setFilteredAircraft(filtered);
   };
 
   const handleBuy = async (marketOfferId: string) => {

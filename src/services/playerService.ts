@@ -47,11 +47,12 @@ export const playerService = {
     return { ...mockPlayer };
   },
 
-  // Changer l'aéroport actuel
-  async changeAirport(airportId: string): Promise<Player> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    mockPlayer.currentAirportId = airportId;
-    return { ...mockPlayer };
+  // Changer l'aéroport actuel (joueur + avion sélectionné)
+  async changeAirport(airportId: string): Promise<void> {
+    await invoke('set_player_airport', { playerId: '1', airportId });
+    if (mockPlayer) {
+      mockPlayer.currentAirportId = airportId;
+    }
   },
 
   // Ajouter un avion au hangar

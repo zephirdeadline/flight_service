@@ -13,8 +13,10 @@
     "windows": [
       {
         "title": "flight_service",
-        "width": 800,
-        "height": 600
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700
       }
     ],
     "security": {
