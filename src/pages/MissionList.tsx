@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { usePopup } from '../context/PopupContext';
-import { Mission, Airport } from '../types';
+import { Mission, Airport, AircraftPosition } from '../types';
 import { missionService } from '../services/missionService';
 import { airportService } from '../services/airportService';
 import { activeMissionService } from '../services/activeMissionService';
+import { simConnectService } from '../services/simConnectService';
 import MissionCard from '../components/MissionCard';
 import './MissionList.css';
+
+const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 const MissionList: React.FC = () => {
   const { player, currentAirport, selectedAircraft, updateMoney, getAircraftMaintenance } = usePlayer();
@@ -29,9 +40,46 @@ const MissionList: React.FC = () => {
   // Check for active missions
   const [hasActiveMission, setHasActiveMission] = useState(false);
 
+  // SimConnect
+  const [simPosition, setSimPosition] = useState<AircraftPosition | null>(null);
+  const [simConnected, setSimConnected] = useState(false);
+  const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     checkActiveMissions();
   }, [player]);
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        let connected = await simConnectService.isConnected();
+        if (!connected) {
+          try {
+            await simConnectService.connect();
+            connected = true;
+          } catch {
+            // MSFS pas lancé
+          }
+        }
+        setSimConnected(connected);
+        if (connected) {
+          const pos = await simConnectService.getPosition();
+          setSimPosition(pos);
+        } else {
+          setSimPosition(null);
+        }
+      } catch {
+        setSimConnected(false);
+        setSimPosition(null);
+      }
+    };
+
+    poll();
+    simPollRef.current = setInterval(poll, 3000);
+    return () => {
+      if (simPollRef.current) clearInterval(simPollRef.current);
+    };
+  }, []);
 
   const checkActiveMissions = async () => {
     if (!player) return;
@@ -137,6 +185,46 @@ const MissionList: React.FC = () => {
     }
   };
 
+  const getMissionDisabledReason = (mission: Mission): string | undefined => {
+    if (!selectedAircraft) return 'No aircraft selected';
+
+    const maintenance = player?.selectedAircraftId
+      ? getAircraftMaintenance(player.selectedAircraftId)
+      : null;
+    if (maintenance?.isUnderMaintenance) return 'Aircraft under maintenance';
+
+    if (displayedAirport) {
+      if (simConnected && simPosition) {
+        const dist = haversineKm(
+          simPosition.latitude, simPosition.longitude,
+          displayedAirport.latitude, displayedAirport.longitude,
+        );
+        if (dist > 3) return `${Math.round(dist)} km from ${displayedAirport.icao}`;
+      } else if (displayedAirport.id !== currentAirport?.id) {
+        return `Must be at ${displayedAirport.icao} to accept`;
+      }
+    }
+
+    if (hasActiveMission) return 'Complete current mission first';
+
+    if (mission.requiredAircraftType) {
+      const canDoMission =
+        selectedAircraft.type === mission.requiredAircraftType ||
+        selectedAircraft.type === 'both';
+      if (!canDoMission) return `Requires ${mission.requiredAircraftType} aircraft`;
+    }
+
+    if (selectedAircraft.range < mission.distance) {
+      return `Range too short (${selectedAircraft.range} NM < ${mission.distance} NM)`;
+    }
+
+    if (mission.passengers && selectedAircraft.capacity < mission.passengers.count) {
+      return `Capacity too low (${selectedAircraft.capacity} < ${mission.passengers.count} pax)`;
+    }
+
+    return undefined;
+  };
+
   const handleAcceptMission = async (missionId: string) => {
     if (!player || !selectedAircraft || !player.selectedAircraftId) {
       return;
@@ -218,6 +306,34 @@ const MissionList: React.FC = () => {
         )}
       </div>
 
+      {/* SimConnect Status */}
+      <div className={`simconnect-status ${simConnected ? 'connected' : 'disconnected'}`}>
+        <span className="simconnect-dot" />
+        {simConnected && simPosition ? (
+          <>
+            <span>SimConnect</span>
+            <span className="simconnect-coords">
+              {simPosition.latitude.toFixed(4)}°, {simPosition.longitude.toFixed(4)}°
+            </span>
+            {displayedAirport && (
+              <span className="simconnect-distance">
+                {(() => {
+                  const dist = haversineKm(
+                    simPosition.latitude, simPosition.longitude,
+                    displayedAirport.latitude, displayedAirport.longitude,
+                  );
+                  return dist <= 3
+                    ? `✓ Within 3 km of ${displayedAirport.icao}`
+                    : `${Math.round(dist)} km from ${displayedAirport.icao}`;
+                })()}
+              </span>
+            )}
+          </>
+        ) : (
+          <span>SimConnect unavailable (MSFS not running) — using last known airport</span>
+        )}
+      </div>
+
       {!selectedAircraft && (
         <div className="warning-banner">
           ⚠️ No aircraft selected! Please select an aircraft from your hangar before accepting missions.
@@ -226,7 +342,19 @@ const MissionList: React.FC = () => {
 
       {displayedAirport && displayedAirport.id !== currentAirport?.id && (
         <div className="warning-banner" style={{ background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)' }}>
-          ℹ️ Viewing missions from {displayedAirport.icao}. You must be at this airport to accept missions.
+          {simConnected && simPosition ? (
+            (() => {
+              const dist = haversineKm(
+                simPosition.latitude, simPosition.longitude,
+                displayedAirport.latitude, displayedAirport.longitude,
+              );
+              return dist <= 3
+                ? `✅ Viewing missions from ${displayedAirport.icao} — you are within range, you can accept missions.`
+                : `ℹ️ Viewing missions from ${displayedAirport.icao} — you are ${Math.round(dist)} km away (need < 3 km to accept).`;
+            })()
+          ) : (
+            `ℹ️ Viewing missions from ${displayedAirport.icao}. You must be at this airport to accept missions.`
+          )}
         </div>
       )}
 
@@ -308,7 +436,7 @@ const MissionList: React.FC = () => {
               key={mission.id}
               mission={mission}
               onAccept={handleAcceptMission}
-              disabled={!selectedAircraft || (displayedAirport?.id !== currentAirport?.id) || hasActiveMission}
+              disabledReason={getMissionDisabledReason(mission)}
             />
           ))}
         </div>

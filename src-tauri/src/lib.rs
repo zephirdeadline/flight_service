@@ -4,7 +4,7 @@ pub mod db;
 pub mod commands;
 pub mod simconnect_service;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use db::Database;
 use simconnect_service::SimConnectService;
 use tauri::Manager;
@@ -32,11 +32,14 @@ pub fn run() {
             db.init()
                 .expect("Failed to initialize database");
 
-            // Ajouter la DB au State Tauri (accessible dans toutes les commandes)
-            app.manage(Mutex::new(db));
+            // Wraper la DB dans Arc pour la partager avec le thread SimConnect
+            let db_arc = Arc::new(Mutex::new(db));
 
-            // Initialiser le service SimConnect
-            let simconnect = SimConnectService::new();
+            // Ajouter la DB au State Tauri (accessible dans toutes les commandes)
+            app.manage(db_arc.clone());
+
+            // Initialiser le service SimConnect (avec accès DB pour auto-détection d'aéroport)
+            let simconnect = SimConnectService::new(db_arc);
             app.manage(simconnect);
 
             Ok(())
@@ -82,6 +85,7 @@ pub fn run() {
             commands::simconnect_start_streaming,
             commands::simconnect_stop_streaming,
             commands::simconnect_is_streaming,
+            commands::simconnect_set_payload,
             // Commandes Cheat (Debug)
             commands::cheat_teleport_to_airport,
             commands::cheat_give_aircraft,
@@ -90,6 +94,10 @@ pub fn run() {
             commands::cheat_force_complete_mission,
             commands::cheat_set_aircraft_wear,
             commands::cheat_complete_maintenance,
+            // Commandes Geo
+            commands::is_within_3km,
+            commands::find_airport_near_position,
+            commands::set_player_airport,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

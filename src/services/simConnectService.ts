@@ -73,4 +73,16 @@ export const simConnectService = {
   async isStreaming(): Promise<boolean> {
     return await invoke('simconnect_is_streaming');
   },
+
+  /**
+   * Configurer les payload stations de l'avion dans Flight Simulator
+   * @param weights - Poids en kg pour chaque station (max 10), dans l'ordre des stations
+   *
+   * Exemples:
+   * - setPayload([150, 150]) - 2 stations à 150 kg chacune
+   * - setPayload([80, 80, 80, 0]) - 3 stations de 80 kg, 4ème vide
+   */
+  async setPayload(weights: number[]): Promise<void> {
+    await invoke('simconnect_set_payload', { weights });
+  },
 };

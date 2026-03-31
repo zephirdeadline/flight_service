@@ -1,6 +1,6 @@
 // Commandes Tauri - Exemples d'utilisation du State DB
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use crate::db::{Database, queries};
 use crate::models::*;
 use crate::simconnect_service::{SimConnectService, AircraftPosition};
@@ -9,7 +9,7 @@ use crate::simconnect_service::{SimConnectService, AircraftPosition};
 
 #[tauri::command]
 pub fn get_all_airports(
-    db: tauri::State<Mutex<Database>>
+    db: tauri::State<Arc<Mutex<Database>>>
 ) -> Result<Vec<Airport>, String> {
     // 1. Lock le Mutex pour accéder à la DB
     let db = db.lock()
@@ -27,7 +27,7 @@ pub fn get_all_airports(
 
 #[tauri::command]
 pub fn get_airport_by_id(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     id: String,
 ) -> Result<Option<Airport>, String> {
     let db = db.lock()
@@ -41,7 +41,7 @@ pub fn get_airport_by_id(
 
 #[tauri::command]
 pub fn purchase_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     aircraft_id: String,
 ) -> Result<(), String> {
@@ -101,7 +101,7 @@ pub fn purchase_aircraft(
 
 #[tauri::command]
 pub fn create_player(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     name: String,
     starting_airport_id: String,
     starting_aircraft_id: String,
@@ -122,7 +122,7 @@ pub fn create_player(
 
 #[tauri::command]
 pub fn get_player(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
 ) -> Result<Option<Player>, String> {
     let db = db.lock()
@@ -137,7 +137,7 @@ pub fn get_player(
 /// Helper pour exécuter une fonction avec la connexion DB
 /// Gère automatiquement le lock et les erreurs
 fn with_db<F, T>(
-    db_state: &tauri::State<Mutex<Database>>,
+    db_state: &tauri::State<Arc<Mutex<Database>>>,
     f: F,
 ) -> Result<T, String>
 where
@@ -154,7 +154,7 @@ where
 
 #[tauri::command]
 pub fn get_all_aircraft(
-    db: tauri::State<Mutex<Database>>
+    db: tauri::State<Arc<Mutex<Database>>>
 ) -> Result<Vec<Aircraft>, String> {
     // Plus simple avec le helper
     with_db(&db, |conn| queries::get_all_aircraft(conn))
@@ -162,7 +162,7 @@ pub fn get_all_aircraft(
 
 #[tauri::command]
 pub fn search_airports(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     query: String,
 ) -> Result<Vec<Airport>, String> {
     with_db(&db, |conn| queries::search_airports(conn, &query))
@@ -172,7 +172,7 @@ pub fn search_airports(
 
 #[tauri::command]
 pub fn get_missions_by_airport(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     airport_id: String,
 ) -> Result<Vec<Mission>, String> {
     with_db(&db, |conn| queries::get_missions_by_airport(conn, &airport_id))
@@ -180,7 +180,7 @@ pub fn get_missions_by_airport(
 
 #[tauri::command]
 pub fn search_missions_to_airport(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     airport_id: String,
 ) -> Result<Vec<Mission>, String> {
@@ -211,7 +211,7 @@ pub fn search_missions_to_airport(
 
 #[tauri::command]
 pub fn get_aircraft_by_id(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     id: String,
 ) -> Result<Option<Aircraft>, String> {
     with_db(&db, |conn| queries::get_aircraft_by_id(conn, &id))
@@ -219,7 +219,7 @@ pub fn get_aircraft_by_id(
 
 #[tauri::command]
 pub fn get_aircraft_by_type(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     aircraft_type: String,
 ) -> Result<Vec<Aircraft>, String> {
     with_db(&db, |conn| queries::get_aircraft_by_type(conn, &aircraft_type))
@@ -229,7 +229,7 @@ pub fn get_aircraft_by_type(
 
 #[tauri::command]
 pub fn accept_mission(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     from_airport_id: String,
     to_airport_id: String,
@@ -260,7 +260,7 @@ pub fn accept_mission(
 
 #[tauri::command]
 pub fn get_active_missions(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
 ) -> Result<Vec<ActiveMission>, String> {
     with_db(&db, |conn| queries::get_active_missions(conn, &player_id))
@@ -268,7 +268,7 @@ pub fn get_active_missions(
 
 #[tauri::command]
 pub fn complete_active_mission(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     active_mission_id: String,
 ) -> Result<i64, String> {
@@ -279,7 +279,7 @@ pub fn complete_active_mission(
 
 #[tauri::command]
 pub fn cancel_active_mission(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     active_mission_id: String,
     progress_percentage: i32,
@@ -293,7 +293,7 @@ pub fn cancel_active_mission(
 
 #[tauri::command]
 pub fn get_owned_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
 ) -> Result<Vec<crate::models::OwnedAircraft>, String> {
     with_db(&db, |conn| {
@@ -303,7 +303,7 @@ pub fn get_owned_aircraft(
 
 #[tauri::command]
 pub fn select_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     player_aircraft_id: String,
 ) -> Result<(), String> {
@@ -316,7 +316,7 @@ pub fn select_aircraft(
 
 #[tauri::command]
 pub fn get_market_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
 ) -> Result<Vec<crate::models::MarketAircraft>, String> {
     with_db(&db, |conn| {
@@ -326,7 +326,7 @@ pub fn get_market_aircraft(
 
 #[tauri::command]
 pub fn purchase_market_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     aircraft_id: String,
     price: i64,
@@ -440,11 +440,19 @@ pub fn simconnect_is_streaming(
     Ok(simconnect.inner().is_streaming())
 }
 
+#[tauri::command]
+pub fn simconnect_set_payload(
+    simconnect: tauri::State<SimConnectService>,
+    weights: Vec<f64>,
+) -> Result<(), String> {
+    simconnect.inner().set_payload_stations(weights)
+}
+
 // ============= Maintenance Commands =============
 
 #[tauri::command]
 pub fn start_aircraft_maintenance(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     player_aircraft_id: String,
     end_date: String,
@@ -469,7 +477,7 @@ pub fn start_aircraft_maintenance(
 
 #[tauri::command]
 pub fn complete_aircraft_maintenance(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     player_aircraft_id: String,
 ) -> Result<(), String> {
@@ -480,7 +488,7 @@ pub fn complete_aircraft_maintenance(
 
 #[tauri::command]
 pub fn add_maintenance_record(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     record: crate::models::MaintenanceRecord,
 ) -> Result<(), String> {
@@ -493,7 +501,7 @@ pub fn add_maintenance_record(
 
 #[tauri::command]
 pub fn cheat_teleport_to_airport(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     airport_id: String,
 ) -> Result<(), String> {
@@ -504,7 +512,7 @@ pub fn cheat_teleport_to_airport(
 
 #[tauri::command]
 pub fn cheat_give_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     aircraft_id: String,
 ) -> Result<(), String> {
@@ -515,7 +523,7 @@ pub fn cheat_give_aircraft(
 
 #[tauri::command]
 pub fn cheat_add_money(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     amount: i64,
 ) -> Result<(), String> {
@@ -526,7 +534,7 @@ pub fn cheat_add_money(
 
 #[tauri::command]
 pub fn cheat_teleport_aircraft(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_aircraft_id: String,
     airport_id: String,
 ) -> Result<(), String> {
@@ -537,7 +545,7 @@ pub fn cheat_teleport_aircraft(
 
 #[tauri::command]
 pub fn cheat_force_complete_mission(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     active_mission_id: String,
 ) -> Result<i64, String> {
@@ -548,7 +556,7 @@ pub fn cheat_force_complete_mission(
 
 #[tauri::command]
 pub fn cheat_set_aircraft_wear(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_aircraft_id: String,
     flight_hours: f64,
     condition: i32,
@@ -560,13 +568,38 @@ pub fn cheat_set_aircraft_wear(
 
 #[tauri::command]
 pub fn cheat_complete_maintenance(
-    db: tauri::State<Mutex<Database>>,
+    db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
     player_aircraft_id: String,
 ) -> Result<(), String> {
     with_db(&db, |conn| {
         queries::complete_maintenance(conn, &player_id, &player_aircraft_id)
     })
+}
+
+// ============= GEO UTILS =============
+
+#[tauri::command]
+pub fn is_within_3km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> bool {
+    queries::is_within_3km(lat1, lon1, lat2, lon2)
+}
+
+#[tauri::command]
+pub fn find_airport_near_position(
+    db: tauri::State<Arc<Mutex<Database>>>,
+    lat: f64,
+    lon: f64,
+) -> Result<Option<Airport>, String> {
+    with_db(&db, |conn| queries::find_airport_near_position(conn, lat, lon))
+}
+
+#[tauri::command]
+pub fn set_player_airport(
+    db: tauri::State<Arc<Mutex<Database>>>,
+    player_id: String,
+    airport_id: String,
+) -> Result<(), String> {
+    with_db(&db, |conn| queries::set_player_airport(conn, &player_id, &airport_id))
 }
 
 // ============= NOTE : Enregistrement des commandes =============

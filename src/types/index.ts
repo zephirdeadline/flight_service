@@ -123,16 +123,16 @@ export interface AircraftPosition {
   longitude: number;
   altitude: number;
   heading: number;
+  airspeed_indicated: number;
+  vertical_speed: number;
   sim_on_ground: boolean;
   ground_velocity: number;
   crash_flag: boolean;
-  // Fuel
-  fuel_total_quantity: number; // gallons
-  fuel_tank_left_main: number; // gallons
-  fuel_tank_right_main: number; // gallons
-  fuel_tank_center: number; // gallons
-  // Moteurs
-  number_of_engines: number; // nombre de moteurs
+  fuel_total_quantity: number;
+  fuel_tank_left_main: number;
+  fuel_tank_right_main: number;
+  fuel_tank_center: number;
+  number_of_engines: number;
   engine_1_rpm: number;
   engine_2_rpm: number;
   engine_3_rpm: number;
@@ -141,7 +141,7 @@ export interface AircraftPosition {
   engine_6_rpm: number;
   engine_7_rpm: number;
   engine_8_rpm: number;
-  engine_1_fuel_flow: number; // gallons per hour
+  engine_1_fuel_flow: number;
   engine_2_fuel_flow: number;
   engine_3_fuel_flow: number;
   engine_4_fuel_flow: number;
@@ -149,40 +149,13 @@ export interface AircraftPosition {
   engine_6_fuel_flow: number;
   engine_7_fuel_flow: number;
   engine_8_fuel_flow: number;
-  // Navigation/Vol
-  vertical_speed: number; // feet per minute
-  plane_alt_above_ground: number; // feet AGL
-  airspeed_true: number; // knots
-  airspeed_indicated: number; // knots
-  // Poids
-  total_weight: number; // kg
-  empty_weight: number; // kg
-  fuel_weight: number; // kg
-  // Payload stations
-  payload_station_count: number; // nombre de stations utilisées
-  // Noms des stations
-  payload_station_name_1: string;
-  payload_station_name_2: string;
-  payload_station_name_3: string;
-  payload_station_name_4: string;
-  payload_station_name_5: string;
-  payload_station_name_6: string;
-  payload_station_name_7: string;
-  payload_station_name_8: string;
-  payload_station_name_9: string;
-  payload_station_name_10: string;
-  payload_station_name_11: string;
-  payload_station_name_12: string;
-  payload_station_name_13: string;
-  payload_station_name_14: string;
-  payload_station_name_15: string;
-  payload_station_name_16: string;
-  payload_station_name_17: string;
-  payload_station_name_18: string;
-  payload_station_name_19: string;
-  payload_station_name_20: string;
-  // Détail poids par slot (stations de charge 1-20)
-  payload_station_weight_1: number; // kg
+  plane_alt_above_ground: number;
+  airspeed_true: number;
+  total_weight: number;
+  empty_weight: number;
+  fuel_weight: number;
+  payload_station_count: number;
+  payload_station_weight_1: number;
   payload_station_weight_2: number;
   payload_station_weight_3: number;
   payload_station_weight_4: number;
@@ -192,20 +165,9 @@ export interface AircraftPosition {
   payload_station_weight_8: number;
   payload_station_weight_9: number;
   payload_station_weight_10: number;
-  payload_station_weight_11: number;
-  payload_station_weight_12: number;
-  payload_station_weight_13: number;
-  payload_station_weight_14: number;
-  payload_station_weight_15: number;
-  payload_station_weight_16: number;
-  payload_station_weight_17: number;
-  payload_station_weight_18: number;
-  payload_station_weight_19: number;
-  payload_station_weight_20: number;
-  // Sécurité/Warnings
   stall_warning: boolean;
   overspeed_warning: boolean;
-  gear_handle_position: boolean; // true = down, false = up
+  gear_handle_position: boolean;
 }
 
 export type PopupType = 'info' | 'warning' | 'error' | 'success' | 'confirm';

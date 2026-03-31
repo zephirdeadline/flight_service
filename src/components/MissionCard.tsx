@@ -5,10 +5,12 @@ import './MissionCard.css';
 interface MissionCardProps {
   mission: Mission;
   onAccept?: (missionId: string) => void;
-  disabled?: boolean;
+  disabledReason?: string;
 }
 
-const MissionCard: React.FC<MissionCardProps> = ({ mission, onAccept, disabled = false }) => {
+const MissionCard: React.FC<MissionCardProps> = ({ mission, onAccept, disabledReason }) => {
+  const disabled = !!disabledReason;
+
   const handleAccept = () => {
     if (onAccept && !disabled) {
       onAccept(mission.id);
@@ -70,11 +72,12 @@ const MissionCard: React.FC<MissionCardProps> = ({ mission, onAccept, disabled =
 
       {onAccept && (
         <button
-          className="accept-button"
+          className={`accept-button ${disabled ? 'disabled-reason' : ''}`}
           onClick={handleAccept}
           disabled={disabled}
+          title={disabledReason}
         >
-          Accept Mission
+          {disabled ? disabledReason : 'Accept Mission'}
         </button>
       )}
     </div>

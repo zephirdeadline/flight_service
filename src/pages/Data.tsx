@@ -11,15 +11,29 @@ export default function Data() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkConnection();
+    autoConnect();
+    return () => {
+      simConnectService.stopStreaming();
+    };
   }, []);
 
-  const checkConnection = async () => {
+  const autoConnect = async () => {
     try {
-      const connected = await simConnectService.isConnected();
-      setIsConnected(connected);
+      const already = await simConnectService.isConnected();
+      if (already) {
+        setIsConnected(true);
+        const streaming = await simConnectService.isStreaming();
+        if (!streaming) await simConnectService.startStreaming();
+        return;
+      }
+      setLoading(true);
+      await simConnectService.connect();
+      await simConnectService.startStreaming();
+      setIsConnected(true);
     } catch (err) {
-      console.error('Failed to check connection:', err);
+      setError(`MSFS not detected: ${err}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,6 +68,7 @@ export default function Data() {
     setError(null);
     try {
       const position = await simConnectService.getPosition();
+      console.log('[SimConnect] Position fetched:', position);
       setData(position);
     } catch (err) {
       setError(`Failed to get data: ${err}`);
@@ -68,6 +83,7 @@ export default function Data() {
 
     const setupListener = async () => {
       unlisten = await listen<AircraftPosition>('simconnect-data', (event) => {
+        console.log('[SimConnect] Data received:', event.payload);
         setData(event.payload);
         setError(null);
       });
@@ -100,23 +116,11 @@ export default function Data() {
 
   const renderEngine = (engineNum: number, rpm: number, fuelFlow: number) => {
     if (rpm === 0 && fuelFlow === 0) return null;
-
     return (
       <div key={engineNum} className="engine-card">
         <h4>Engine {engineNum}</h4>
         {renderGauge(rpm, 3000, 'RPM', 'rpm')}
         {renderGauge(fuelFlow, 30, 'Fuel Flow', 'gph')}
-      </div>
-    );
-  };
-
-  const renderPayloadStation = (num: number, name: string, weight: number) => {
-    if (!name && weight === 0) return null;
-
-    return (
-      <div key={num} className="payload-station">
-        <span className="station-name">{name || `Station ${num}`}</span>
-        <span className="station-weight">{weight.toFixed(1)} kg</span>
       </div>
     );
   };
@@ -275,31 +279,30 @@ export default function Data() {
           </section>
 
           {/* Payload Stations */}
-          <section className="data-section">
-            <h2>📦 Payload Stations ({data.payload_station_count.toFixed(0)})</h2>
-            <div className="payload-list">
-              {renderPayloadStation(1, data.payload_station_name_1, data.payload_station_weight_1)}
-              {renderPayloadStation(2, data.payload_station_name_2, data.payload_station_weight_2)}
-              {renderPayloadStation(3, data.payload_station_name_3, data.payload_station_weight_3)}
-              {renderPayloadStation(4, data.payload_station_name_4, data.payload_station_weight_4)}
-              {renderPayloadStation(5, data.payload_station_name_5, data.payload_station_weight_5)}
-              {renderPayloadStation(6, data.payload_station_name_6, data.payload_station_weight_6)}
-              {renderPayloadStation(7, data.payload_station_name_7, data.payload_station_weight_7)}
-              {renderPayloadStation(8, data.payload_station_name_8, data.payload_station_weight_8)}
-              {renderPayloadStation(9, data.payload_station_name_9, data.payload_station_weight_9)}
-              {renderPayloadStation(10, data.payload_station_name_10, data.payload_station_weight_10)}
-              {renderPayloadStation(11, data.payload_station_name_11, data.payload_station_weight_11)}
-              {renderPayloadStation(12, data.payload_station_name_12, data.payload_station_weight_12)}
-              {renderPayloadStation(13, data.payload_station_name_13, data.payload_station_weight_13)}
-              {renderPayloadStation(14, data.payload_station_name_14, data.payload_station_weight_14)}
-              {renderPayloadStation(15, data.payload_station_name_15, data.payload_station_weight_15)}
-              {renderPayloadStation(16, data.payload_station_name_16, data.payload_station_weight_16)}
-              {renderPayloadStation(17, data.payload_station_name_17, data.payload_station_weight_17)}
-              {renderPayloadStation(18, data.payload_station_name_18, data.payload_station_weight_18)}
-              {renderPayloadStation(19, data.payload_station_name_19, data.payload_station_weight_19)}
-              {renderPayloadStation(20, data.payload_station_name_20, data.payload_station_weight_20)}
-            </div>
-          </section>
+          {data.payload_station_count > 0 && (
+            <section className="data-section">
+              <h2>📦 Payload Stations ({data.payload_station_count.toFixed(0)})</h2>
+              <div className="payload-list">
+                {[
+                  data.payload_station_weight_1,
+                  data.payload_station_weight_2,
+                  data.payload_station_weight_3,
+                  data.payload_station_weight_4,
+                  data.payload_station_weight_5,
+                  data.payload_station_weight_6,
+                  data.payload_station_weight_7,
+                  data.payload_station_weight_8,
+                  data.payload_station_weight_9,
+                  data.payload_station_weight_10,
+                ].slice(0, data.payload_station_count).map((weight, i) => (
+                  <div key={i + 1} className="payload-station">
+                    <span className="station-name">Station {i + 1}</span>
+                    <span className="station-weight">{weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Warnings */}
           <section className="data-section">
@@ -313,6 +316,7 @@ export default function Data() {
               </div>
             </div>
           </section>
+
         </div>
       )}
     </div>
