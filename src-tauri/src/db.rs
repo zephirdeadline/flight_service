@@ -51,13 +51,6 @@ impl Database {
             self.mark_migration_applied(3)?;
         }
 
-        // Migration 4 : Désactivée (schéma corrigé directement dans migration 001)
-        // if !self.migration_applied(4)? {
-        //     let owned_aircraft = include_str!("../migrations/004_owned_aircraft_instances.sql");
-        //     self.conn.execute_batch(owned_aircraft)?;
-        //     self.mark_migration_applied(4)?;
-        // }
-
         // Migration 5 : Correction de la FK active_missions.aircraft_id
         if !self.migration_applied(5)? {
             let fix_fk = include_str!("../migrations/005_fix_active_missions_fk.sql");

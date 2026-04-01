@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import { PopupProvider } from './context/PopupContext';
+import { SimConnectProvider } from './context/SimConnectContext';
 import Header from './components/Header';
 import Setup from './pages/Setup';
 import Dashboard from './pages/Dashboard';
@@ -71,7 +72,9 @@ function App() {
     <Router>
       <PopupProvider>
         <PlayerProvider>
-          <AppContent />
+          <SimConnectProvider>
+            <AppContent />
+          </SimConnectProvider>
         </PlayerProvider>
       </PopupProvider>
     </Router>

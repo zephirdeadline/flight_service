@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex};
 use crate::db::{Database, queries};
 use crate::models::*;
-use crate::simconnect_service::{SimConnectService, AircraftPosition};
+use crate::simconnect_service::{SimConnectService, SimData};
 
 // ============= EXEMPLE : Get All Airports =============
 
@@ -399,8 +399,8 @@ pub fn simconnect_disconnect(
 #[tauri::command]
 pub fn simconnect_get_position(
     simconnect: tauri::State<SimConnectService>
-) -> Result<AircraftPosition, String> {
-    simconnect.inner().get_aircraft_position()
+) -> Result<SimData, String> {
+    simconnect.inner().get_sim_data()
 }
 
 #[tauri::command]

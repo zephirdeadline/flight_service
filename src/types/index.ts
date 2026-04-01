@@ -118,7 +118,7 @@ export interface MaintenanceRecord {
   description: string;
 }
 
-export interface AircraftPosition {
+export interface SimData {
   latitude: number;
   longitude: number;
   altitude: number;

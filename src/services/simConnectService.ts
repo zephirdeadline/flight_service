@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AircraftPosition } from '../types';
+import type { SimData } from '../types';
 
 export const simConnectService = {
   /**
@@ -26,7 +26,7 @@ export const simConnectService = {
   /**
    * Récupérer la position actuelle de l'avion dans Flight Simulator
    */
-  async getPosition(): Promise<AircraftPosition> {
+  async getPosition(): Promise<SimData> {
     return await invoke('simconnect_get_position');
   },
 

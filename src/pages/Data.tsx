@@ -1,102 +1,8 @@
-import { useState, useEffect } from 'react';
-import { listen } from '@tauri-apps/api/event';
-import { simConnectService } from '../services/simConnectService';
-import type { AircraftPosition } from '../types';
+import { useSimConnect } from '../context/SimConnectContext';
 import './Data.css';
 
 export default function Data() {
-  const [data, setData] = useState<AircraftPosition | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    autoConnect();
-    return () => {
-      simConnectService.stopStreaming();
-    };
-  }, []);
-
-  const autoConnect = async () => {
-    try {
-      const already = await simConnectService.isConnected();
-      if (already) {
-        setIsConnected(true);
-        const streaming = await simConnectService.isStreaming();
-        if (!streaming) await simConnectService.startStreaming();
-        return;
-      }
-      setLoading(true);
-      await simConnectService.connect();
-      await simConnectService.startStreaming();
-      setIsConnected(true);
-    } catch (err) {
-      setError(`MSFS not detected: ${err}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnect = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await simConnectService.connect();
-      await simConnectService.startStreaming();
-      setIsConnected(true);
-    } catch (err) {
-      setError(`Failed to connect: ${err}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    try {
-      await simConnectService.stopStreaming();
-      await simConnectService.disconnect();
-      setIsConnected(false);
-      setData(null);
-    } catch (err) {
-      setError(`Failed to disconnect: ${err}`);
-    }
-  };
-
-  const handleRefresh = async () => {
-    if (!isConnected) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const position = await simConnectService.getPosition();
-      console.log('[SimConnect] Position fetched:', position);
-      setData(position);
-    } catch (err) {
-      setError(`Failed to get data: ${err}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Écouter les événements de données depuis le backend
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    const setupListener = async () => {
-      unlisten = await listen<AircraftPosition>('simconnect-data', (event) => {
-        console.log('[SimConnect] Data received:', event.payload);
-        setData(event.payload);
-        setError(null);
-      });
-    };
-
-    setupListener();
-
-    return () => {
-      if (unlisten) {
-        unlisten();
-      }
-    };
-  }, []);
+  const { isStreaming, lastData: data } = useSimConnect();
 
   const renderGauge = (value: number, max: number, label: string, unit: string) => {
     const percentage = Math.min((value / max) * 100, 100);
@@ -104,10 +10,7 @@ export default function Data() {
       <div className="gauge">
         <div className="gauge-label">{label}</div>
         <div className="gauge-bar">
-          <div
-            className="gauge-fill"
-            style={{ width: `${percentage}%` }}
-          />
+          <div className="gauge-fill" style={{ width: `${percentage}%` }} />
         </div>
         <div className="gauge-value">{value.toFixed(1)} {unit}</div>
       </div>
@@ -129,46 +32,22 @@ export default function Data() {
     <div className="data-page">
       <div className="data-header">
         <h1>✈️ Aircraft Data</h1>
-        <div className="data-controls">
-          {!isConnected ? (
-            <button onClick={handleConnect} disabled={loading} className="btn-connect">
-              {loading ? 'Connecting...' : '🔌 Connect to Simulator'}
-            </button>
-          ) : (
-            <>
-              <button onClick={handleRefresh} disabled={loading} className="btn-refresh">
-                🔄 Refresh
-              </button>
-              <button onClick={handleDisconnect} className="btn-disconnect">
-                ⏹️ Disconnect
-              </button>
-              <span className="connection-status connected">● Connected</span>
-            </>
-          )}
-        </div>
       </div>
 
-      {error && (
-        <div className="data-error">
-          ⚠️ {error}
-        </div>
-      )}
-
-      {!isConnected && !error && (
+      {!isStreaming && !data && (
         <div className="data-placeholder">
-          <p>Connect to Flight Simulator 2024 to view real-time aircraft data</p>
+          <p>Start SimConnect streaming from the header to view real-time aircraft data</p>
         </div>
       )}
 
-      {isConnected && !data && (
+      {isStreaming && !data && (
         <div className="data-loading">
-          Loading data...
+          Waiting for data...
         </div>
       )}
 
       {data && (
         <div className="data-content">
-          {/* Position & Navigation */}
           <section className="data-section">
             <h2>📍 Position & Navigation</h2>
             <div className="data-grid">
@@ -213,7 +92,6 @@ export default function Data() {
             </div>
           </section>
 
-          {/* État du vol */}
           <section className="data-section">
             <h2>🛬 Flight Status</h2>
             <div className="status-grid">
@@ -229,7 +107,6 @@ export default function Data() {
             </div>
           </section>
 
-          {/* Fuel */}
           <section className="data-section">
             <h2>⛽ Fuel</h2>
             <div className="fuel-gauges">
@@ -244,7 +121,6 @@ export default function Data() {
             </div>
           </section>
 
-          {/* Moteurs */}
           <section className="data-section">
             <h2>🔧 Engines ({data.number_of_engines.toFixed(0)})</h2>
             <div className="engines-grid">
@@ -259,7 +135,6 @@ export default function Data() {
             </div>
           </section>
 
-          {/* Poids */}
           <section className="data-section">
             <h2>⚖️ Weight & Balance</h2>
             <div className="data-grid">
@@ -278,7 +153,6 @@ export default function Data() {
             </div>
           </section>
 
-          {/* Payload Stations */}
           {data.payload_station_count > 0 && (
             <section className="data-section">
               <h2>📦 Payload Stations ({data.payload_station_count.toFixed(0)})</h2>
@@ -304,7 +178,6 @@ export default function Data() {
             </section>
           )}
 
-          {/* Warnings */}
           <section className="data-section">
             <h2>⚠️ Warnings</h2>
             <div className="warnings-grid">
@@ -316,7 +189,6 @@ export default function Data() {
               </div>
             </div>
           </section>
-
         </div>
       )}
     </div>

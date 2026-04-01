@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { usePopup } from '../context/PopupContext';
-import { Mission, Airport, AircraftPosition } from '../types';
+import { Mission, Airport, SimData } from '../types';
 import { missionService } from '../services/missionService';
 import { airportService } from '../services/airportService';
 import { activeMissionService } from '../services/activeMissionService';
@@ -41,7 +41,7 @@ const MissionList: React.FC = () => {
   const [hasActiveMission, setHasActiveMission] = useState(false);
 
   // SimConnect
-  const [simPosition, setSimPosition] = useState<AircraftPosition | null>(null);
+  const [simPosition, setSimPosition] = useState<SimData | null>(null);
   const [simConnected, setSimConnected] = useState(false);
   const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

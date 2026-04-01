@@ -7,8 +7,10 @@ use std::thread;
 use std::time::Duration;
 use tauri::Emitter;
 
+use crate::db::Database;
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct AircraftPosition {
+pub struct SimData {
     pub latitude: f64,
     pub longitude: f64,
     pub altitude: f64,
@@ -118,71 +120,74 @@ impl SimConnectService {
             const DEF_ID: u32 = 0;
             const REQ_ID: u32 = 0;
 
-            // Dernier aéroport détecté pour éviter les écritures répétées
+            // Connexion dédiée au thread de streaming
+            let mut sim = simconnect::SimConnector::new();
+            Self::setup_data_definitions(&mut sim);
+
+            // MSFS pousse les données automatiquement chaque seconde
+            sim.request_data_on_sim_object(
+                REQ_ID, DEF_ID, 0,
+                simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SECOND,
+                0, 0, 0, 0,
+            );
+
             let mut last_airport_id: Option<String> = None;
 
             while streaming.load(Ordering::Relaxed) {
-                // Récupérer la position SimConnect (isolé dans catch_unwind)
-                let maybe_position = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let mut conn = connection.lock().ok()?;
-                    let sim = conn.as_mut()?;
-
-                    if !sim.request_data_on_sim_object(REQ_ID, DEF_ID, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_ONCE, 0, 0, 0, 0) {
-                        return None;
-                    }
-
-                    for _ in 0..50 {
-                        if let Ok(simconnect::DispatchResult::SimObjectData(data)) = sim.get_next_message() {
-                            unsafe {
-                                let data_ptr = std::ptr::addr_of!(data.dwData) as *const u8;
-                                let position = Self::parse_data(data_ptr);
-                                let _ = app_handle.emit("simconnect-data", position.clone());
-                                return Some(position);
-                            }
-                        }
-                        thread::sleep(Duration::from_millis(10));
-                    }
-                    None
+                let get_next_message_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    sim.get_next_message()
                 }));
 
-                match maybe_position {
+                match get_next_message_result {
                     Err(_) => {
-                        // Panic SimConnect, on arrête
-                        eprintln!("[SimConnect] Panic caught in streaming thread, stopping.");
+                        // Seul vrai panic
                         streaming.store(false, Ordering::Relaxed);
                         break;
                     }
-                    Ok(Some(position)) => {
-                        // Auto-détection d'aéroport quand au sol
-                        if position.sim_on_ground {
-                            if let Ok(db_guard) = db.lock() {
-                                if let Ok(Some(airport)) = crate::db::queries::find_airport_near_position(
-                                    db_guard.conn(),
-                                    position.latitude,
-                                    position.longitude,
-                                ) {
-                                    if last_airport_id.as_deref() != Some(&airport.id) {
-                                        let _ = crate::db::queries::set_player_airport(
-                                            db_guard.conn(),
-                                            "1",
-                                            &airport.id,
-                                        );
-                                        last_airport_id = Some(airport.id);
-                                    }
-                                }
-                            }
-                        } else {
-                            last_airport_id = None;
-                        }
+                    Ok(Ok(simconnect::DispatchResult::SimObjectData(data))) => {
+                        let data_ptr = std::ptr::addr_of!(data.dwData) as *const u8;
+                        let sim_data = unsafe { Self::parse_data(data_ptr) };
+                        Self::handle_sim_data(sim_data, &app_handle, &db, &last_airport_id);
                     }
-                    Ok(None) => {}
-                }
+                    Ok(_) => {} // autres messages SimConnect — ignorer
+                };
 
-                thread::sleep(Duration::from_secs(1));
+                thread::sleep(Duration::from_millis(10));
             }
+
+            // Dire à MSFS d'arrêter d'envoyer les données
+            sim.request_data_on_sim_object(
+                REQ_ID, DEF_ID, 0,
+                simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_NEVER,
+                0, 0, 0, 0,
+            );
         });
 
         Ok(())
+    }
+
+    fn handle_sim_data(sim_data: SimData, app_handle: &tauri::AppHandle, db: &Mutex<Database>, last_airport_id: &mut Option<String>) {
+        let _ = app_handle.emit("simconnect-data", sim_data.clone());
+        if sim_data.sim_on_ground {
+            if let Ok(db_guard) = db.lock() {
+                if let Ok(Some(airport)) = crate::db::queries::find_airport_near_position(
+                    db_guard.conn(),
+                    sim_data.latitude,
+                    sim_data.longitude,
+                ) {
+                    if last_airport_id.as_deref() != Some(&airport.id) {
+                        let _ = crate::db::queries::set_player_airport(
+                            db_guard.conn(),
+                            "1",
+                            &airport.id,
+                        );
+                        *last_airport_id = Some(airport.id);
+                    }
+                }
+            }
+        } else {
+            *last_airport_id = None;
+        }
     }
 
     pub fn stop_streaming(&self) {
@@ -327,14 +332,14 @@ impl SimConnectService {
         }
     }
 
-    unsafe fn parse_data(ptr: *const u8) -> AircraftPosition {
+    unsafe fn parse_data(ptr: *const u8) -> SimData {
         let mut offset = 0;
 
         // Tout est FLOAT64 : 8 bytes par champ, même ordre que setup_data_definitions
         let r = |i: usize| std::ptr::read_unaligned(ptr.add(i * 8) as *const f64);
 
 
-        AircraftPosition {
+        SimData {
             latitude:                   r(0),
             longitude:                  r(1),
             altitude:                   r(2),
@@ -387,7 +392,7 @@ impl SimConnectService {
         }
     }
 
-    pub fn get_aircraft_position(&self) -> Result<AircraftPosition, String> {
+    pub fn get_sim_data(&self) -> Result<SimData, String> {
         let mut conn = self.connection.lock()
             .map_err(|_| "Failed to lock connection".to_string())?;
 

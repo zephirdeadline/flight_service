@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { usePlayer } from '../context/PlayerContext';
+import { useSimConnect } from '../context/SimConnectContext';
 import './Header.css';
 
 const Header: React.FC = () => {
   const { player, currentAirport } = usePlayer();
+  const { isStreaming, startStreaming, stopStreaming } = useSimConnect();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -52,6 +54,12 @@ const Header: React.FC = () => {
         </nav>
 
         <div className="header-right">
+          <button
+            className={`simconnect-btn ${isStreaming ? 'streaming' : ''}`}
+            onClick={isStreaming ? stopStreaming : startStreaming}
+          >
+            {isStreaming ? '🔴 SimConnect' : '⚫ SimConnect'}
+          </button>
           <div className="money-display">
             <span className="money-icon">💰</span>
             <span className="money-amount">
