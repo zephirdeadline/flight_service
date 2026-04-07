@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection, Result};
-use crate::models::{Aircraft, AircraftType, OwnedAircraft, Player};
+use crate::models::{AircraftCatalog, AircraftType, OwnedAircraft, Player};
 use super::maintenance::{auto_complete_finished_maintenances, get_aircraft_maintenances, get_maintenance_history};
 
 pub fn create_player(
@@ -126,7 +126,7 @@ pub fn get_owned_aircraft(conn: &Connection, player_id: &str) -> Result<Vec<Owne
             current_airport_id: row.get(2)?,
             purchase_date: row.get(3)?,
             purchase_price: row.get(4)?,
-            aircraft: Aircraft {
+            aircraft: AircraftCatalog {
                 id: row.get(5)?,
                 name: row.get(6)?,
                 manufacturer: row.get(7)?,

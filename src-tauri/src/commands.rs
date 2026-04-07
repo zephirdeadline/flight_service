@@ -155,7 +155,7 @@ where
 #[tauri::command]
 pub fn get_all_aircraft(
     db: tauri::State<Arc<Mutex<Database>>>
-) -> Result<Vec<Aircraft>, String> {
+) -> Result<Vec<AircraftCatalog>, String> {
     // Plus simple avec le helper
     with_db(&db, |conn| queries::get_all_aircraft(conn))
 }
@@ -213,7 +213,7 @@ pub fn search_missions_to_airport(
 pub fn get_aircraft_by_id(
     db: tauri::State<Arc<Mutex<Database>>>,
     id: String,
-) -> Result<Option<Aircraft>, String> {
+) -> Result<Option<AircraftCatalog>, String> {
     with_db(&db, |conn| queries::get_aircraft_by_id(conn, &id))
 }
 
@@ -221,7 +221,7 @@ pub fn get_aircraft_by_id(
 pub fn get_aircraft_by_type(
     db: tauri::State<Arc<Mutex<Database>>>,
     aircraft_type: String,
-) -> Result<Vec<Aircraft>, String> {
+) -> Result<Vec<AircraftCatalog>, String> {
     with_db(&db, |conn| queries::get_aircraft_by_type(conn, &aircraft_type))
 }
 

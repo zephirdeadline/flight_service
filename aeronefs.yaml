@@ -1,0 +1,1454 @@
+# Base de données des aéronefs - extraite des captures MSFS
+# Prix en USD (approximatifs, au moment de production ou list price récent)
+# Autonomie en km, vitesse de croisière en km/h, masse en kg
+
+aircraft:
+
+  # ─── AVIONS DE LIGNE ───────────────────────────────────────────────────────
+
+  - nom_reel: "Boeing 737 MAX 8 / BBJ"
+    variantes_simulateur:
+      - "737 Max 8 BBJ"
+      - "737 Max 8 Passengers"
+    fabricant: Boeing
+    pays: USA
+    categorie: Avion de ligne moyen-courrier
+    premier_vol: 2016
+    fin_production: null
+    autonomie_km: 6570        # BBJ : 12960 km
+    vitesse_croisiere_kmh: 839
+    passagers_max: 210
+    mtow_kg: 88320
+    prix_usd: "121 000 000"
+    moteurs: "2x CFM LEAP-1B27"
+
+  - nom_reel: "Boeing 747-8F"
+    variantes_simulateur:
+      - "747-8F"
+    fabricant: Boeing
+    pays: USA
+    categorie: Avion cargo gros porteur
+    premier_vol: 2010
+    fin_production: 2022
+    autonomie_km: 8130
+    vitesse_croisiere_kmh: 903
+    charge_utile_max_kg: 134200
+    mtow_kg: 447696
+    prix_usd: "419 000 000"
+    moteurs: "4x GE GEnx-2B67"
+
+  - nom_reel: "Boeing 747-8i"
+    variantes_simulateur:
+      - "747-8i"
+    fabricant: Boeing
+    pays: USA
+    categorie: Avion de ligne gros porteur
+    premier_vol: 2011
+    fin_production: 2022
+    autonomie_km: 14815
+    vitesse_croisiere_kmh: 903
+    passagers_max: 467
+    mtow_kg: 447696
+    prix_usd: "403 000 000"
+    moteurs: "4x GE GEnx-2B67"
+
+  - nom_reel: "Airbus A310"
+    variantes_simulateur:
+      - "A310"
+    fabricant: Airbus
+    pays: France/Allemagne
+    categorie: Avion de ligne moyen/long-courrier
+    premier_vol: 1982
+    fin_production: 2007
+    autonomie_km: 9600
+    vitesse_croisiere_kmh: 850
+    passagers_max: 240
+    mtow_kg: 164000
+    prix_usd: "60 000 000"    # prix d'occasion variable
+    moteurs: "2x CF6-80C2 ou PW4000"
+
+  - nom_reel: "Airbus A320neo"
+    variantes_simulateur:
+      - "A320neo V2"
+      - "A320neo V2 VIP"
+    fabricant: Airbus
+    pays: France/Allemagne
+    categorie: Avion de ligne moyen-courrier
+    premier_vol: 2014
+    fin_production: null
+    autonomie_km: 6300
+    vitesse_croisiere_kmh: 833
+    passagers_max: 194
+    mtow_kg: 79000
+    prix_usd: "110 600 000"
+    moteurs: "2x CFM LEAP-1A ou P&W PW1100G"
+
+  - nom_reel: "Airbus A321"
+    variantes_simulateur:
+      - "A321"
+    fabricant: Airbus
+    pays: France/Allemagne
+    categorie: Avion de ligne moyen-courrier
+    premier_vol: 1993
+    fin_production: null
+    autonomie_km: 7400    # A321XLR
+    vitesse_croisiere_kmh: 833
+    passagers_max: 244
+    mtow_kg: 97000
+    prix_usd: "129 500 000"
+    moteurs: "2x CFM LEAP-1A ou P&W PW1100G"
+
+  # ─── AVIATION D'AFFAIRES ───────────────────────────────────────────────────
+
+  - nom_reel: "Daher TBM 930"
+    variantes_simulateur:
+      - "Asobo TBM 930 Passengers"
+    fabricant: Daher
+    pays: France
+    categorie: Turbopropulseur monomoteur haute performance
+    premier_vol: 2014
+    fin_production: null    # remplacé par TBM 960
+    autonomie_km: 3333
+    vitesse_croisiere_kmh: 611
+    passagers_max: 6
+    mtow_kg: 3354
+    prix_usd: "4 400 000"
+    moteurs: "1x Pratt & Whitney PT6A-66D"
+
+  - nom_reel: "Beechcraft King Air"
+    variantes_simulateur:
+      - "Beechcraft King Air"
+    fabricant: "Textron Aviation (Beechcraft)"
+    pays: USA
+    categorie: Bimoteur turbopropulseur
+    premier_vol: 1963
+    fin_production: null
+    autonomie_km: 2815    # C90GTx ; 350ER : 3600 km
+    vitesse_croisiere_kmh: 533
+    passagers_max: 15
+    mtow_kg: 6804    # variant 350
+    prix_usd: "7 000 000"    # selon variante
+    moteurs: "2x Pratt & Whitney PT6A"
+
+  - nom_reel: "Cessna Citation CJ4"
+    variantes_simulateur:
+      - "Cessna Citation CJ4"
+    fabricant: "Textron Aviation (Cessna)"
+    pays: USA
+    categorie: Jet d'affaires léger
+    premier_vol: 2008
+    fin_production: null
+    autonomie_km: 3378
+    vitesse_croisiere_kmh: 778
+    passagers_max: 9
+    mtow_kg: 7393
+    prix_usd: "9 400 000"
+    moteurs: "2x Williams FJ44-4A"
+
+  - nom_reel: "Pilatus PC-12 NGX"
+    variantes_simulateur:
+      - "PC-12 NGX Air Ambulance"
+      - "PC-12 NGX Passengers"
+      - "PC-12 NGX VIP"
+      - "PC-12NGX Cargo - Empty"
+      - "PC-12NGX Cargo - Loaded"
+    fabricant: Pilatus
+    pays: Suisse
+    categorie: Turbopropulseur monomoteur utilitaire/affaires
+    premier_vol: 1991    # PC-12 ; NGX en 2020
+    fin_production: null
+    autonomie_km: 3692
+    vitesse_croisiere_kmh: 528
+    passagers_max: 9
+    mtow_kg: 4740
+    prix_usd: "5 500 000"
+    moteurs: "1x Pratt & Whitney PT6E-67XP"
+
+  - nom_reel: "Cirrus Vision Jet SF50 (Microsoft Vision Jet)"
+    variantes_simulateur:
+      - "Microsoft Vision Jet Complete Seating"
+      - "Microsoft Vision Jet Executive Seating"
+      - "Microsoft Vision Jet Family Seating"
+    fabricant: Cirrus Aircraft
+    pays: USA
+    categorie: Jet personnel monomoteur (VLJ)
+    premier_vol: 2008
+    fin_production: null
+    autonomie_km: 2776
+    vitesse_croisiere_kmh: 685
+    passagers_max: 7
+    mtow_kg: 3583
+    prix_usd: "2 450 000"
+    moteurs: "1x Williams FJ33-5A"
+
+  - nom_reel: "Diamond DA62"
+    variantes_simulateur:
+      - "DA62 Passengers"
+      - "DA62 Scientific Research"
+    fabricant: Diamond Aircraft
+    pays: Autriche
+    categorie: Bimoteur piston léger
+    premier_vol: 2012
+    fin_production: null
+    autonomie_km: 1872
+    vitesse_croisiere_kmh: 354
+    passagers_max: 7
+    mtow_kg: 2300
+    prix_usd: "1 200 000"
+    moteurs: "2x AE300 (Continental CD-300) diesel"
+
+  - nom_reel: "Velocity Aircraft SE/XL"
+    variantes_simulateur:
+      - "Velocity Microsoft"
+    fabricant: Velocity Inc.
+    pays: USA
+    categorie: Avion kit composite canard pousseur
+    premier_vol: 1985
+    fin_production: null    # kits toujours disponibles
+    autonomie_km: 1850
+    vitesse_croisiere_kmh: 370
+    passagers_max: 4
+    mtow_kg: 1542
+    prix_usd: "150 000"    # kit, variable selon finition
+    moteurs: "1x Lycoming IO-540"
+    notes: "Avion monté en kit ; inclus dans MSFS avec livraison Microsoft"
+
+  # ─── AVIATION GÉNÉRALE ─────────────────────────────────────────────────────
+
+  - nom_reel: "Beechcraft Bonanza G36"
+    variantes_simulateur:
+      - "Beechcraft Bonanza"
+      - "Beechcraft Bonanza Private Charter"
+    fabricant: "Textron Aviation (Beechcraft)"
+    pays: USA
+    categorie: Monomoteur piston tourisme
+    premier_vol: 1945
+    fin_production: null
+    autonomie_km: 1658
+    vitesse_croisiere_kmh: 325
+    passagers_max: 6
+    mtow_kg: 1678
+    prix_usd: "900 000"
+    moteurs: "1x Continental IO-550-B"
+
+  - nom_reel: "Cessna 172SP Skyhawk (G1000)"
+    variantes_simulateur:
+      - "C172SP G1000 Aerial Advertising"
+      - "C172SP G1000 Cargo"
+      - "C172SP G1000 Passengers"
+      - "C172SP G1000 Passengers Floats"
+      - "C172SP G1000 Passengers Skis"
+      - "C172SP G1000 Skydive"
+      - "C172SP G1000 Tow"
+      - "Bushwheel"
+      - "Bushwheel 180hp"
+      - "Floatplane"
+      - "Floatplane 180hp"
+      - "Tundra 29in"
+      - "Tundra 29in 180HP"
+      - "Tundra 35in"
+      - "Tundra 35in 180hp"
+      - "Cessna Skyhawk Taildragger kit Blue & gray clean"
+      - "Cessna Skyhawk Taildragger kit Blue & gray dirty"
+      - "Cessna Skyhawk Taildragger kit Brown & beige clean"
+      - "Cessna Skyhawk Taildragger kit Brown & beige dirty"
+      - "Cessna Skyhawk Taildragger kit Brown & black clean"
+      - "Cessna Skyhawk Taildragger kit Burgundy clean"
+      - "Cessna Skyhawk Taildragger kit Burgundy dirty"
+      - "Cessna Skyhawk Taildragger kit Metal Red clean"
+      - "Cessna Skyhawk Taildragger kit Metal Red dirty"
+      - "Cessna Skyhawk Taildragger kit Olive clean"
+      - "Cessna Skyhawk Taildragger kit Olive dirty"
+      - "Cessna Skyhawk bushkit Blue & gray clean"
+      - "Cessna Skyhawk bushkit Blue & gray dirty"
+      - "Cessna Skyhawk bushkit Burgundy clean"
+      - "Cessna Skyhawk bushkit Burgundy dirty"
+      - "Cessna Skyhawk bushkit Green & gold dirty"
+    fabricant: "Textron Aviation (Cessna)"
+    pays: USA
+    categorie: Monomoteur piston école/tourisme
+    premier_vol: 1955    # 172 ; SP variant 1998
+    fin_production: null
+    autonomie_km: 1289
+    vitesse_croisiere_kmh: 226
+    passagers_max: 4
+    mtow_kg: 1111
+    prix_usd: "450 000"
+    moteurs: "1x Lycoming IO-360-L2A"
+    notes: "Variantes Tundra/Bushwheel = roues surdimensionnées bush. Floatplane = version hydravion. Taildragger/Bushkit = modifications de train."
+
+  - nom_reel: "Reims-Cessna FR172 Hawk XP"
+    variantes_simulateur:
+      - "Cessna 172 Hawk XP II Amphibian Blue and gray"
+      - "Cessna 172 Hawk XP II Amphibian I-GDMX"
+      - "Cessna 172 Hawk XP II Amphibian I-GDBM"
+      - "Cessna 172 Hawk XP II Amphibian Wendy"
+      - "Cessna 172 Hawk XP II Amphibian green"
+      - "Cessna 172 Hawk XP II Amphibian red"
+      - "Cessna 172 Hawk XP II C-GALR"
+      - "Cessna 172 Hawk XP II D-EBMG"
+      - "Cessna 172 Hawk XP II F-OMKS"
+      - "Cessna 172 Hawk XP II HB-CHG"
+      - "Cessna 172 Hawk XP II LY-000"
+      - "Cessna 172 Hawk XP II N17524J"
+      - "Cessna 172 Hawk XP II OE-DHX"
+      - "Cessna 172 Hawk XP II SF-PLR"
+    fabricant: "Reims Aviation / Cessna"
+    pays: France/USA
+    categorie: Monomoteur piston tourisme (moteur renforcé)
+    premier_vol: 1977
+    fin_production: 1981
+    autonomie_km: 1155
+    vitesse_croisiere_kmh: 232
+    passagers_max: 4
+    mtow_kg: 1089
+    prix_usd: "30 000"    # d'occasion uniquement
+    moteurs: "1x Continental IO-360-K (195 ch)"
+    notes: "Fabriqué par Reims Aviation en France. Variantes Amphibian = version hydravion avec flotteurs."
+
+  - nom_reel: "Reims FR172 Rocket"
+    variantes_simulateur:
+      - "Cessna 172 Reims Rocket"
+      - "Cessna 172 Reims Rocket D-ECJG"
+      - "Cessna 172 Reims Rocket D-EEDL"
+      - "Cessna 172 Reims Rocket D-EEZU"
+      - "Cessna 172 Reims Rocket D-EMQI"
+      - "Cessna 172 Reims Rocket F-GAGS"
+      - "Cessna 172 Reims Rocket MB-CDV"
+      - "Cessna 172 Reims Rocket Irish Air Corps"
+      - "Cessna 172 Reims Rocket N19515"
+      - "Cessna 172 Reims Rocket N7774J"
+      - "Cessna 172 Reims Rocket OK-GUK"
+      - "Cessna 172 Reims Rocket SP-ANT"
+    fabricant: "Reims Aviation"
+    pays: France
+    categorie: Monomoteur piston tourisme
+    premier_vol: 1971
+    fin_production: 1979
+    autonomie_km: 1100
+    vitesse_croisiere_kmh: 235
+    passagers_max: 4
+    mtow_kg: 1043
+    prix_usd: "25 000"    # d'occasion uniquement
+    moteurs: "1x Continental IO-360-H (210 ch)"
+    notes: "Version haute performance de la C172 fabriquée sous licence par Reims en France. Les immatriculations listées sont des appareils réels."
+
+  - nom_reel: "Cessna 152"
+    variantes_simulateur:
+      - "Cessna C152"
+      - "Cessna C152 Aerial Advertising"
+    fabricant: "Textron Aviation (Cessna)"
+    pays: USA
+    categorie: Monomoteur piston biplace école
+    premier_vol: 1977
+    fin_production: 1985
+    autonomie_km: 756
+    vitesse_croisiere_kmh: 196
+    passagers_max: 2
+    mtow_kg: 757
+    prix_usd: "45 000"    # d'occasion
+    moteurs: "1x Lycoming O-235-L2C (110 ch)"
+
+  - nom_reel: "Cessna A185F Skywagon"
+    variantes_simulateur:
+      - "C185F Skywagon Amphibious"
+      - "C185F Skywagon Fairing"
+      - "C185F Skywagon Ski"
+      - "C185F Skywagon Standard"
+      - "C185F Skywagon Tundra"
+    fabricant: Cessna
+    pays: USA
+    categorie: Monomoteur piston utilitaire STOL
+    premier_vol: 1961
+    fin_production: 1985
+    autonomie_km: 1393
+    vitesse_croisiere_kmh: 272
+    passagers_max: 6
+    mtow_kg: 1519
+    prix_usd: "130 000"    # d'occasion
+    moteurs: "1x Continental IO-520-D (300 ch)"
+
+  - nom_reel: "Cessna 208B Grand Caravan"
+    variantes_simulateur:
+      - "C208B Cargo"
+      - "C208B Floats Passengers"
+      - "C208B Medic"
+      - "C208B Passengers"
+      - "C208B Scientific"
+      - "C208B Skydive"
+    fabricant: "Textron Aviation (Cessna)"
+    pays: USA
+    categorie: Turbopropulseur monomoteur utilitaire/commuter
+    premier_vol: 1986
+    fin_production: null
+    autonomie_km: 1982
+    vitesse_croisiere_kmh: 341
+    passagers_max: 14
+    mtow_kg: 3629
+    prix_usd: "2 600 000"
+    moteurs: "1x Pratt & Whitney PT6A-114A"
+
+  - nom_reel: "Cessna 400 Corvalis TTx"
+    variantes_simulateur:
+      - "C400 Corvalis"
+    fabricant: "Textron Aviation (Cessna)"
+    pays: USA
+    categorie: Monomoteur piston haute performance
+    premier_vol: 2004    # Columbia 400, racheté par Cessna en 2007
+    fin_production: 2018
+    autonomie_km: 1992
+    vitesse_croisiere_kmh: 370
+    passagers_max: 4
+    mtow_kg: 1633
+    prix_usd: "800 000"
+    moteurs: "1x Continental TSIO-550-C (310 ch)"
+
+  - nom_reel: "Diamond DA40NG"
+    variantes_simulateur:
+      - "Diamond DA40NG"
+      - "Diamond DA40NG Private Charter"
+    fabricant: Diamond Aircraft
+    pays: Autriche
+    categorie: Monomoteur diesel tourisme
+    premier_vol: 2007    # variante NG
+    fin_production: null
+    autonomie_km: 1555
+    vitesse_croisiere_kmh: 315
+    passagers_max: 4
+    mtow_kg: 1200
+    prix_usd: "600 000"
+    moteurs: "1x Continental CD-300 (AE300) diesel"
+
+  - nom_reel: "Flight Design CTLS"
+    variantes_simulateur:
+      - "Flight Design CT"
+    fabricant: Flight Design GmbH
+    pays: Allemagne
+    categorie: ULM / LSA biplace
+    premier_vol: 2003
+    fin_production: null
+    autonomie_km: 1120
+    vitesse_croisiere_kmh: 230
+    passagers_max: 2
+    mtow_kg: 600
+    prix_usd: "200 000"
+    moteurs: "1x Rotax 912 ULS (100 ch)"
+
+  - nom_reel: "Grumman G-21 Goose"
+    variantes_simulateur:
+      - "Grumman Goose G21A"
+    fabricant: Grumman Aircraft
+    pays: USA
+    categorie: Hydravion amphibie bimoteur
+    premier_vol: 1937
+    fin_production: 1945
+    autonomie_km: 1287
+    vitesse_croisiere_kmh: 290
+    passagers_max: 8
+    mtow_kg: 3628
+    prix_usd: "800 000"    # d'occasion (très variable)
+    moteurs: "2x Pratt & Whitney R-985 Wasp Junior"
+
+  - nom_reel: "Icon A5"
+    variantes_simulateur:
+      - "Icon A5"
+    fabricant: Icon Aircraft
+    pays: USA
+    categorie: Hydravion amphibie LSA biplace
+    premier_vol: 2008
+    fin_production: null    # production très limitée
+    autonomie_km: 743
+    vitesse_croisiere_kmh: 174
+    passagers_max: 2
+    mtow_kg: 650
+    prix_usd: "389 000"
+    moteurs: "1x Rotax 912 iS (100 ch)"
+
+  - nom_reel: "JMB Aircraft VL3"
+    variantes_simulateur:
+      - "JMB Aviation VL3"
+    fabricant: JMB Aircraft
+    pays: République Tchèque
+    categorie: LSA biplace haute performance
+    premier_vol: 2016
+    fin_production: null
+    autonomie_km: 1200
+    vitesse_croisiere_kmh: 280
+    passagers_max: 2
+    mtow_kg: 600
+    prix_usd: "105 000"
+    moteurs: "1x Rotax 912 iS ou 915 iS"
+
+  - nom_reel: "Piper PA-28-236 Dakota"
+    variantes_simulateur:
+      - "Piper PA28-236 Dakota - Fairings"
+      - "Piper PA28-236 Dakota - Standard"
+    fabricant: Piper Aircraft
+    pays: USA
+    categorie: Monomoteur piston tourisme
+    premier_vol: 1979
+    fin_proquction: 1994
+    autonomie_km: 1497
+    vitesse_croisiere_kmh: 290
+    passagers_max: 4
+    mtow_kg: 1304
+    prix_usd: "80 000"    # d'occasion
+    moteurs: "1x Lycoming O-540-J3A5D (235 ch)"
+
+  - nom_reel: "Robin DR400"
+    variantes_simulateur:
+      - "Robin DR400"
+    fabricant: Robin Aircraft
+    pays: France
+    categorie: Monomoteur piston tourisme
+    premier_vol: 1972
+    fin_production: null
+    autonomie_km: 1300
+    vitesse_croisiere_kmh: 250
+    passagers_max: 4
+    mtow_kg: 1100
+    prix_usd: "220 000"    # neuf
+    moteurs: "1x Lycoming O-320 ou O-360"
+
+  - nom_reel: "Edgley EA-7 Optica"
+    variantes_simulateur:
+      - "Optica: Passengers"
+      - "Optica: Scientific Research"
+    fabricant: "Edgley Aircraft / Brooklands Aircraft"
+    pays: "Royaume-Uni"
+    categorie: Avion d'observation triplace
+    premier_vol: 1979
+    fin_production: 1993
+    autonomie_km: 1280
+    vitesse_croisiere_kmh: 233
+    passagers_max: 3
+    mtow_kg: 1225
+    prix_usd: "300 000"    # d'occasion
+    moteurs: "1x Avco Lycoming O-540-A4A5 (260 ch)"
+
+  # ─── AVIONS BUSH / STOL ────────────────────────────────────────────────────
+
+  - nom_reel: "De Havilland Canada DHC-2 Beaver"
+    variantes_simulateur:
+      - "DHC-2 Beaver Floats / Cargo / GPS"
+      - "DHC-2 Beaver Floats / Cargo / Radio + ADF"
+      - "DHC-2 Beaver Floats / Cargo / Radios"
+      - "DHC-2 Beaver Floats / Passenger Cabin / GPS"
+    fabricant: "De Havilland Canada (Viking Air)"
+    pays: Canada
+    categorie: Monomoteur piston utilitaire / hydravion STOL
+    premier_vol: 1947
+    fin_production: 1967    # original ; restaurations continues
+    autonomie_km: 1252
+    vitesse_croisiere_kmh: 217
+    passagers_max: 10    # 6 sur flotteurs
+    mtow_kg: 2313
+    prix_usd: "450 000"    # d'occasion restauré
+    moteurs: "1x Pratt & Whitney R-985 Wasp Junior (450 ch)"
+
+  - nom_reel: "De Havilland Canada DHC-6-300 Twin Otter"
+    variantes_simulateur:
+      - "DHC-6-300 Twin Otter Floats"
+      - "DHC-6-300 Twin Otter Skis"
+      - "DHC-6-300 Twin Otter Wheels"
+    fabricant: "De Havilland Canada (Viking Air)"
+    pays: Canada
+    categorie: Bimoteur turbopropulseur STOL utilitaire
+    premier_vol: 1965
+    fin_production: null    # Série 400 par Viking Air
+    autonomie_km: 1705
+    vitesse_croisiere_kmh: 338
+    passagers_max: 20
+    mtow_kg: 5670
+    prix_usd: "7 000 000"    # neuf Viking Air
+    moteurs: "2x Pratt & Whitney PT6A-27"
+
+  - nom_reel: "Pilatus PC-6 Porter"
+    variantes_simulateur:
+      - "Pilatus PC-6 G950 Floats"
+      - "Pilatus PC-6 G950 Wheels"
+      - "Pilatus PC-6 Gauge Skis"
+      - "Pilatus PC-6 Gauge Wheels"
+    fabricant: Pilatus
+    pays: Suisse
+    categorie: Turbopropulseur monomoteur STOL utilitaire
+    premier_vol: 1959
+    fin_production: 2019
+    autonomie_km: 1500
+    vitesse_croisiere_kmh: 222
+    passagers_max: 10
+    mtow_kg: 2800
+    prix_usd: "1 500 000"    # d'occasion
+    moteurs: "1x Pratt & Whitney PT6A-27"
+
+  - nom_reel: "CubCrafters XCub"
+    variantes_simulateur:
+      - "XCub Aerial Advertising"
+      - "XCub Passengers"
+      - "XCub Passengers Big Wheels"
+      - "XCub Passengers Floats"
+      - "XCub Passengers Skis"
+    fabricant: CubCrafters
+    pays: USA
+    categorie: Monomoteur piston STOL biplace
+    premier_vol: 2016
+    fin_production: null
+    autonomie_km: 1100
+    vitesse_croisiere_kmh: 230
+    passagers_max: 2
+    mtow_kg: 884
+    prix_usd: "300 000"
+    moteurs: "1x Continental IO-390-C3B6 (180 ch)"
+
+  - nom_reel: "CubCrafters NXCub"
+    variantes_simulateur:
+      - "NXcub"
+      - "NXcub Aerial Advertising"
+    fabricant: CubCrafters
+    pays: USA
+    categorie: Monomoteur piston STOL biplace
+    premier_vol: 2018
+    fin_production: null
+    autonomie_km: 800
+    vitesse_croisiere_kmh: 213
+    passagers_max: 2
+    mtow_kg: 726
+    prix_usd: "350 000"
+    moteurs: "1x Continental IO-390"
+
+  - nom_reel: "Draco (Mike Patey - Piper Pawnee modifié)"
+    variantes_simulateur:
+      - "Draco X: Cargo"
+      - "Draco X: Passengers"
+    fabricant: Mike Patey (custom)
+    pays: USA
+    categorie: Avion bush STOL turbopropulseur one-off
+    premier_vol: 2018
+    fin_production: null    # exemplaire unique (détruit 2019, en reconstruction)
+    autonomie_km: 1600
+    vitesse_croisiere_kmh: 370
+    passagers_max: 2
+    mtow_kg: ~1500
+    prix_usd: null    # inestimable, one-off
+    moteurs: "1x Walter M601 turbopropulseur"
+    notes: "Basé sur un Piper PA-25 Pawnee modifié de façon extrême. Unique au monde. Détruit lors d'un accident en 2019."
+
+  - nom_reel: "Smaug (Mike Patey - Cessna 172 modifié)"
+    variantes_simulateur:
+      - "Smaug Ace of Spades Floats"
+      - "Smaug Ace of Spades Tundra"
+      - "Smaug Alabaster RT Floats"
+      - "Smaug Alabaster RT Tundra"
+      - "Smaug Alabaster ST Floats"
+      - "Smaug Alabaster ST Tundra"
+      - "Smaug Biggles Floats"
+      - "Smaug Biggles Tundra"
+      - "Smaug Blackjack RT Floats"
+      - "Smaug Blackjack RT Tundra"
+      - "Smaug Blackjack ST Floats"
+      - "Smaug Blackjack ST Tundra"
+      - "Smaug Blackjack WT Floats"
+      - "Smaug Blackjack WT Tundra"
+      - "Smaug Brown Dog Floats"
+      - "Smaug Brown Dog Tundra"
+      - "Smaug Bush Divers Floats"
+      - "Smaug Bush Divers Tundra"
+      - "Smaug Calypso RT Floats"
+      - "Smaug Calypso RT Tundra"
+      - "Smaug Calypso ST Floats"
+      - "Smaug Calypso ST Tundra"
+      - "Smaug Calypso WT Floats"
+      - "Smaug Calypso WT Tundra"
+      - "Smaug ChunkyFlyer Floats"
+      - "Smaug ChunkyFlyer Tundra"
+      - "Smaug ClockStopper Floats"
+      - "Smaug ClockStopper Tundra"
+      - "Smaug Comic Crazy Floats"
+      - "Smaug Comic Crazy Tundra"
+      - "Smaug Crimson RT Floats"
+      - "Smaug Crimson RT Tundra"
+      - "Smaug Crimson ST Floats"
+      - "Smaug Crimson ST Tundra"
+      - "Smaug Crimson WT Floats"
+      - "Smaug Crimson WT Tundra"
+      - "Smaug DHParadox Floats"
+      - "Smaug DHParadox Tundra"
+      - "Smaug DannyMalloy Floats"
+      - "Smaug DannyMalloy Tundra"
+      - "Smaug Emerald RT Floats"
+      - "Smaug Emerald RT Tundra"
+      - "Smaug Emerald ST Floats"
+      - "Smaug Emerald ST Tundra"
+      - "Smaug Emerald WT Floats"
+      - "Smaug Emerald WT Tundra"
+      - "Smaug Fender46 Floats"
+      - "Smaug Fender46 Tundra"
+      - "Smaug Floxtrot Floats"
+      - "Smaug Floxtrot Tundra"
+      - "Smaug FlynDive Floats"
+      - "Smaug FlynDive Tundra"
+      - "Smaug Grim Floats"
+      - "Smaug Grim Tundra"
+      - "Smaug Gromit Floats"
+      - "Smaug Gromit Tundra"
+      - "Smaug Grunge RT Floats"
+      - "Smaug Grunge RT Tundra"
+      - "Smaug Grunge ST Floats"
+      - "Smaug Grunge ST Tundra"
+      - "Smaug Grunge WT Floats"
+      - "Smaug Grunge WT Tundra"
+      - "Smaug ItsNorCally Floats"
+      - "Smaug ItsNorCally Tundra"
+      - "Smaug Kaida Floats"
+      - "Smaug Kaida Tundra"
+      - "Smaug Kit Kat Floats"
+      - "Smaug Kit Kat Tundra"
+      - "Smaug Limerick RT Floats"
+      - "Smaug Limerick RT Tundra"
+      - "Smaug Limerick ST Floats"
+      - "Smaug Limerick ST Tundra"
+      - "Smaug Limerick WT Floats"
+      - "Smaug Limerick WT Tundra"
+      - "Smaug Nimbus RT Floats"
+      - "Smaug Nimbus RT Tundra"
+      - "Smaug Nimbus ST Floats"
+      - "Smaug Nimbus ST Tundra"
+      - "Smaug PapaMeesh Floats"
+      - "Smaug PapaMeesh Tundra"
+      - "Smaug Poseidon RT Floats"
+      - "Smaug Poseidon RT Tundra"
+      - "Smaug Poseidon ST Floats"
+      - "Smaug Poseidon ST Tundra"
+      - "Smaug Rudder58 Floats"
+      - "Smaug Rudder58 Tundra"
+      - "Smaug Scratch Floats"
+      - "Smaug Scratch Tundra"
+      - "Smaug Sean 768 Floats"
+      - "Smaug Sean 768 Tundra"
+      - "Smaug Sleeveless Floats"
+      - "Smaug Sleeveless Tundra"
+      - "Smaug Sunburst RT Floats"
+      - "Smaug Sunburst RT Tundra"
+      - "Smaug Sunburst ST Floats"
+      - "Smaug Sunburst ST Tundra"
+      - "Smaug Treetop Flyer Floats"
+      - "Smaug Treetop Flyer Tundra"
+      - "Smaug Zox Floats"
+      - "Smaug Zox Tundra"
+    fabricant: Mike Patey (custom)
+    pays: USA
+    categorie: Avion bush STOL extrême one-off
+    premier_vol: 2021
+    fin_production: null    # exemplaire unique
+    autonomie_km: ~1200
+    vitesse_croisiere_kmh: ~210
+    passagers_max: 4
+    mtow_kg: ~1200
+    prix_usd: null    # inestimable, one-off
+    moteurs: "1x Lycoming (modifié)"
+    notes: "Successeur de Draco. Cessna 172 massivement modifié avec roues tundra géantes (29\" ou 35\"). Les noms de livraison (Floats/Tundra) indiquent la configuration du train d'atterrissage. Successeur de Draco."
+
+  - nom_reel: "Zlin Savage Cub (Zilin Aviation)"
+    variantes_simulateur:
+      - "Zilin Aviation Savage Cub"
+      - "Zilin Aviation Savage Cub Aerial Advertising"
+      - "Zilin Aviation Savage Cub Rescue"
+    fabricant: "Zlin Aviation (anciennement ICP)"
+    pays: République Tchèque
+    categorie: ULM / LSA STOL biplace
+    premier_vol: 2000
+    fin_production: null
+    autonomie_km: 800
+    vitesse_croisiere_kmh: 170
+    passagers_max: 2
+    mtow_kg: 600
+    prix_usd: "100 000"
+    moteurs: "1x Rotax 912 ULS (100 ch)"
+
+  # ─── HÉLICOPTÈRES ──────────────────────────────────────────────────────────
+
+  - nom_reel: "Bell UH-1H Iroquois (Huey)"
+    variantes_simulateur:
+      - "BELL UH-1H Iroquois Cargo"
+      - "BELL UH-1H Iroquois Rescue Hoist"
+    fabricant: Bell Helicopter
+    pays: USA
+    categorie: Hélicoptère militaire utilitaire
+    premier_vol: 1956
+    fin_production: 1987    # USA ; continue ailleurs
+    autonomie_km: 600
+    vitesse_croisiere_kmh: 204
+    passagers_max: 14
+    mtow_kg: 4763
+    prix_usd: null    # militaire historique
+    moteurs: "1x Lycoming T53-L-13B"
+
+  - nom_reel: "Bell 407"
+    variantes_simulateur:
+      - "Bell 407"
+    fabricant: Bell Textron
+    pays: USA
+    categorie: Hélicoptère civil monomoteur
+    premier_vol: 1995
+    fin_production: null
+    autonomie_km: 611
+    vitesse_croisiere_kmh: 226
+    passagers_max: 7
+    mtow_kg: 2722
+    prix_usd: "2 100 000"
+    moteurs: "1x Rolls-Royce 250-C47B"
+
+  - nom_reel: "Hélicoptères Guimbal Cabri G2"
+    variantes_simulateur:
+      - "Cabri G2 Passengers"
+    fabricant: "Hélicoptères Guimbal (groupe Airbus)"
+    pays: France
+    categorie: Hélicoptère école biplace léger
+    premier_vol: 2005
+    fin_production: null
+    autonomie_km: 720
+    vitesse_croisiere_kmh: 185
+    passagers_max: 2
+    mtow_kg: 700
+    prix_usd: "450 000"
+    moteurs: "1x Rolls-Royce RR300"
+
+  - nom_reel: "Airbus H125 (ex-AS350 Écureuil)"
+    variantes_simulateur:
+      - "H125 AerialApp"
+      - "H125 Cargo"
+      - "H125 Passengers"
+      - "H125 Rescue"
+      - "H125 Rescue No Hoist"
+    fabricant: Airbus Helicopters
+    pays: France
+    categorie: Hélicoptère civil monomoteur polyvalent
+    premier_vol: 1974    # AS350 ; H125 en 2015
+    fin_production: null
+    autonomie_km: 651
+    vitesse_croisiere_kmh: 246
+    passagers_max: 6
+    mtow_kg: 2250
+    prix_usd: "2 500 000"
+    moteurs: "1x Safran Arriel 2D"
+
+  - nom_reel: "Eurocopter EC135T1"
+    variantes_simulateur:
+      - "Eurocopter EC-135T1 Ambulance"
+      - "Eurocopter EC-135T1 Passenger"
+      - "Eurocopter EC-135T1 Search and Rescue"
+      - "Eurocopter EC-135T1 Sightseeing"
+    fabricant: "Eurocopter (Airbus Helicopters)"
+    pays: France/Allemagne
+    categorie: Hélicoptère bimoteur léger
+    premier_vol: 1994
+    fin_production: null    # EC135T3 en production
+    autonomie_km: 635
+    vitesse_croisiere_kmh: 254
+    passagers_max: 8
+    mtow_kg: 2910
+    prix_usd: "4 000 000"
+    moteurs: "2x Pratt & Whitney Canada PW206B"
+
+  - nom_reel: "Robinson R66 Turbine"
+    variantes_simulateur:
+      - "R66 Turbine Passenger"
+      - "R66 Turbine Spray System"
+    fabricant: Robinson Helicopter
+    pays: USA
+    categorie: Hélicoptère turbine léger
+    premier_vol: 2007
+    fin_production: null
+    autonomie_km: 603
+    vitesse_croisiere_kmh: 222
+    passagers_max: 5
+    mtow_kg: 1225
+    prix_usd: "1 000 000"
+    moteurs: "1x Rolls-Royce RR300"
+
+  - nom_reel: "Sikorsky S-64 Skycrane"
+    variantes_simulateur:
+      - "S-64F Skycrane Default Configuration"
+      - "S-64F Skycrane Firefighting Configuration"
+      - "S-64F Skycrane Lifting Configuration"
+    fabricant: "Sikorsky / Erickson Incorporated"
+    pays: USA
+    categorie: Hélicoptère grue lourd
+    premier_vol: 1962
+    fin_production: null    # reconstructions par Erickson
+    autonomie_km: 370
+    vitesse_croisiere_kmh: 203
+    charge_utile_kg: 9072
+    mtow_kg: 19050
+    prix_usd: "4 500 000"    # d'occasion
+    moteurs: "2x Pratt & Whitney JFTD12A-5A"
+
+  # ─── AVIONS MILITAIRES / DÉFENSE ───────────────────────────────────────────
+
+  - nom_reel: "Fairchild Republic A-10C Thunderbolt II"
+    variantes_simulateur:
+      - "A10C Thunderbolt II"
+    fabricant: "Fairchild Republic"
+    pays: USA
+    categorie: Avion d'attaque au sol
+    premier_vol: 1972
+    fin_production: 1984
+    autonomie_km: 1800
+    vitesse_croisiere_kmh: 560
+    mtow_kg: 23000
+    prix_usd: "18 800 000"    # dollars 1994
+    moteurs: "2x GE TF34-GE-100A"
+
+  - nom_reel: "Boeing F/A-18E Super Hornet"
+    variantes_simulateur:
+      - "FA18E SuperHornet"
+    fabricant: Boeing
+    pays: USA
+    categorie: Chasseur multirôle embarqué
+    premier_vol: 1995
+    fin_production: null
+    autonomie_km: 2346    # ferry
+    vitesse_max_kmh: 1915    # Mach 1.8
+    mtow_kg: 29937
+    prix_usd: "67 400 000"
+    moteurs: "2x GE F414-GE-400"
+
+  - nom_reel: "Aero L-39 Albatros"
+    variantes_simulateur:
+      - "L-39 Albatros"
+    fabricant: Aero Vodochody
+    pays: République Tchèque
+    categorie: Jet d'entraînement militaire
+    premier_vol: 1968
+    fin_production: 1999
+    autonomie_km: 1100
+    vitesse_croisiere_kmh: 700
+    passagers_max: 2
+    mtow_kg: 4700
+    prix_usd: "1 000 000"    # civil d'occasion
+    moteurs: "1x Ivchenko AI-25TL"
+
+  - nom_reel: "North American T-6 Texan"
+    variantes_simulateur:
+      - "North American T-6 Texan Reno"
+    fabricant: North American Aviation
+    pays: USA
+    categorie: Avion d'entraînement militaire WWII
+    premier_vol: 1938
+    fin_production: 1945
+    autonomie_km: 1175
+    vitesse_croisiere_kmh: 300
+    passagers_max: 2
+    mtow_kg: 2404
+    prix_usd: "300 000"    # vintage en état de vol
+    moteurs: "1x Pratt & Whitney R-1340 Wasp (600 ch)"
+
+  - nom_reel: "North American P-51 Mustang"
+    variantes_simulateur:
+      - "P51 Mustang"
+    fabricant: North American Aviation
+    pays: USA
+    categorie: Chasseur long rayon d'action WWII
+    premier_vol: 1940
+    fin_production: 1945
+    autonomie_km: 2755    # avec réservoirs supplémentaires
+    vitesse_croisiere_kmh: 580
+    passagers_max: 1
+    mtow_kg: 5490
+    prix_usd: "2 500 000"    # vintage en état de vol
+    moteurs: "1x Rolls-Royce/Packard Merlin V-1650-7 (1490 ch)"
+
+  - nom_reel: "Consolidated B-24 Liberator"
+    variantes_simulateur:
+      - "Consolidated B-24D Liberator - Diamond Lil"
+      - "Consolidated B-24D Liberator - Fightin Sam"
+      - "Consolidated B-24D Liberator - PB4Y-1"
+      - "Consolidated B-24D Liberator - RAF No.1586"
+      - "Consolidated B-24D Liberator - Sandman"
+      - "Consolidated B-24D Liberator - Strawberry Bitch"
+      - "Consolidated B-24D Liberator - Training"
+      - "Consolidated B-24J Liberator - Breezy Lady"
+      - "Consolidated B-24J Liberator - Irish Angel II/She Wolf"
+      - "Consolidated B-24J Liberator - That's All Brother"
+      - "Consolidated B-24J Liberator - The Beast"
+      - "Consolidated B-24J Liberator - Witchcraft"
+    fabricant: Consolidated Aircraft
+    pays: USA
+    categorie: Bombardier lourd quadrimoteur WWII
+    premier_vol: 1939
+    fin_production: 1945
+    autonomie_km: 3380
+    vitesse_croisiere_kmh: 383
+    mtow_kg: 29484
+    prix_usd: null    # militaire historique
+    moteurs: "4x Pratt & Whitney R-1830-65 Twin Wasp (1200 ch chacun)"
+    notes: "Les noms correspondent à des appareils historiques réels. PB4Y-1 = variante navale."
+
+  # ─── AVIONS ACROBATIQUES ───────────────────────────────────────────────────
+
+  - nom_reel: "Aviat Pitts S-1"
+    variantes_simulateur:
+      - "Aviat Pitts S1"
+    fabricant: Aviat Aircraft
+    pays: USA
+    categorie: Biplan acrobatique monoplace
+    premier_vol: 1944
+    fin_production: null
+    autonomie_km: 563
+    vitesse_croisiere_kmh: 241
+    passagers_max: 1
+    mtow_kg: 521
+    prix_usd: "350 000"
+    moteurs: "1x Lycoming AEIO-360"
+
+  - nom_reel: "Aviat Pitts S-2"
+    variantes_simulateur:
+      - "Aviat Pitts S2"
+    fabricant: Aviat Aircraft
+    pays: USA
+    categorie: Biplan acrobatique biplace
+    premier_vol: 1967
+    fin_production: null
+    autonomie_km: 563
+    vitesse_croisiere_kmh: 241
+    passagers_max: 2
+    mtow_kg: 748
+    prix_usd: "450 000"
+    moteurs: "1x Lycoming AEIO-540"
+
+  - nom_reel: "Zivko Edge 540"
+    variantes_simulateur:
+      - "Edge540 v2"
+      - "Edge540 v3 Bullet"
+      - "Edge540 v3 Kirby Chambliss"
+      - "Edge540 v3 Martin Sonka"
+      - "Edge540 v3 Matt Hall"
+    fabricant: Zivko Aeronautics
+    pays: USA
+    categorie: Monoplan acrobatique monoplace
+    premier_vol: 1993
+    fin_production: null
+    autonomie_km: 800
+    vitesse_croisiere_kmh: 370
+    passagers_max: 1
+    mtow_kg: 770
+    prix_usd: "400 000"
+    moteurs: "1x Lycoming AEIO-540"
+    notes: "Avion de la Red Bull Air Race. Les variantes portent les noms des pilotes célèbres."
+
+  - nom_reel: "Extra 330"
+    variantes_simulateur:
+      - "Extra 330 Passengers"
+    fabricant: Extra Aircraft
+    pays: Allemagne
+    categorie: Monoplan acrobatique mono/biplace
+    premier_vol: 1988
+    fin_production: null
+    autonomie_km: 1000
+    vitesse_croisiere_kmh: 330
+    passagers_max: 2
+    mtow_kg: 950
+    prix_usd: "420 000"
+    moteurs: "1x Lycoming AEIO-540-L1B5"
+
+  - nom_reel: "MXS-R"
+    variantes_simulateur:
+      - "MXS-R"
+      - "MXS-R Race"
+    fabricant: Zivko Aeronautics
+    pays: USA
+    categorie: Monoplan acrobatique Red Bull Air Race
+    premier_vol: 2008
+    fin_production: null    # production limitée sur commande
+    autonomie_km: 800
+    vitesse_croisiere_kmh: 385
+    passagers_max: 1
+    mtow_kg: 750
+    prix_usd: "350 000"
+    moteurs: "1x Lycoming IO-580"
+
+  - nom_reel: "Robin CAP 10"
+    variantes_simulateur:
+      - "Robin CAP10"
+    fabricant: "Robin / Apex Aircraft"
+    pays: France
+    categorie: Monoplan acrobatique biplace
+    premier_vol: 1968
+    fin_production: null
+    autonomie_km: 900
+    vitesse_croisiere_kmh: 250
+    passagers_max: 2
+    mtow_kg: 760
+    prix_usd: "240 000"
+    moteurs: "1x Lycoming AEIO-360"
+
+  - nom_reel: "CAP 4 Paulistinha (EAY)"
+    variantes_simulateur:
+      - "CAP-4"
+    fabricant: "Companhia Aeronáutica Paulista (CAP)"
+    pays: Brésil
+    categorie: Avion école léger biplace
+    premier_vol: 1943
+    fin_production: 1960
+    autonomie_km: 700
+    vitesse_croisiere_kmh: 160
+    passagers_max: 2
+    mtow_kg: 650
+    prix_usd: null    # historique, très rare
+    moteurs: "1x Continental A65 (65 ch)"
+    notes: "Les immatriculations PP-xxx et PT-xxx sont brésiliennes. Avion de collection rare."
+
+  # ─── AVIONS HISTORIQUES ────────────────────────────────────────────────────
+
+  - nom_reel: "Curtiss JN-4 Jenny"
+    variantes_simulateur:
+      - "Curtiss JN-4 Jenny"
+    fabricant: Curtiss Aeroplane
+    pays: USA
+    categorie: Biplan école WWI
+    premier_vol: 1915
+    fin_production: 1927
+    autonomie_km: 370
+    vitesse_croisiere_kmh: 120
+    passagers_max: 2
+    mtow_kg: 871
+    prix_usd: null    # pièce de musée
+    moteurs: "1x Curtiss OX-5 (90 ch)"
+
+  - nom_reel: "Douglas DC-3"
+    variantes_simulateur:
+      - "Douglas DC-3 Aviators Club modern"
+      - "Douglas DC-3 Aviators XBOX Club"
+      - "Douglas DC-3 BLUE STRIPE"
+      - "Douglas DC-3 DCDIRECT"
+      - "Douglas DC-3 DUSTY"
+      - "Douglas DC-3 EMERALD HARBOR"
+      - "Douglas DC-3 METAL LEFT"
+      - "Douglas DC-3 Metal - classic"
+      - "Douglas DC-3 RED YELLOW"
+      - "Douglas DC-3 WHITE - classic"
+      - "Douglas DC-3 WORLD TRAVEL"
+    fabricant: Douglas Aircraft
+    pays: USA
+    categorie: Bimoteur piston transport/cargo
+    premier_vol: 1935
+    fin_production: 1950    # modifications et rénovations continuent
+    autonomie_km: 2400
+    vitesse_croisiere_kmh: 333
+    passagers_max: 36
+    mtow_kg: 11793
+    prix_usd: "400 000"    # d'occasion variable
+    moteurs: "2x Pratt & Whitney R-1830 Twin Wasp"
+
+  - nom_reel: "Ryan NYP Spirit of St. Louis"
+    variantes_simulateur:
+      - "Spirit of St.Louis"
+    fabricant: Ryan Airlines
+    pays: USA
+    categorie: Monoplan long-courrier historique
+    premier_vol: 1927
+    fin_production: 1927    # 1 exemplaire construit
+    autonomie_km: 6400
+    vitesse_croisiere_kmh: 172
+    passagers_max: 1
+    mtow_kg: 2383
+    prix_usd: null    # pièce de musée (Smithsonian)
+    moteurs: "1x Wright J-5C Whirlwind (223 ch)"
+    notes: "Utilisé par Charles Lindbergh pour la première traversée solo de l'Atlantique le 20-21 mai 1927."
+
+  - nom_reel: "Wright Flyer"
+    variantes_simulateur:
+      - "Wright Flyer"
+    fabricant: Wright Brothers
+    pays: USA
+    categorie: Premier avion motorisé
+    premier_vol: 1903
+    fin_production: 1905
+    autonomie_km: 0.26    # 260 mètres lors du premier vol
+    vitesse_croisiere_kmh: 48
+    passagers_max: 1
+    mtow_kg: 340
+    prix_usd: null    # pièce de musée (Smithsonian)
+    moteurs: "1x Wright 4-cylindres (12 ch)"
+    notes: "Premier vol motorisé contrôlé de l'histoire, le 17 décembre 1903 à Kitty Hawk, NC."
+
+  - nom_reel: "Hughes H-4 Hercules (Spruce Goose)"
+    variantes_simulateur:
+      - "Hercules H-4"
+    fabricant: Hughes Aircraft
+    pays: USA
+    categorie: Hydravion géant de transport
+    premier_vol: 1947
+    fin_production: 1947    # 1 seul exemplaire
+    autonomie_km: null    # n'a volé qu'une fois (~1,6 km)
+    vitesse_croisiere_kmh: 407    # théorique
+    passagers_max: 750    # théorique
+    mtow_kg: 181000
+    prix_usd: null    # museum piece
+    moteurs: "8x Pratt & Whitney R-4360 Wasp Major (3000 ch chacun)"
+    notes: "N'a volé qu'une seule fois (environ 1,6 km à 21 m d'altitude). Exposé à Everett, Washington."
+
+  - nom_reel: "Ilyushin Il-103"
+    variantes_simulateur:
+      - "Ilyushin Il-103 EP-817"
+      - "Ilyushin Il-103 ROKAF 05011"
+      - "Ilyushin Il-103 RA-02011"
+      - "il-103"
+      - "il-103 improved"
+      - "il-103 improved Clean"
+      - "il-103 improved RA-10321"
+      - "il-103 improved Static"
+      - "il-103 improved RA-1917"
+    fabricant: Ilyushin
+    pays: Russie
+    categorie: Monomoteur piston école/tourisme
+    premier_vol: 1994
+    fin_production: 2012
+    autonomie_km: 1350
+    vitesse_croisiere_kmh: 230
+    passagers_max: 4
+    mtow_kg: 1310
+    prix_usd: "120 000"
+    moteurs: "1x VOKBM M-14P (360 ch)"
+    notes: "Les immatriculations EP-xxx (Iran), RA-xxx (Russie), ROKAF (Corée du Sud). Variante 'improved' = version modernisée."
+
+  # ─── AVIONS LÉGERS / ULM ───────────────────────────────────────────────────
+
+  - nom_reel: "CGS Hawk Arrow II"
+    variantes_simulateur:
+      - "CGS Hawk Arrow II"
+    fabricant: CGS Aviation
+    pays: USA
+    categorie: ULM monoplace
+    premier_vol: 1990
+    fin_production: 2005
+    autonomie_km: 400
+    vitesse_croisiere_kmh: 145
+    passagers_max: 1
+    mtow_kg: 450
+    prix_usd: "30 000"    # kit d'occasion
+    moteurs: "1x Rotax 503 ou Briggs & Stratton"
+
+  - nom_reel: "Magni Gyro M24 Plus"
+    variantes_simulateur:
+      - "Magni M24 Plus White"
+    fabricant: Magni Gyro
+    pays: Italie
+    categorie: Autogire biplace
+    premier_vol: 2005
+    fin_production: null
+    autonomie_km: 600
+    vitesse_croisiere_kmh: 150
+    passagers_max: 2
+    mtow_kg: 560
+    prix_usd: "65 000"
+    moteurs: "1x Rotax 914 (115 ch)"
+
+  - nom_reel: "Powrachute Sky Rascal"
+    variantes_simulateur:
+      - "Powrachute Sky Rascal"
+    fabricant: Powrachute
+    pays: USA
+    categorie: Parachute motorisé (trike)
+    premier_vol: null
+    fin_production: null
+    autonomie_km: 200
+    vitesse_croisiere_kmh: 50
+    passagers_max: 1
+    mtow_kg: 300
+    prix_usd: "20 000"
+    moteurs: "1x monocylindre 2-temps (variable)"
+
+  # ─── AVIONS INCENDIE ───────────────────────────────────────────────────────
+
+  - nom_reel: "Bombardier CL-415 (SuperScooper)"
+    variantes_simulateur:
+      - "CL415 Firefighting"
+    fabricant: "Bombardier (De Havilland Canada)"
+    pays: Canada
+    categorie: Amphibien bombardier d'eau
+    premier_vol: 1993
+    fin_production: 2015
+    autonomie_km: 2426
+    vitesse_croisiere_kmh: 370
+    capacite_eau_litres: 6130
+    mtow_kg: 19890
+    prix_usd: "30 000 000"
+    moteurs: "2x Pratt & Whitney Canada PW123AF"
+
+  # ─── PLANEURS ──────────────────────────────────────────────────────────────
+
+  - nom_reel: "DG Flugzeugbau LS8"
+    variantes_simulateur:
+      - "DG LS8"
+    fabricant: "DG Flugzeugbau (ex Rolladen-Schneider)"
+    pays: Allemagne
+    categorie: Planeur monoplace de compétition
+    premier_vol: 1994
+    fin_production: 2014
+    finesse: 47
+    vitesse_croisiere_kmh: 130
+    passagers_max: 1
+    mtow_kg: 600
+    prix_usd: "90 000"
+    moteurs: null
+
+  - nom_reel: "DG Flugzeugbau 1001E Neo"
+    variantes_simulateur:
+      - "DG-1001-E Neo"
+    fabricant: DG Flugzeugbau
+    pays: Allemagne
+    categorie: Motoplaneur biplace
+    premier_vol: 2010
+    fin_production: null
+    finesse: 45
+    autonomie_km: 900
+    vitesse_croisiere_kmh: 140
+    passagers_max: 2
+    mtow_kg: 850
+    prix_usd: "200 000"
+    moteurs: "1x Solo 2350C (moteur escamotable)"
+
+  # ─── EVTOL / AVENIR ────────────────────────────────────────────────────────
+
+  - nom_reel: "Jetson ONE"
+    variantes_simulateur:
+      - "Jetson One"
+    fabricant: Jetson
+    pays: Suède
+    categorie: eVTOL monoplace personnel
+    premier_vol: 2021
+    fin_production: null
+    autonomie_km: 80
+    vitesse_croisiere_kmh: 100
+    passagers_max: 1
+    mtow_kg: 190
+    prix_usd: "92 000"
+    moteurs: "8x moteurs électriques"
+
+  - nom_reel: "Joby Aviation S4"
+    variantes_simulateur:
+      - "Joby"
+    fabricant: Joby Aviation
+    pays: USA
+    categorie: eVTOL taxi aérien
+    premier_vol: 2017    # prototype
+    fin_production: null    # certification en cours
+    autonomie_km: 241
+    vitesse_croisiere_kmh: 322
+    passagers_max: 5
+    mtow_kg: 2177
+    prix_usd: null    # service taxi, prix non divulgué
+    moteurs: "6x rotors électriques basculants"
+
+  - nom_reel: "Archer Midnight"
+    variantes_simulateur:
+      - "Midnight"
+    fabricant: Archer Aviation
+    pays: USA
+    categorie: eVTOL taxi aérien
+    premier_vol: 2022
+    fin_production: null    # certification en cours
+    autonomie_km: 100
+    vitesse_croisiere_kmh: 240
+    passagers_max: 5
+    mtow_kg: ~3175
+    prix_usd: null    # service taxi
+    moteurs: "12x rotors électriques"
+
+  - nom_reel: "Heart Aerospace ES-30"
+    variantes_simulateur:
+      - "ES30 Passengers"
+    fabricant: Heart Aerospace
+    pays: Suède
+    categorie: Avion régional hybride-électrique
+    premier_vol: null    # en développement (~2028)
+    fin_production: null
+    autonomie_km: 400    # électrique pur ; 800 km hybride
+    vitesse_croisiere_kmh: 430
+    passagers_max: 30
+    mtow_kg: ~18000
+    prix_usd: null    # en développement
+    moteurs: "4x moteurs électriques + turbogénérateurs"
+
+  - nom_reel: "Boom Supersonic XB-1"
+    variantes_simulateur:
+      - "Boom XB-1"
+    fabricant: Boom Supersonic
+    pays: USA
+    categorie: Démonstrateur supersonique
+    premier_vol: 2023
+    fin_production: null    # démonstrateur, 1 exemplaire
+    vitesse_max_kmh: 2716    # Mach 2.2 objectif
+    mtow_kg: ~6350
+    prix_usd: null    # démonstrateur
+    moteurs: "3x GE J85-15"
+    notes: "Démonstrateur technologique pour le futur Overture (avion de ligne supersonique). 1 seul exemplaire construit."
+
+  # ─── AVIONS SPÉCIAUX / DIRIGEABLES ────────────────────────────────────────
+
+  - nom_reel: "Airship Industries Skyship 600"
+    variantes_simulateur:
+      - "Skyship600 Passenger"
+    fabricant: Airship Industries
+    pays: "Royaume-Uni"
+    categorie: Dirigeable souple non rigide
+    premier_vol: 1984
+    fin_production: 1990
+    autonomie_km: 3200
+    vitesse_croisiere_kmh: 90
+    passagers_max: 8
+    longueur_m: 61
+    prix_usd: null    # hors production
+    moteurs: "2x Porsche 930 (200 ch chacun)"
+
+  - nom_reel: "S12-G (dirigeable / aéronef indéterminé)"
+    variantes_simulateur:
+      - "S12-G: Passengers"
+    fabricant: inconnu
+    pays: inconnu
+    categorie: Aéronef non identifié avec certitude (possible dirigeable)
+    notes: "Apparaît dans le simulateur avec livraisons GERMANY, PIONEER, USA. Probablement un dirigeable ou blimp de surveillance."
+
+  # ─── AÉRONEFS FICTIFS / SIMULATEUR UNIQUEMENT ─────────────────────────────
+
+  - nom_reel: "Ballon à air chaud (générique)"
+    variantes_simulateur:
+      - "HotAirBalloon Passengers"
+    fabricant: générique
+    categorie: Ballon à air chaud
+    premier_vol: 1783    # Montgolfier
+    fin_production: null
+    autonomie_km: ~500    # variable selon vent
+    vitesse_croisiere_kmh: ~30    # selon vent
+    passagers_max: 4
+    mtow_kg: ~700
+    prix_usd: "30 000"    # ballon standard
+
+  - nom_reel: "FlyDoo (fictif simulateur)"
+    variantes_simulateur:
+      - "FlyDoo Passengers"
+    fabricant: fictif / add-on MSFS
+    categorie: Aéronef fictif
+    notes: "Aéronef conceptuel ou fictif créé pour le simulateur."
+
+  - nom_reel: "Scrapyard / SeaMonster (véhicules fictifs)"
+    variantes_simulateur:
+      - "Scrapyard Dia de los Muertos"
+      - "Scrapyard Hot Rod"
+      - "Scrapyard Monster Hypercar"
+      - "Scrapyard Monster Rusty Baron"
+      - "Scrapyard SeaMonster Dia de los Muertos"
+      - "Scrapyard SeaMonster Hot Rod"
+      - "Scrapyard SeaMonster Hypercar"
+      - "Scrapyard SeaMonster Rusty Baron"
+    fabricant: fictif / add-on MSFS
+    categorie: Véhicules fictifs (buggy / voiture / monstre)
+    notes: "Véhicules de fiction inclus comme add-on amusant dans MSFS."
+
+  - nom_reel: "Dune Buggy (fictif)"
+    variantes_simulateur:
+      - "Dune Buggy"
+    fabricant: fictif / add-on MSFS
+    categorie: Véhicule terrestre fictif
+    notes: "Véhicule terrestre fictif (buggy des dunes) inclus dans MSFS."

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use super::Aircraft;
+use super::AircraftCatalog;
 
 /// Représente un avion possédé avec toutes ses informations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -10,5 +10,5 @@ pub struct OwnedAircraft {
     pub current_airport_id: String,
     pub purchase_date: String,
     pub purchase_price: i64,
-    pub aircraft: Aircraft,
+    pub aircraft: AircraftCatalog,
 }

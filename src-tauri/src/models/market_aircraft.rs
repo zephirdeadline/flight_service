@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use super::{Aircraft, Airport};
+use super::{AircraftCatalog, Airport};
 
 /// Représente une offre d'avion sur le marché (occasion ou neuf)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MarketAircraft {
     pub id: String, // ID unique de l'offre (généré depuis seed)
-    pub aircraft: Aircraft, // Informations du catalogue
+    pub aircraft: AircraftCatalog, // Informations du catalogue
     pub location: Airport, // Où se trouve l'avion
     pub distance: i32, // Distance depuis la position du joueur (NM)
     pub price: i64, // Prix de vente (peut être réduit si occasion)

@@ -1,0 +1,1567 @@
+# Catalogue des aéronefs — données issues de aeronefs.yaml
+# range en NM (km × 0.54), vitesses en nœuds (km/h × 0.54)
+# Champs requis par AircraftCatalog (Rust/serde)
+
+# ── AVIATION GÉNÉRALE ────────────────────────────────────────────────────────
+
+- id: "cessna-c152"
+  name: "Cessna 152"
+  manufacturer: "Textron Aviation (Cessna)"
+  type: passenger
+  price: 45000
+  capacity: 2
+  range: 408
+  cruiseSpeed: 106
+  maxSpeed: 126
+  fuelCapacity: 130
+  fuelConsumption: 22.0
+  emptyWeight: 490
+  maxTakeoffWeight: 757
+  serviceCeiling: 14700
+  rateOfClimb: 715
+  wingspan: 10.0
+  length: 7.34
+  maintenanceCostPerHour: 50
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "cessna-172sp"
+  name: "Cessna 172SP Skyhawk"
+  manufacturer: "Textron Aviation (Cessna)"
+  type: passenger
+  price: 450000
+  capacity: 4
+  range: 696
+  cruiseSpeed: 122
+  maxSpeed: 142
+  fuelCapacity: 212
+  fuelConsumption: 36.0
+  emptyWeight: 767
+  maxTakeoffWeight: 1111
+  serviceCeiling: 14000
+  rateOfClimb: 721
+  wingspan: 11.0
+  length: 8.28
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "reims-fr172-hawk-xp"
+  name: "Reims-Cessna FR172 Hawk XP"
+  manufacturer: "Reims Aviation / Cessna"
+  type: passenger
+  price: 30000
+  capacity: 4
+  range: 624
+  cruiseSpeed: 125
+  maxSpeed: 143
+  fuelCapacity: 150
+  fuelConsumption: 28.0
+  emptyWeight: 680
+  maxTakeoffWeight: 1089
+  serviceCeiling: 14000
+  rateOfClimb: 760
+  wingspan: 10.92
+  length: 8.20
+  maintenanceCostPerHour: 60
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "reims-fr172-rocket"
+  name: "Reims FR172 Rocket"
+  manufacturer: "Reims Aviation"
+  type: passenger
+  price: 25000
+  capacity: 4
+  range: 594
+  cruiseSpeed: 127
+  maxSpeed: 149
+  fuelCapacity: 160
+  fuelConsumption: 32.0
+  emptyWeight: 650
+  maxTakeoffWeight: 1043
+  serviceCeiling: 15000
+  rateOfClimb: 900
+  wingspan: 10.92
+  length: 8.20
+  maintenanceCostPerHour: 65
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "diamond-da40ng"
+  name: "Diamond DA40NG"
+  manufacturer: "Diamond Aircraft"
+  type: passenger
+  price: 600000
+  capacity: 4
+  range: 839
+  cruiseSpeed: 170
+  maxSpeed: 194
+  fuelCapacity: 120
+  fuelConsumption: 25.0
+  emptyWeight: 780
+  maxTakeoffWeight: 1200
+  serviceCeiling: 18000
+  rateOfClimb: 800
+  wingspan: 11.94
+  length: 8.06
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "diamond-da62"
+  name: "Diamond DA62"
+  manufacturer: "Diamond Aircraft"
+  type: passenger
+  price: 1200000
+  capacity: 7
+  range: 1010
+  cruiseSpeed: 191
+  maxSpeed: 216
+  fuelCapacity: 285
+  fuelConsumption: 60.0
+  emptyWeight: 1350
+  maxTakeoffWeight: 2300
+  serviceCeiling: 20000
+  rateOfClimb: 1100
+  wingspan: 14.51
+  length: 8.95
+  maintenanceCostPerHour: 150
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "beechcraft-bonanza"
+  name: "Beechcraft Bonanza G36"
+  manufacturer: "Textron Aviation (Beechcraft)"
+  type: passenger
+  price: 900000
+  capacity: 6
+  range: 895
+  cruiseSpeed: 175
+  maxSpeed: 200
+  fuelCapacity: 290
+  fuelConsumption: 55.0
+  emptyWeight: 1050
+  maxTakeoffWeight: 1678
+  serviceCeiling: 18500
+  rateOfClimb: 1050
+  wingspan: 10.21
+  length: 8.38
+  maintenanceCostPerHour: 120
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "cessna-400-corvalis"
+  name: "Cessna 400 Corvalis TTx"
+  manufacturer: "Textron Aviation (Cessna)"
+  type: passenger
+  price: 800000
+  capacity: 4
+  range: 1075
+  cruiseSpeed: 200
+  maxSpeed: 230
+  fuelCapacity: 285
+  fuelConsumption: 55.0
+  emptyWeight: 1040
+  maxTakeoffWeight: 1633
+  serviceCeiling: 25000
+  rateOfClimb: 1400
+  wingspan: 11.2
+  length: 7.93
+  maintenanceCostPerHour: 120
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "flight-design-ct"
+  name: "Flight Design CTLS"
+  manufacturer: "Flight Design GmbH"
+  type: passenger
+  price: 200000
+  capacity: 2
+  range: 605
+  cruiseSpeed: 124
+  maxSpeed: 140
+  fuelCapacity: 90
+  fuelConsumption: 15.0
+  emptyWeight: 330
+  maxTakeoffWeight: 600
+  serviceCeiling: 14000
+  rateOfClimb: 550
+  wingspan: 8.60
+  length: 6.31
+  maintenanceCostPerHour: 30
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "grumman-goose"
+  name: "Grumman G-21 Goose"
+  manufacturer: "Grumman Aircraft"
+  type: both
+  price: 800000
+  capacity: 8
+  range: 695
+  cruiseSpeed: 157
+  maxSpeed: 180
+  fuelCapacity: 900
+  fuelConsumption: 140.0
+  emptyWeight: 2380
+  maxTakeoffWeight: 3628
+  serviceCeiling: 21000
+  rateOfClimb: 1000
+  wingspan: 14.96
+  length: 11.74
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "icon-a5"
+  name: "Icon A5"
+  manufacturer: "Icon Aircraft"
+  type: passenger
+  price: 389000
+  capacity: 2
+  range: 401
+  cruiseSpeed: 94
+  maxSpeed: 108
+  fuelCapacity: 100
+  fuelConsumption: 19.0
+  emptyWeight: 448
+  maxTakeoffWeight: 650
+  serviceCeiling: 12000
+  rateOfClimb: 500
+  wingspan: 10.58
+  length: 6.91
+  maintenanceCostPerHour: 40
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "jmb-vl3"
+  name: "JMB Aircraft VL3"
+  manufacturer: "JMB Aircraft"
+  type: passenger
+  price: 105000
+  capacity: 2
+  range: 648
+  cruiseSpeed: 151
+  maxSpeed: 168
+  fuelCapacity: 95
+  fuelConsumption: 16.0
+  emptyWeight: 300
+  maxTakeoffWeight: 600
+  serviceCeiling: 14000
+  rateOfClimb: 600
+  wingspan: 9.50
+  length: 6.50
+  maintenanceCostPerHour: 35
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "piper-pa28-dakota"
+  name: "Piper PA-28-236 Dakota"
+  manufacturer: "Piper Aircraft"
+  type: passenger
+  price: 80000
+  capacity: 4
+  range: 808
+  cruiseSpeed: 157
+  maxSpeed: 180
+  fuelCapacity: 290
+  fuelConsumption: 50.0
+  emptyWeight: 785
+  maxTakeoffWeight: 1304
+  serviceCeiling: 17500
+  rateOfClimb: 980
+  wingspan: 10.97
+  length: 7.52
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "robin-dr400"
+  name: "Robin DR400"
+  manufacturer: "Robin Aircraft"
+  type: passenger
+  price: 220000
+  capacity: 4
+  range: 702
+  cruiseSpeed: 135
+  maxSpeed: 157
+  fuelCapacity: 190
+  fuelConsumption: 35.0
+  emptyWeight: 660
+  maxTakeoffWeight: 1100
+  serviceCeiling: 15000
+  rateOfClimb: 800
+  wingspan: 8.72
+  length: 6.96
+  maintenanceCostPerHour: 70
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "edgley-optica"
+  name: "Edgley EA-7 Optica"
+  manufacturer: "Edgley Aircraft / Brooklands Aircraft"
+  type: passenger
+  price: 300000
+  capacity: 3
+  range: 691
+  cruiseSpeed: 126
+  maxSpeed: 143
+  fuelCapacity: 200
+  fuelConsumption: 36.0
+  emptyWeight: 730
+  maxTakeoffWeight: 1225
+  serviceCeiling: 15000
+  rateOfClimb: 700
+  wingspan: 12.0
+  length: 8.99
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "velocity-se"
+  name: "Velocity Aircraft SE/XL"
+  manufacturer: "Velocity Inc."
+  type: passenger
+  price: 150000
+  capacity: 4
+  range: 999
+  cruiseSpeed: 200
+  maxSpeed: 220
+  fuelCapacity: 280
+  fuelConsumption: 55.0
+  emptyWeight: 900
+  maxTakeoffWeight: 1542
+  serviceCeiling: 23000
+  rateOfClimb: 1400
+  wingspan: 8.84
+  length: 5.49
+  maintenanceCostPerHour: 90
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "ilyushin-il103"
+  name: "Ilyushin Il-103"
+  manufacturer: "Ilyushin"
+  type: passenger
+  price: 120000
+  capacity: 4
+  range: 729
+  cruiseSpeed: 124
+  maxSpeed: 148
+  fuelCapacity: 170
+  fuelConsumption: 35.0
+  emptyWeight: 805
+  maxTakeoffWeight: 1310
+  serviceCeiling: 13800
+  rateOfClimb: 650
+  wingspan: 10.56
+  length: 8.00
+  maintenanceCostPerHour: 60
+  maxFlightHoursBeforeMaintenance: 100
+
+# ── AVIONS UTILITAIRES / BUSH / STOL ─────────────────────────────────────────
+
+- id: "cessna-a185f"
+  name: "Cessna A185F Skywagon"
+  manufacturer: "Cessna"
+  type: both
+  price: 130000
+  capacity: 6
+  range: 752
+  cruiseSpeed: 147
+  maxSpeed: 168
+  fuelCapacity: 340
+  fuelConsumption: 70.0
+  emptyWeight: 879
+  maxTakeoffWeight: 1519
+  serviceCeiling: 17150
+  rateOfClimb: 1010
+  wingspan: 10.92
+  length: 7.85
+  maintenanceCostPerHour: 90
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "dhc2-beaver"
+  name: "De Havilland DHC-2 Beaver"
+  manufacturer: "De Havilland Canada (Viking Air)"
+  type: both
+  price: 450000
+  capacity: 6
+  range: 676
+  cruiseSpeed: 117
+  maxSpeed: 154
+  fuelCapacity: 530
+  fuelConsumption: 100.0
+  emptyWeight: 1260
+  maxTakeoffWeight: 2313
+  serviceCeiling: 18000
+  rateOfClimb: 1020
+  wingspan: 14.63
+  length: 9.24
+  maintenanceCostPerHour: 120
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "pilatus-pc6"
+  name: "Pilatus PC-6 Porter"
+  manufacturer: "Pilatus"
+  type: both
+  price: 1500000
+  capacity: 10
+  range: 810
+  cruiseSpeed: 120
+  maxSpeed: 151
+  fuelCapacity: 530
+  fuelConsumption: 130.0
+  emptyWeight: 1220
+  maxTakeoffWeight: 2800
+  serviceCeiling: 25000
+  rateOfClimb: 1150
+  wingspan: 15.87
+  length: 11.0
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "cessna-208b"
+  name: "Cessna 208B Grand Caravan"
+  manufacturer: "Textron Aviation (Cessna)"
+  type: both
+  price: 2600000
+  capacity: 14
+  range: 1070
+  cruiseSpeed: 184
+  maxSpeed: 200
+  fuelCapacity: 1500
+  fuelConsumption: 200.0
+  emptyWeight: 2145
+  maxTakeoffWeight: 3629
+  serviceCeiling: 25000
+  rateOfClimb: 975
+  wingspan: 15.88
+  length: 12.67
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "cubcrafters-xcub"
+  name: "CubCrafters XCub"
+  manufacturer: "CubCrafters"
+  type: passenger
+  price: 300000
+  capacity: 2
+  range: 594
+  cruiseSpeed: 124
+  maxSpeed: 140
+  fuelCapacity: 135
+  fuelConsumption: 35.0
+  emptyWeight: 540
+  maxTakeoffWeight: 884
+  serviceCeiling: 20000
+  rateOfClimb: 1350
+  wingspan: 10.74
+  length: 6.71
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "cubcrafters-nxcub"
+  name: "CubCrafters NXCub"
+  manufacturer: "CubCrafters"
+  type: passenger
+  price: 350000
+  capacity: 2
+  range: 432
+  cruiseSpeed: 115
+  maxSpeed: 132
+  fuelCapacity: 110
+  fuelConsumption: 32.0
+  emptyWeight: 440
+  maxTakeoffWeight: 726
+  serviceCeiling: 18000
+  rateOfClimb: 1200
+  wingspan: 10.51
+  length: 6.45
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "draco-x"
+  name: "Draco X"
+  manufacturer: "Mike Patey (custom)"
+  type: both
+  price: 5000000
+  capacity: 2
+  range: 864
+  cruiseSpeed: 200
+  maxSpeed: 240
+  fuelCapacity: 400
+  fuelConsumption: 90.0
+  emptyWeight: 900
+  maxTakeoffWeight: 1500
+  serviceCeiling: 25000
+  rateOfClimb: 3000
+  wingspan: 11.0
+  length: 8.0
+  maintenanceCostPerHour: 300
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "smaug"
+  name: "Smaug"
+  manufacturer: "Mike Patey (custom)"
+  type: both
+  price: 3000000
+  capacity: 4
+  range: 648
+  cruiseSpeed: 113
+  maxSpeed: 135
+  fuelCapacity: 200
+  fuelConsumption: 40.0
+  emptyWeight: 720
+  maxTakeoffWeight: 1200
+  serviceCeiling: 18000
+  rateOfClimb: 2000
+  wingspan: 11.0
+  length: 8.28
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "zlin-savage-cub"
+  name: "Zlin Savage Cub"
+  manufacturer: "Zlin Aviation"
+  type: passenger
+  price: 100000
+  capacity: 2
+  range: 432
+  cruiseSpeed: 92
+  maxSpeed: 108
+  fuelCapacity: 90
+  fuelConsumption: 16.0
+  emptyWeight: 330
+  maxTakeoffWeight: 600
+  serviceCeiling: 13000
+  rateOfClimb: 550
+  wingspan: 9.20
+  length: 6.27
+  maintenanceCostPerHour: 30
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "dhc6-twin-otter"
+  name: "De Havilland DHC-6-300 Twin Otter"
+  manufacturer: "De Havilland Canada (Viking Air)"
+  type: both
+  price: 7000000
+  capacity: 20
+  range: 920
+  cruiseSpeed: 182
+  maxSpeed: 204
+  fuelCapacity: 2050
+  fuelConsumption: 350.0
+  emptyWeight: 3360
+  maxTakeoffWeight: 5670
+  serviceCeiling: 25000
+  rateOfClimb: 1390
+  wingspan: 19.81
+  length: 15.77
+  maintenanceCostPerHour: 600
+  maxFlightHoursBeforeMaintenance: 250
+
+- id: "douglas-dc3"
+  name: "Douglas DC-3"
+  manufacturer: "Douglas Aircraft"
+  type: both
+  price: 400000
+  capacity: 36
+  range: 1296
+  cruiseSpeed: 180
+  maxSpeed: 210
+  fuelCapacity: 4770
+  fuelConsumption: 420.0
+  emptyWeight: 7650
+  maxTakeoffWeight: 11793
+  serviceCeiling: 23200
+  rateOfClimb: 1100
+  wingspan: 28.96
+  length: 19.66
+  maintenanceCostPerHour: 300
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "bombardier-cl415"
+  name: "Bombardier CL-415 SuperScooper"
+  manufacturer: "Bombardier (De Havilland Canada)"
+  type: both
+  price: 30000000
+  capacity: 10
+  range: 1310
+  cruiseSpeed: 200
+  maxSpeed: 234
+  fuelCapacity: 6000
+  fuelConsumption: 800.0
+  emptyWeight: 12882
+  maxTakeoffWeight: 19890
+  serviceCeiling: 25000
+  rateOfClimb: 1500
+  wingspan: 28.63
+  length: 19.82
+  maintenanceCostPerHour: 3000
+  maxFlightHoursBeforeMaintenance: 250
+
+# ── AVIATION D'AFFAIRES ───────────────────────────────────────────────────────
+
+- id: "cirrus-sf50"
+  name: "Cirrus Vision Jet SF50"
+  manufacturer: "Cirrus Aircraft"
+  type: passenger
+  price: 2450000
+  capacity: 7
+  range: 1500
+  cruiseSpeed: 370
+  maxSpeed: 405
+  fuelCapacity: 900
+  fuelConsumption: 200.0
+  emptyWeight: 1900
+  maxTakeoffWeight: 3583
+  serviceCeiling: 31000
+  rateOfClimb: 2800
+  wingspan: 12.31
+  length: 9.25
+  maintenanceCostPerHour: 300
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "daher-tbm930"
+  name: "Daher TBM 930"
+  manufacturer: "Daher"
+  type: passenger
+  price: 4400000
+  capacity: 6
+  range: 1800
+  cruiseSpeed: 330
+  maxSpeed: 368
+  fuelCapacity: 1500
+  fuelConsumption: 250.0
+  emptyWeight: 2100
+  maxTakeoffWeight: 3354
+  serviceCeiling: 31000
+  rateOfClimb: 2100
+  wingspan: 12.68
+  length: 10.65
+  maintenanceCostPerHour: 400
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "beechcraft-king-air"
+  name: "Beechcraft King Air"
+  manufacturer: "Textron Aviation (Beechcraft)"
+  type: passenger
+  price: 7000000
+  capacity: 15
+  range: 1520
+  cruiseSpeed: 288
+  maxSpeed: 318
+  fuelCapacity: 3000
+  fuelConsumption: 450.0
+  emptyWeight: 3810
+  maxTakeoffWeight: 6804
+  serviceCeiling: 35000
+  rateOfClimb: 2100
+  wingspan: 17.65
+  length: 14.22
+  maintenanceCostPerHour: 700
+  maxFlightHoursBeforeMaintenance: 250
+
+- id: "pilatus-pc12"
+  name: "Pilatus PC-12 NGX"
+  manufacturer: "Pilatus"
+  type: both
+  price: 5500000
+  capacity: 9
+  range: 1994
+  cruiseSpeed: 285
+  maxSpeed: 310
+  fuelCapacity: 1900
+  fuelConsumption: 300.0
+  emptyWeight: 2812
+  maxTakeoffWeight: 4740
+  serviceCeiling: 30000
+  rateOfClimb: 1600
+  wingspan: 16.28
+  length: 14.40
+  maintenanceCostPerHour: 500
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "cessna-citation-cj4"
+  name: "Cessna Citation CJ4"
+  manufacturer: "Textron Aviation (Cessna)"
+  type: passenger
+  price: 9400000
+  capacity: 9
+  range: 1824
+  cruiseSpeed: 420
+  maxSpeed: 451
+  fuelCapacity: 4000
+  fuelConsumption: 600.0
+  emptyWeight: 4800
+  maxTakeoffWeight: 7393
+  serviceCeiling: 45000
+  rateOfClimb: 3900
+  wingspan: 15.58
+  length: 15.60
+  maintenanceCostPerHour: 900
+  maxFlightHoursBeforeMaintenance: 300
+
+# ── AVIONS DE LIGNE ───────────────────────────────────────────────────────────
+
+- id: "airbus-a310"
+  name: "Airbus A310"
+  manufacturer: "Airbus"
+  type: passenger
+  price: 60000000
+  capacity: 240
+  range: 5184
+  cruiseSpeed: 459
+  maxSpeed: 487
+  fuelCapacity: 55210
+  fuelConsumption: 4500.0
+  emptyWeight: 80000
+  maxTakeoffWeight: 164000
+  serviceCeiling: 41000
+  rateOfClimb: 2000
+  wingspan: 43.89
+  length: 46.66
+  maintenanceCostPerHour: 4000
+  maxFlightHoursBeforeMaintenance: 400
+
+- id: "airbus-a320neo"
+  name: "Airbus A320neo"
+  manufacturer: "Airbus"
+  type: passenger
+  price: 110600000
+  capacity: 194
+  range: 3402
+  cruiseSpeed: 450
+  maxSpeed: 473
+  fuelCapacity: 26730
+  fuelConsumption: 2500.0
+  emptyWeight: 42600
+  maxTakeoffWeight: 79000
+  serviceCeiling: 39800
+  rateOfClimb: 2500
+  wingspan: 35.8
+  length: 37.57
+  maintenanceCostPerHour: 5000
+  maxFlightHoursBeforeMaintenance: 500
+
+- id: "airbus-a321"
+  name: "Airbus A321"
+  manufacturer: "Airbus"
+  type: passenger
+  price: 129500000
+  capacity: 244
+  range: 3996
+  cruiseSpeed: 450
+  maxSpeed: 473
+  fuelCapacity: 32940
+  fuelConsumption: 2800.0
+  emptyWeight: 48500
+  maxTakeoffWeight: 97000
+  serviceCeiling: 39800
+  rateOfClimb: 2400
+  wingspan: 35.8
+  length: 44.51
+  maintenanceCostPerHour: 5500
+  maxFlightHoursBeforeMaintenance: 500
+
+- id: "boeing-737-max8"
+  name: "Boeing 737 MAX 8"
+  manufacturer: "Boeing"
+  type: passenger
+  price: 121000000
+  capacity: 210
+  range: 3548
+  cruiseSpeed: 453
+  maxSpeed: 473
+  fuelCapacity: 25817
+  fuelConsumption: 2700.0
+  emptyWeight: 45070
+  maxTakeoffWeight: 88320
+  serviceCeiling: 41000
+  rateOfClimb: 2500
+  wingspan: 35.9
+  length: 39.52
+  maintenanceCostPerHour: 5500
+  maxFlightHoursBeforeMaintenance: 500
+
+- id: "boeing-747-8i"
+  name: "Boeing 747-8i"
+  manufacturer: "Boeing"
+  type: passenger
+  price: 403000000
+  capacity: 467
+  range: 8000
+  cruiseSpeed: 488
+  maxSpeed: 516
+  fuelCapacity: 226100
+  fuelConsumption: 12000.0
+  emptyWeight: 178756
+  maxTakeoffWeight: 447696
+  serviceCeiling: 43100
+  rateOfClimb: 1600
+  wingspan: 68.4
+  length: 76.25
+  maintenanceCostPerHour: 25000
+  maxFlightHoursBeforeMaintenance: 500
+
+- id: "boeing-747-8f"
+  name: "Boeing 747-8F"
+  manufacturer: "Boeing"
+  type: cargo
+  price: 419000000
+  capacity: 134200  # kg charge utile
+  range: 4390
+  cruiseSpeed: 488
+  maxSpeed: 516
+  fuelCapacity: 226100
+  fuelConsumption: 12000.0
+  emptyWeight: 178756
+  maxTakeoffWeight: 447696
+  serviceCeiling: 43100
+  rateOfClimb: 1600
+  wingspan: 68.4
+  length: 76.25
+  maintenanceCostPerHour: 25000
+  maxFlightHoursBeforeMaintenance: 500
+
+# ── HÉLICOPTÈRES ─────────────────────────────────────────────────────────────
+
+- id: "bell-uh1h"
+  name: "Bell UH-1H Iroquois"
+  manufacturer: "Bell Helicopter"
+  type: both
+  price: 1000000
+  capacity: 14
+  range: 324
+  cruiseSpeed: 110
+  maxSpeed: 125
+  fuelCapacity: 850
+  fuelConsumption: 280.0
+  emptyWeight: 2365
+  maxTakeoffWeight: 4763
+  serviceCeiling: 19390
+  rateOfClimb: 1600
+  wingspan: 14.63
+  length: 17.62
+  maintenanceCostPerHour: 500
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "bell-407"
+  name: "Bell 407"
+  manufacturer: "Bell Textron"
+  type: passenger
+  price: 2100000
+  capacity: 7
+  range: 330
+  cruiseSpeed: 122
+  maxSpeed: 140
+  fuelCapacity: 530
+  fuelConsumption: 150.0
+  emptyWeight: 1474
+  maxTakeoffWeight: 2722
+  serviceCeiling: 18600
+  rateOfClimb: 1390
+  wingspan: 10.67
+  length: 12.70
+  maintenanceCostPerHour: 400
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "guimbal-cabri-g2"
+  name: "Hélicoptères Guimbal Cabri G2"
+  manufacturer: "Hélicoptères Guimbal"
+  type: passenger
+  price: 450000
+  capacity: 2
+  range: 389
+  cruiseSpeed: 100
+  maxSpeed: 118
+  fuelCapacity: 140
+  fuelConsumption: 38.0
+  emptyWeight: 480
+  maxTakeoffWeight: 700
+  serviceCeiling: 15000
+  rateOfClimb: 1000
+  wingspan: 7.20
+  length: 6.54
+  maintenanceCostPerHour: 150
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "airbus-h125"
+  name: "Airbus H125"
+  manufacturer: "Airbus Helicopters"
+  type: both
+  price: 2500000
+  capacity: 6
+  range: 351
+  cruiseSpeed: 133
+  maxSpeed: 155
+  fuelCapacity: 540
+  fuelConsumption: 160.0
+  emptyWeight: 1174
+  maxTakeoffWeight: 2250
+  serviceCeiling: 23000
+  rateOfClimb: 1350
+  wingspan: 10.69
+  length: 12.63
+  maintenanceCostPerHour: 400
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "eurocopter-ec135"
+  name: "Eurocopter EC135T1"
+  manufacturer: "Eurocopter (Airbus Helicopters)"
+  type: passenger
+  price: 4000000
+  capacity: 8
+  range: 343
+  cruiseSpeed: 137
+  maxSpeed: 157
+  fuelCapacity: 820
+  fuelConsumption: 250.0
+  emptyWeight: 1760
+  maxTakeoffWeight: 2910
+  serviceCeiling: 20000
+  rateOfClimb: 1600
+  wingspan: 10.20
+  length: 12.16
+  maintenanceCostPerHour: 500
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "robinson-r66"
+  name: "Robinson R66 Turbine"
+  manufacturer: "Robinson Helicopter"
+  type: passenger
+  price: 1000000
+  capacity: 5
+  range: 325
+  cruiseSpeed: 120
+  maxSpeed: 137
+  fuelCapacity: 285
+  fuelConsumption: 110.0
+  emptyWeight: 670
+  maxTakeoffWeight: 1225
+  serviceCeiling: 14000
+  rateOfClimb: 1000
+  wingspan: 10.06
+  length: 11.76
+  maintenanceCostPerHour: 250
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "sikorsky-s64"
+  name: "Sikorsky S-64 Skycrane"
+  manufacturer: "Sikorsky / Erickson Incorporated"
+  type: cargo
+  price: 4500000
+  capacity: 9072  # kg charge utile
+  range: 200
+  cruiseSpeed: 110
+  maxSpeed: 124
+  fuelCapacity: 4920
+  fuelConsumption: 1800.0
+  emptyWeight: 8724
+  maxTakeoffWeight: 19050
+  serviceCeiling: 14000
+  rateOfClimb: 1200
+  wingspan: 21.95
+  length: 26.97
+  maintenanceCostPerHour: 3000
+  maxFlightHoursBeforeMaintenance: 100
+
+# ── AVIONS MILITAIRES / ENTRAÎNEMENT ─────────────────────────────────────────
+
+- id: "north-american-t6-texan"
+  name: "North American T-6 Texan"
+  manufacturer: "North American Aviation"
+  type: passenger
+  price: 300000
+  capacity: 2
+  range: 634
+  cruiseSpeed: 162
+  maxSpeed: 200
+  fuelCapacity: 480
+  fuelConsumption: 100.0
+  emptyWeight: 1886
+  maxTakeoffWeight: 2404
+  serviceCeiling: 24200
+  rateOfClimb: 1200
+  wingspan: 12.81
+  length: 8.99
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 150
+
+- id: "p51-mustang"
+  name: "North American P-51 Mustang"
+  manufacturer: "North American Aviation"
+  type: passenger
+  price: 2500000
+  capacity: 1
+  range: 1488
+  cruiseSpeed: 313
+  maxSpeed: 395
+  fuelCapacity: 1420
+  fuelConsumption: 280.0
+  emptyWeight: 3230
+  maxTakeoffWeight: 5490
+  serviceCeiling: 41900
+  rateOfClimb: 3200
+  wingspan: 11.28
+  length: 9.84
+  maintenanceCostPerHour: 1000
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "aero-l39-albatros"
+  name: "Aero L-39 Albatros"
+  manufacturer: "Aero Vodochody"
+  type: passenger
+  price: 1000000
+  capacity: 2
+  range: 594
+  cruiseSpeed: 378
+  maxSpeed: 437
+  fuelCapacity: 1620
+  fuelConsumption: 700.0
+  emptyWeight: 3330
+  maxTakeoffWeight: 4700
+  serviceCeiling: 37730
+  rateOfClimb: 4330
+  wingspan: 9.46
+  length: 12.13
+  maintenanceCostPerHour: 800
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "a10c-thunderbolt"
+  name: "Fairchild Republic A-10C Thunderbolt II"
+  manufacturer: "Fairchild Republic"
+  type: both
+  price: 18800000
+  capacity: 1
+  range: 972
+  cruiseSpeed: 302
+  maxSpeed: 380
+  fuelCapacity: 6800
+  fuelConsumption: 1500.0
+  emptyWeight: 11321
+  maxTakeoffWeight: 23000
+  serviceCeiling: 45000
+  rateOfClimb: 6000
+  wingspan: 17.53
+  length: 16.26
+  maintenanceCostPerHour: 3000
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "fa18e-super-hornet"
+  name: "Boeing F/A-18E Super Hornet"
+  manufacturer: "Boeing"
+  type: both
+  price: 67400000
+  capacity: 1
+  range: 1267
+  cruiseSpeed: 432
+  maxSpeed: 1034
+  fuelCapacity: 9595
+  fuelConsumption: 3000.0
+  emptyWeight: 13864
+  maxTakeoffWeight: 29937
+  serviceCeiling: 50000
+  rateOfClimb: 30000
+  wingspan: 13.62
+  length: 18.38
+  maintenanceCostPerHour: 8000
+  maxFlightHoursBeforeMaintenance: 300
+
+- id: "b24-liberator"
+  name: "Consolidated B-24 Liberator"
+  manufacturer: "Consolidated Aircraft"
+  type: cargo
+  price: 2000000
+  capacity: 3600  # kg charge utile (bombe ou fret)
+  range: 1825
+  cruiseSpeed: 207
+  maxSpeed: 263
+  fuelCapacity: 15200
+  fuelConsumption: 1200.0
+  emptyWeight: 16782
+  maxTakeoffWeight: 29484
+  serviceCeiling: 28000
+  rateOfClimb: 1025
+  wingspan: 33.53
+  length: 20.22
+  maintenanceCostPerHour: 2000
+  maxFlightHoursBeforeMaintenance: 150
+
+# ── AVIONS ACROBATIQUES ───────────────────────────────────────────────────────
+
+- id: "pitts-s1"
+  name: "Aviat Pitts S-1"
+  manufacturer: "Aviat Aircraft"
+  type: passenger
+  price: 350000
+  capacity: 1
+  range: 304
+  cruiseSpeed: 130
+  maxSpeed: 163
+  fuelCapacity: 70
+  fuelConsumption: 30.0
+  emptyWeight: 385
+  maxTakeoffWeight: 521
+  serviceCeiling: 17500
+  rateOfClimb: 2700
+  wingspan: 5.28
+  length: 4.72
+  maintenanceCostPerHour: 80
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "pitts-s2"
+  name: "Aviat Pitts S-2"
+  manufacturer: "Aviat Aircraft"
+  type: passenger
+  price: 450000
+  capacity: 2
+  range: 304
+  cruiseSpeed: 130
+  maxSpeed: 163
+  fuelCapacity: 85
+  fuelConsumption: 35.0
+  emptyWeight: 490
+  maxTakeoffWeight: 748
+  serviceCeiling: 17900
+  rateOfClimb: 2800
+  wingspan: 6.10
+  length: 5.61
+  maintenanceCostPerHour: 90
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "zivko-edge540"
+  name: "Zivko Edge 540"
+  manufacturer: "Zivko Aeronautics"
+  type: passenger
+  price: 400000
+  capacity: 1
+  range: 432
+  cruiseSpeed: 200
+  maxSpeed: 237
+  fuelCapacity: 145
+  fuelConsumption: 55.0
+  emptyWeight: 500
+  maxTakeoffWeight: 770
+  serviceCeiling: 17000
+  rateOfClimb: 3500
+  wingspan: 7.47
+  length: 6.0
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "extra-330"
+  name: "Extra 330"
+  manufacturer: "Extra Aircraft"
+  type: passenger
+  price: 420000
+  capacity: 2
+  range: 540
+  cruiseSpeed: 178
+  maxSpeed: 216
+  fuelCapacity: 180
+  fuelConsumption: 55.0
+  emptyWeight: 588
+  maxTakeoffWeight: 950
+  serviceCeiling: 16400
+  rateOfClimb: 3900
+  wingspan: 8.0
+  length: 7.12
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "mxs-r"
+  name: "MXS-R"
+  manufacturer: "Zivko Aeronautics"
+  type: passenger
+  price: 350000
+  capacity: 1
+  range: 432
+  cruiseSpeed: 208
+  maxSpeed: 243
+  fuelCapacity: 130
+  fuelConsumption: 50.0
+  emptyWeight: 490
+  maxTakeoffWeight: 750
+  serviceCeiling: 17000
+  rateOfClimb: 4000
+  wingspan: 7.32
+  length: 5.94
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "robin-cap10"
+  name: "Robin CAP 10"
+  manufacturer: "Robin / Apex Aircraft"
+  type: passenger
+  price: 240000
+  capacity: 2
+  range: 486
+  cruiseSpeed: 135
+  maxSpeed: 164
+  fuelCapacity: 100
+  fuelConsumption: 30.0
+  emptyWeight: 470
+  maxTakeoffWeight: 760
+  serviceCeiling: 17000
+  rateOfClimb: 2000
+  wingspan: 8.06
+  length: 7.16
+  maintenanceCostPerHour: 70
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "cap4-paulistinha"
+  name: "CAP 4 Paulistinha"
+  manufacturer: "Companhia Aeronautica Paulista"
+  type: passenger
+  price: 50000
+  capacity: 2
+  range: 378
+  cruiseSpeed: 86
+  maxSpeed: 103
+  fuelCapacity: 80
+  fuelConsumption: 15.0
+  emptyWeight: 400
+  maxTakeoffWeight: 650
+  serviceCeiling: 12000
+  rateOfClimb: 600
+  wingspan: 10.80
+  length: 6.90
+  maintenanceCostPerHour: 40
+  maxFlightHoursBeforeMaintenance: 100
+
+# ── AVIONS HISTORIQUES ────────────────────────────────────────────────────────
+
+- id: "curtiss-jenny"
+  name: "Curtiss JN-4 Jenny"
+  manufacturer: "Curtiss Aeroplane"
+  type: passenger
+  price: 100000
+  capacity: 2
+  range: 200
+  cruiseSpeed: 65
+  maxSpeed: 78
+  fuelCapacity: 90
+  fuelConsumption: 25.0
+  emptyWeight: 528
+  maxTakeoffWeight: 871
+  serviceCeiling: 11450
+  rateOfClimb: 400
+  wingspan: 13.30
+  length: 8.33
+  maintenanceCostPerHour: 50
+  maxFlightHoursBeforeMaintenance: 50
+
+- id: "ryan-spirit-st-louis"
+  name: "Ryan NYP Spirit of St. Louis"
+  manufacturer: "Ryan Airlines"
+  type: passenger
+  price: 500000
+  capacity: 1
+  range: 3456
+  cruiseSpeed: 93
+  maxSpeed: 118
+  fuelCapacity: 1704
+  fuelConsumption: 30.0
+  emptyWeight: 975
+  maxTakeoffWeight: 2383
+  serviceCeiling: 21000
+  rateOfClimb: 400
+  wingspan: 14.02
+  length: 8.43
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 50
+
+- id: "wright-flyer"
+  name: "Wright Flyer"
+  manufacturer: "Wright Brothers"
+  type: passenger
+  price: 10000
+  capacity: 1
+  range: 1
+  cruiseSpeed: 26
+  maxSpeed: 30
+  fuelCapacity: 4
+  fuelConsumption: 3.0
+  emptyWeight: 274
+  maxTakeoffWeight: 340
+  serviceCeiling: 200
+  rateOfClimb: 60
+  wingspan: 12.29
+  length: 6.43
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 1
+
+- id: "hughes-h4-hercules"
+  name: "Hughes H-4 Hercules"
+  manufacturer: "Hughes Aircraft"
+  type: passenger
+  price: 50000000
+  capacity: 750
+  range: 2
+  cruiseSpeed: 220
+  maxSpeed: 255
+  fuelCapacity: 100000
+  fuelConsumption: 30000.0
+  emptyWeight: 100000
+  maxTakeoffWeight: 181000
+  serviceCeiling: 16000
+  rateOfClimb: 1000
+  wingspan: 97.54
+  length: 66.65
+  maintenanceCostPerHour: 50000
+  maxFlightHoursBeforeMaintenance: 10
+
+# ── ULM / AVIONS LÉGERS ───────────────────────────────────────────────────────
+
+- id: "cgs-hawk-arrow"
+  name: "CGS Hawk Arrow II"
+  manufacturer: "CGS Aviation"
+  type: passenger
+  price: 30000
+  capacity: 1
+  range: 216
+  cruiseSpeed: 78
+  maxSpeed: 92
+  fuelCapacity: 40
+  fuelConsumption: 8.0
+  emptyWeight: 250
+  maxTakeoffWeight: 450
+  serviceCeiling: 10000
+  rateOfClimb: 400
+  wingspan: 9.14
+  length: 5.64
+  maintenanceCostPerHour: 20
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "magni-m24"
+  name: "Magni Gyro M24 Plus"
+  manufacturer: "Magni Gyro"
+  type: passenger
+  price: 65000
+  capacity: 2
+  range: 324
+  cruiseSpeed: 81
+  maxSpeed: 97
+  fuelCapacity: 60
+  fuelConsumption: 12.0
+  emptyWeight: 310
+  maxTakeoffWeight: 560
+  serviceCeiling: 10000
+  rateOfClimb: 700
+  wingspan: 8.50
+  length: 4.20
+  maintenanceCostPerHour: 30
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "powrachute-sky-rascal"
+  name: "Powrachute Sky Rascal"
+  manufacturer: "Powrachute"
+  type: passenger
+  price: 20000
+  capacity: 1
+  range: 108
+  cruiseSpeed: 27
+  maxSpeed: 32
+  fuelCapacity: 15
+  fuelConsumption: 5.0
+  emptyWeight: 180
+  maxTakeoffWeight: 300
+  serviceCeiling: 5000
+  rateOfClimb: 200
+  wingspan: 8.0
+  length: 3.0
+  maintenanceCostPerHour: 10
+  maxFlightHoursBeforeMaintenance: 100
+
+# ── PLANEURS ─────────────────────────────────────────────────────────────────
+
+- id: "dg-ls8"
+  name: "DG Flugzeugbau LS8"
+  manufacturer: "DG Flugzeugbau"
+  type: passenger
+  price: 90000
+  capacity: 1
+  range: 162
+  cruiseSpeed: 70
+  maxSpeed: 118
+  fuelCapacity: 0
+  fuelConsumption: 0.0
+  emptyWeight: 290
+  maxTakeoffWeight: 600
+  serviceCeiling: 25000
+  rateOfClimb: 400
+  wingspan: 15.0
+  length: 6.95
+  maintenanceCostPerHour: 20
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "dg-1001e-neo"
+  name: "DG Flugzeugbau 1001E Neo"
+  manufacturer: "DG Flugzeugbau"
+  type: passenger
+  price: 200000
+  capacity: 2
+  range: 486
+  cruiseSpeed: 76
+  maxSpeed: 119
+  fuelCapacity: 30
+  fuelConsumption: 7.0
+  emptyWeight: 510
+  maxTakeoffWeight: 850
+  serviceCeiling: 25000
+  rateOfClimb: 600
+  wingspan: 20.0
+  length: 9.33
+  maintenanceCostPerHour: 30
+  maxFlightHoursBeforeMaintenance: 200
+
+# ── eVTOL / AVIONS DU FUTUR ───────────────────────────────────────────────────
+
+- id: "jetson-one"
+  name: "Jetson ONE"
+  manufacturer: "Jetson"
+  type: passenger
+  price: 92000
+  capacity: 1
+  range: 43
+  cruiseSpeed: 54
+  maxSpeed: 65
+  fuelCapacity: 0
+  fuelConsumption: 0.0
+  emptyWeight: 86
+  maxTakeoffWeight: 190
+  serviceCeiling: 4500
+  rateOfClimb: 800
+  wingspan: 2.3
+  length: 2.0
+  maintenanceCostPerHour: 30
+  maxFlightHoursBeforeMaintenance: 50
+
+- id: "joby-s4"
+  name: "Joby Aviation S4"
+  manufacturer: "Joby Aviation"
+  type: passenger
+  price: 2000000
+  capacity: 5
+  range: 130
+  cruiseSpeed: 174
+  maxSpeed: 200
+  fuelCapacity: 0
+  fuelConsumption: 0.0
+  emptyWeight: 1497
+  maxTakeoffWeight: 2177
+  serviceCeiling: 15000
+  rateOfClimb: 1500
+  wingspan: 10.70
+  length: 7.0
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "archer-midnight"
+  name: "Archer Midnight"
+  manufacturer: "Archer Aviation"
+  type: passenger
+  price: 2000000
+  capacity: 5
+  range: 54
+  cruiseSpeed: 130
+  maxSpeed: 155
+  fuelCapacity: 0
+  fuelConsumption: 0.0
+  emptyWeight: 1905
+  maxTakeoffWeight: 3175
+  serviceCeiling: 10000
+  rateOfClimb: 1000
+  wingspan: 13.0
+  length: 8.5
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "heart-es30"
+  name: "Heart Aerospace ES-30"
+  manufacturer: "Heart Aerospace"
+  type: passenger
+  price: 10000000
+  capacity: 30
+  range: 216
+  cruiseSpeed: 232
+  maxSpeed: 248
+  fuelCapacity: 0
+  fuelConsumption: 0.0
+  emptyWeight: 11700
+  maxTakeoffWeight: 18000
+  serviceCeiling: 22000
+  rateOfClimb: 1500
+  wingspan: 30.0
+  length: 22.0
+  maintenanceCostPerHour: 800
+  maxFlightHoursBeforeMaintenance: 200
+
+- id: "boom-xb1"
+  name: "Boom Supersonic XB-1"
+  manufacturer: "Boom Supersonic"
+  type: passenger
+  price: 20000000
+  capacity: 1
+  range: 972
+  cruiseSpeed: 864
+  maxSpeed: 1467
+  fuelCapacity: 3000
+  fuelConsumption: 2000.0
+  emptyWeight: 3810
+  maxTakeoffWeight: 6350
+  serviceCeiling: 60000
+  rateOfClimb: 15000
+  wingspan: 5.16
+  length: 20.70
+  maintenanceCostPerHour: 5000
+  maxFlightHoursBeforeMaintenance: 50
+
+# ── AVIONS SPÉCIAUX ───────────────────────────────────────────────────────────
+
+- id: "skyship-600"
+  name: "Airship Industries Skyship 600"
+  manufacturer: "Airship Industries"
+  type: passenger
+  price: 5000000
+  capacity: 8
+  range: 1728
+  cruiseSpeed: 49
+  maxSpeed: 59
+  fuelCapacity: 2000
+  fuelConsumption: 40.0
+  emptyWeight: 9300
+  maxTakeoffWeight: 12400
+  serviceCeiling: 10000
+  rateOfClimb: 250
+  wingspan: 61.0
+  length: 61.0
+  maintenanceCostPerHour: 200
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "hot-air-balloon"
+  name: "Ballon a air chaud"
+  manufacturer: "Générique"
+  type: passenger
+  price: 30000
+  capacity: 4
+  range: 270
+  cruiseSpeed: 16
+  maxSpeed: 32
+  fuelCapacity: 200
+  fuelConsumption: 20.0
+  emptyWeight: 400
+  maxTakeoffWeight: 700
+  serviceCeiling: 10000
+  rateOfClimb: 300
+  wingspan: 20.0
+  length: 30.0
+  maintenanceCostPerHour: 20
+  maxFlightHoursBeforeMaintenance: 100
+
+- id: "flydoo"
+  name: "FlyDoo"
+  manufacturer: "Fictif / MSFS"
+  type: passenger
+  price: 0
+  capacity: 6
+  range: 500
+  cruiseSpeed: 150
+  maxSpeed: 180
+  fuelCapacity: 400
+  fuelConsumption: 80.0
+  emptyWeight: 1200
+  maxTakeoffWeight: 2000
+  serviceCeiling: 20000
+  rateOfClimb: 1000
+  wingspan: 12.0
+  length: 9.0
+  maintenanceCostPerHour: 100
+  maxFlightHoursBeforeMaintenance: 100

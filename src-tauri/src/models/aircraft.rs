@@ -9,7 +9,7 @@ pub enum AircraftType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Aircraft {
+pub struct AircraftCatalog {
     pub id: String,
     pub name: String,
     pub manufacturer: String,
@@ -44,3 +44,10 @@ pub struct Aircraft {
     pub image_url: Option<String>,
 }
 
+impl AircraftCatalog {
+    /// Retourne la liste complète des aéronefs, parsée depuis aircraft.yaml (embarqué à la compilation).
+    pub fn load_aircraft_list() -> Vec<AircraftCatalog> {
+        let yaml = include_str!("../aircraft.yaml");
+        serde_yaml::from_str(yaml).expect("aircraft.yaml invalide")
+    }
+}

@@ -11,7 +11,7 @@ pub mod market_aircraft;
 
 // Re-export des types principaux pour faciliter l'utilisation
 pub use airport::Airport;
-pub use aircraft::{Aircraft, AircraftType};
+pub use aircraft::{AircraftCatalog, AircraftType};
 pub use mission::{Mission, MissionType, CargoDetails, PassengerDetails};
 pub use player::Player;
 pub use owned_aircraft::OwnedAircraft;

@@ -1,7 +1,7 @@
 use rusqlite::{Connection, Result, Row};
-use crate::models::{Aircraft, AircraftType};
+use crate::models::{AircraftCatalog, AircraftType};
 
-fn map_aircraft_row(row: &Row) -> Result<Aircraft> {
+fn map_aircraft_row(row: &Row) -> Result<AircraftCatalog> {
     let type_str: String = row.get(3)?;
     let aircraft_type = match type_str.as_str() {
         "passenger" => AircraftType::Passenger,
@@ -10,7 +10,7 @@ fn map_aircraft_row(row: &Row) -> Result<Aircraft> {
         _ => AircraftType::Passenger,
     };
 
-    Ok(Aircraft {
+    Ok(AircraftCatalog {
         id: row.get(0)?,
         name: row.get(1)?,
         manufacturer: row.get(2)?,
@@ -41,13 +41,13 @@ const AIRCRAFT_SELECT: &str =
             service_ceiling, rate_of_climb, wingspan, length
      FROM aircraft_catalog";
 
-pub fn get_all_aircraft(conn: &Connection) -> Result<Vec<Aircraft>> {
+pub fn get_all_aircraft(conn: &Connection) -> Result<Vec<AircraftCatalog>> {
     let mut stmt = conn.prepare(&format!("{} ORDER BY price", AIRCRAFT_SELECT))?;
     let aircraft = stmt.query_map([], map_aircraft_row)?;
     aircraft.collect()
 }
 
-pub fn get_aircraft_by_id(conn: &Connection, id: &str) -> Result<Option<Aircraft>> {
+pub fn get_aircraft_by_id(conn: &Connection, id: &str) -> Result<Option<AircraftCatalog>> {
     let mut stmt = conn.prepare(&format!("{} WHERE id = ?1", AIRCRAFT_SELECT))?;
     let mut rows = stmt.query([id])?;
 
@@ -58,7 +58,7 @@ pub fn get_aircraft_by_id(conn: &Connection, id: &str) -> Result<Option<Aircraft
     }
 }
 
-pub fn get_aircraft_by_type(conn: &Connection, aircraft_type: &str) -> Result<Vec<Aircraft>> {
+pub fn get_aircraft_by_type(conn: &Connection, aircraft_type: &str) -> Result<Vec<AircraftCatalog>> {
     let mut stmt = conn.prepare(&format!(
         "{} WHERE type = ?1 OR type = 'both' ORDER BY price",
         AIRCRAFT_SELECT
@@ -67,7 +67,7 @@ pub fn get_aircraft_by_type(conn: &Connection, aircraft_type: &str) -> Result<Ve
     aircraft.collect()
 }
 
-pub fn get_aircraft_by_budget(conn: &Connection, max_price: i64) -> Result<Vec<Aircraft>> {
+pub fn get_aircraft_by_budget(conn: &Connection, max_price: i64) -> Result<Vec<AircraftCatalog>> {
     let mut stmt = conn.prepare(&format!(
         "{} WHERE price <= ?1 ORDER BY price DESC",
         AIRCRAFT_SELECT
