@@ -62,10 +62,11 @@ const ActiveMissions: React.FC = () => {
     // Vérif avion : TITLE SimConnect (depuis lastData du context) === ID YAML (catalog ID)
     const aircraftOk = (simData?.aircraft_title ?? '') === aircraft.id;
 
-    // Payload attendu
-    const expectedPayload = mission.cargo
+    // Payload attendu : pilote (80 kg) + cargaison/passagers
+    const PILOT_WEIGHT = 80;
+    const expectedPayload = PILOT_WEIGHT + (mission.cargo
       ? mission.cargo.weight
-      : mission.passengers ? mission.passengers.count * 80 : 0;
+      : mission.passengers ? mission.passengers.count * 80 : 0);
 
     // Payload réel : total - empty - fuel
     const actualPayload = Math.max(0, Math.round(
@@ -211,16 +212,21 @@ const ActiveMissions: React.FC = () => {
     const mission = activeMission.mission;
     if (stationCount <= 0) return [];
 
+    // Station 1 = toujours le pilote (80 kg)
+    const PILOT_WEIGHT = 80;
+
     if (mission.passengers) {
-      // 1 passager = 1 station, chaque station = 80 kg
-      const usedStations = Math.min(mission.passengers.count, stationCount, 10);
-      return Array.from({ length: usedStations }, () => 80);
+      // Station 1 = pilote, stations suivantes = passagers (80 kg chacun)
+      const passengerStations = Math.min(mission.passengers.count, stationCount - 1, 9);
+      return [PILOT_WEIGHT, ...Array.from({ length: passengerStations }, () => 80)];
     }
 
     if (mission.cargo) {
-      // Cargo : poids réparti équitablement sur tous les slots
-      const perStation = Math.round((mission.cargo.weight / stationCount) * 10) / 10;
-      return Array.from({ length: stationCount }, () => perStation);
+      // Station 1 = pilote, reste = cargo réparti
+      const cargoStations = stationCount - 1;
+      if (cargoStations <= 0) return [PILOT_WEIGHT];
+      const perStation = Math.round((mission.cargo.weight / cargoStations) * 10) / 10;
+      return [PILOT_WEIGHT, ...Array.from({ length: cargoStations }, () => perStation)];
     }
 
     return [];
@@ -321,9 +327,9 @@ const ActiveMissions: React.FC = () => {
                   const stationCount = simConnected && simPosition
                     ? Math.max(1, Math.floor(simPosition.payload_station_count))
                     : 0;
-                  const totalKg = mission.cargo
+                  const totalKg = 80 + (mission.cargo
                     ? mission.cargo.weight
-                    : (mission.passengers ? mission.passengers.count * 80 : 0);
+                    : (mission.passengers ? mission.passengers.count * 80 : 0));
                   const activeWeights = stationCount > 0
                     ? calculatePayloadWeights(activeMission, stationCount)
                     : [];
@@ -471,11 +477,12 @@ const ActiveMissions: React.FC = () => {
                           <div className="metric">
                             <span className="metric-label">Payload:</span>
                             <span className="metric-value">
-                              {mission.cargo
-                                ? `${mission.cargo.weight.toLocaleString()} kg`
+                              {`${(80 + (mission.cargo
+                                ? mission.cargo.weight
                                 : mission.passengers
-                                  ? `${(mission.passengers.count * 80).toLocaleString()} kg`
-                                  : '0 kg'}
+                                  ? mission.passengers.count * 80
+                                  : 0)).toLocaleString()} kg`}
+                              <span style={{ fontSize: '0.75em', opacity: 0.7 }}> (pilot incl.)</span>
                             </span>
                           </div>
                           <div className="metric">
@@ -483,13 +490,27 @@ const ActiveMissions: React.FC = () => {
                             <span className="metric-value">
                               {simConnected && simPosition
                                 ? `${Math.round(simPosition.total_weight).toLocaleString()} kg`
-                                : `${(aircraft.emptyWeight + (mission.cargo?.weight || (mission.passengers ? mission.passengers.count * 80 : 0))).toLocaleString()} kg`}
+                                : `${(aircraft.emptyWeight + 80 + (mission.cargo?.weight || (mission.passengers ? mission.passengers.count * 80 : 0))).toLocaleString()} kg`}
                             </span>
                           </div>
                           <div className="metric">
                             <span className="metric-label">Max Takeoff:</span>
                             <span className="metric-value">{aircraft.maxTakeoffWeight.toLocaleString()} kg</span>
                           </div>
+                          {(() => {
+                            const total = simConnected && simPosition
+                              ? Math.round(simPosition.total_weight)
+                              : aircraft.emptyWeight + 80 + (mission.cargo?.weight || (mission.passengers ? mission.passengers.count * 80 : 0));
+                            const margin = aircraft.maxTakeoffWeight - total;
+                            return (
+                              <div className="metric">
+                                <span className="metric-label">Margin:</span>
+                                <span className="metric-value" style={{ color: margin < 0 ? '#e74c3c' : margin < aircraft.maxTakeoffWeight * 0.05 ? '#e67e22' : '#27ae60' }}>
+                                  {margin >= 0 ? '+' : ''}{margin.toLocaleString()} kg
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Dimensions */}
