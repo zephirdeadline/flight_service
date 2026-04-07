@@ -49,6 +49,16 @@ export default function Data() {
       {data && (
         <div className="data-content">
           <section className="data-section">
+            <h2>✈️ Aircraft</h2>
+            <div className="data-grid">
+              <div className="data-item">
+                <span className="label">Title</span>
+                <span className="value">{data.aircraft_title || '—'}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="data-section">
             <h2>📍 Position & Navigation</h2>
             <div className="data-grid">
               <div className="data-item">

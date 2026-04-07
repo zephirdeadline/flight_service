@@ -8,6 +8,7 @@ pub fn create_player(
     starting_airport_id: &str,
     starting_aircraft_id: &str,
     starting_aircraft_price: i64,
+    starting_money: i64,
 ) -> Result<String> {
     let player_id = "1".to_string();
 
@@ -16,8 +17,8 @@ pub fn create_player(
     let player_aircraft_id = uuid::Uuid::new_v4().to_string();
 
     conn.execute(
-        "INSERT INTO players (id, name, current_airport_id) VALUES (?1, ?2, ?3)",
-        params![&player_id, name, starting_airport_id],
+        "INSERT INTO players (id, name, current_airport_id, money) VALUES (?1, ?2, ?3, ?4)",
+        params![&player_id, name, starting_airport_id, starting_money],
     )?;
 
     conn.execute(

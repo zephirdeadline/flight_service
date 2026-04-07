@@ -11,6 +11,7 @@ use crate::db::Database;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SimData {
+    pub aircraft_title: String,
     pub latitude: f64,
     pub longitude: f64,
     pub altitude: f64,
@@ -328,22 +329,32 @@ impl SimConnectService {
         sim.add_data_definition(DEF_ID, "STALL WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "OVERSPEED WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GEAR HANDLE POSITION", "number", f64_type, UNUSED, 0.0);
+        // TITLE à la fin — STRING256 (256 bytes) à l'offset 49*8 = 392
+        let str_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
+        sim.add_data_definition(DEF_ID, "TITLE", "", str_type, UNUSED, 0.0);
 
         // DEF_IDs 1-10 : variables d'écriture pour les payload stations
-        // Chaque DEF_ID correspond à une station (DEF_ID 1 = station 1, etc.)
         for i in 1u32..=10 {
             sim.add_data_definition(i, &format!("PAYLOAD STATION WEIGHT:{}", i), "kilograms", f64_type, 0, 0.0);
         }
+
+        // DEF_ID 11 : TITLE (string256) — DEF_ID séparé car type différent
+        let str_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
+        sim.add_data_definition(11, "TITLE", "", str_type, UNUSED, 0.0);
     }
 
     unsafe fn parse_data(ptr: *const u8) -> SimData {
-        let mut offset = 0;
-
         // Tout est FLOAT64 : 8 bytes par champ, même ordre que setup_data_definitions
         let r = |i: usize| std::ptr::read_unaligned(ptr.add(i * 8) as *const f64);
 
+        // TITLE : STRING256 à l'offset 49*8 = 392
+        let title_bytes = std::slice::from_raw_parts(ptr.add(49 * 8), 256);
+        let title_end = title_bytes.iter().position(|&b| b == 0).unwrap_or(256);
+        let aircraft_title = String::from_utf8_lossy(&title_bytes[..title_end]).to_string();
+
 
         SimData {
+            aircraft_title,
             latitude:                   r(0),
             longitude:                  r(1),
             altitude:                   r(2),

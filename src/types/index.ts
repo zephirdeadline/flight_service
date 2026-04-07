@@ -119,6 +119,7 @@ export interface MaintenanceRecord {
 }
 
 export interface SimData {
+  aircraft_title: string;
   latitude: number;
   longitude: number;
   altitude: number;

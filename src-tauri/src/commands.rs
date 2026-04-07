@@ -112,12 +112,16 @@ pub fn create_player(
     let db = db.lock()
         .map_err(|e| format!("Failed to lock database: {}", e))?;
 
+    const STARTING_BUDGET: i64 = 55000;
+    let starting_money = STARTING_BUDGET - aircraft.price;
+
     queries::create_player(
         db.conn(),
         &name,
         &starting_airport_id,
         &starting_aircraft_id,
         aircraft.price,
+        starting_money,
     )
     .map_err(|e| format!("Failed to create player: {}", e))
 }

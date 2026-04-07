@@ -18,43 +18,35 @@ const Hangar: React.FC = () => {
     player,
     currentAirport,
     loading,
-    refreshPlayer,
   } = usePlayer();
   const popup = usePopup();
 
   const [airportCache, setAirportCache] = React.useState<Map<string, Airport>>(new Map());
 
-  // Refresh player au montage pour vérifier les maintenances terminées
+  // Charger uniquement les aéroports manquants dans le cache
   React.useEffect(() => {
-    refreshPlayer();
-  }, []);
+    const missingIds = ownedAircraft
+      .map(a => a.currentAirportId)
+      .filter((id, i, arr) => arr.indexOf(id) === i && !airportCache.has(id));
 
-  // Charger les aéroports où sont garés les avions
-  React.useEffect(() => {
-    async function loadAirports() {
-      const airportIds = [...new Set(ownedAircraft.map(a => a.currentAirportId))];
-      const cache = new Map<string, Airport>();
+    if (missingIds.length === 0) return;
 
-      for (const airportId of airportIds) {
-        if (!airportCache.has(airportId)) {
-          try {
-            const airport = await airportService.getAirportById(airportId);
-            if (airport) {
-              cache.set(airportId, airport);
-            }
-          } catch (error) {
-            console.error(`Failed to load airport ${airportId}:`, error);
-          }
-        } else {
-          cache.set(airportId, airportCache.get(airportId)!);
+    async function loadMissingAirports() {
+      const newEntries = new Map<string, Airport>();
+      for (const airportId of missingIds) {
+        try {
+          const airport = await airportService.getAirportById(airportId);
+          if (airport) newEntries.set(airportId, airport);
+        } catch (error) {
+          console.error(`Failed to load airport ${airportId}:`, error);
         }
       }
-      setAirportCache(cache);
+      if (newEntries.size > 0) {
+        setAirportCache(prev => new Map([...prev, ...newEntries]));
+      }
     }
 
-    if (ownedAircraft.length > 0) {
-      loadAirports();
-    }
+    loadMissingAirports();
   }, [ownedAircraft]);
 
   // Fonction pour calculer la distance entre deux aéroports (Haversine)

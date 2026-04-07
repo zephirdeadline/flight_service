@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { usePopup } from '../context/PopupContext';
+import { useSimConnect } from '../context/SimConnectContext';
 import { ActiveMission, Aircraft, SimData } from '../types';
-import { aircraftService } from '../services/aircraftService';
 import { activeMissionService } from '../services/activeMissionService';
 import { simConnectService } from '../services/simConnectService';
 import './ActiveMissions.css';
@@ -20,13 +20,12 @@ const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): nu
 const KM_TO_NM = 0.539957;
 
 const ActiveMissions: React.FC = () => {
-  const { player, refreshPlayer, currentAirport } = usePlayer();
+  const { player, refreshPlayer, currentAirport, ownedAircraft } = usePlayer();
+  const { isConnected: simConnected, lastData: simData } = useSimConnect();
   const popup = usePopup();
   const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
-  const [aircraftMap, setAircraftMap] = useState<Record<string, Aircraft>>({});
   const [loading, setLoading] = useState(true);
   const [simPosition, setSimPosition] = useState<SimData | null>(null);
-  const [simConnected, setSimConnected] = useState(false);
   const [payloadSentMap, setPayloadSentMap] = useState<Record<string, boolean>>({});
   const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -34,27 +33,14 @@ const ActiveMissions: React.FC = () => {
     loadActiveMissions();
   }, [player]);
 
+  // Polling position pour la progression (getPosition = données complètes)
   useEffect(() => {
     const poll = async () => {
+      if (!simConnected) { setSimPosition(null); return; }
       try {
-        let connected = await simConnectService.isConnected();
-        if (!connected) {
-          try {
-            await simConnectService.connect();
-            connected = true;
-          } catch {
-            // MSFS pas lancé
-          }
-        }
-        setSimConnected(connected);
-        if (connected) {
-          const pos = await simConnectService.getPosition();
-          setSimPosition(pos);
-        } else {
-          setSimPosition(null);
-        }
+        const pos = await simConnectService.getPosition();
+        setSimPosition(pos);
       } catch {
-        setSimConnected(false);
         setSimPosition(null);
       }
     };
@@ -64,7 +50,34 @@ const ActiveMissions: React.FC = () => {
     return () => {
       if (simPollRef.current) clearInterval(simPollRef.current);
     };
-  }, []);
+  }, [simConnected]);
+
+  const checkPreflight = (activeMission: ActiveMission, aircraft: Aircraft | undefined) => {
+    if (!simConnected || !simPosition || !aircraft) {
+      return { aircraftOk: false, payloadOk: false, actualPayload: 0, expectedPayload: 0, ready: false };
+    }
+
+    const mission = activeMission.mission;
+
+    // Vérif avion : TITLE SimConnect (depuis lastData du context) === ID YAML (catalog ID)
+    const aircraftOk = (simData?.aircraft_title ?? '') === aircraft.id;
+
+    // Payload attendu
+    const expectedPayload = mission.cargo
+      ? mission.cargo.weight
+      : mission.passengers ? mission.passengers.count * 80 : 0;
+
+    // Payload réel : total - empty - fuel
+    const actualPayload = Math.max(0, Math.round(
+      simPosition.total_weight - simPosition.empty_weight - simPosition.fuel_weight
+    ));
+
+    // Tolérance 5%
+    const tolerance = Math.max(10, expectedPayload * 0.05);
+    const payloadOk = Math.abs(actualPayload - expectedPayload) <= tolerance;
+
+    return { aircraftOk, payloadOk, actualPayload, expectedPayload, ready: aircraftOk && payloadOk };
+  };
 
   const calculateMissionProgress = (activeMission: ActiveMission): { progress: number; distanceRemaining: number; canComplete: boolean } => {
     const mission = activeMission.mission;
@@ -119,14 +132,6 @@ const ActiveMissions: React.FC = () => {
       const missions = await activeMissionService.getActiveMissions(player.id);
       setActiveMissions(missions);
 
-      // Charger les avions utilisés
-      const aircraftIds = [...new Set(missions.map(m => m.aircraftId))];
-      if (aircraftIds.length > 0) {
-        const aircraft = await aircraftService.getAircraftByIds(aircraftIds);
-        const map: Record<string, Aircraft> = {};
-        aircraft.forEach(a => map[a.id] = a);
-        setAircraftMap(map);
-      }
     } catch (error) {
       console.error('Error loading active missions:', error);
     } finally {
@@ -261,7 +266,8 @@ const ActiveMissions: React.FC = () => {
         <div className="active-missions-grid">
           {activeMissions.map((activeMission) => {
             const mission = activeMission.mission;
-            const aircraft = aircraftMap[activeMission.aircraftId];
+            const aircraft = ownedAircraft.find(o => o.id === activeMission.aircraftId)?.aircraft;
+            const preflight = checkPreflight(activeMission, aircraft);
             const { progress, distanceRemaining, canComplete } = calculateMissionProgress(activeMission);
 
             return (
@@ -511,6 +517,25 @@ const ActiveMissions: React.FC = () => {
                   </>
                 )}
 
+                {/* Checklist pré-vol — affiché uniquement si SimConnect connecté */}
+                {simConnected && (
+                  <div className={`preflight-checklist ${preflight.ready ? 'preflight-ready' : 'preflight-pending'}`}>
+                    <div className="preflight-title">Pre-flight checklist</div>
+                    <div className={`preflight-item ${preflight.aircraftOk ? 'ok' : 'fail'}`}>
+                      {preflight.aircraftOk ? '✅' : '❌'} Aircraft
+                      {!preflight.aircraftOk && aircraft && (
+                        <span className="preflight-hint"> — Load <strong>{aircraft.name}</strong> ({aircraft.id})</span>
+                      )}
+                    </div>
+                    <div className={`preflight-item ${preflight.payloadOk ? 'ok' : 'fail'}`}>
+                      {preflight.payloadOk ? '✅' : '❌'} Payload
+                      <span className="preflight-hint">
+                        {' '}{preflight.actualPayload} kg / {preflight.expectedPayload} kg required
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mission-actions">
                   {canComplete || activeMission.status === 'ready_to_complete' ? (
                     <button
@@ -519,6 +544,10 @@ const ActiveMissions: React.FC = () => {
                     >
                       ✅ Complete Mission
                     </button>
+                  ) : simConnected && !preflight.ready ? (
+                    <div className="preflight-blocked">
+                      Complete pre-flight checklist to start mission
+                    </div>
                   ) : (
                     <div className="mission-progress">
                       <div className="progress-info">
