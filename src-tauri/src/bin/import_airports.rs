@@ -67,8 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let schema = include_str!("../../migrations/001_initial_schema.sql");
         conn.execute_batch(schema)?;
 
-        let seed = include_str!("../../migrations/002_seed_data.sql");
-        conn.execute_batch(seed)?;
+
 
         println!("✅ Schema created successfully!");
         println!();

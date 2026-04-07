@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection, Result};
-use crate::models::{AircraftCatalog, AircraftType, OwnedAircraft, Player};
+use crate::models::{AircraftCatalog, OwnedAircraft, Player};
 use super::maintenance::{auto_complete_finished_maintenances, get_aircraft_maintenances, get_maintenance_history};
 
 pub fn create_player(
@@ -7,16 +7,11 @@ pub fn create_player(
     name: &str,
     starting_airport_id: &str,
     starting_aircraft_id: &str,
+    starting_aircraft_price: i64,
 ) -> Result<String> {
     let player_id = "1".to_string();
 
     conn.execute("DELETE FROM players WHERE id = ?1", [&player_id])?;
-
-    let aircraft_price: i64 = conn.query_row(
-        "SELECT price FROM aircraft_catalog WHERE id = ?1",
-        [starting_aircraft_id],
-        |row| row.get(0),
-    )?;
 
     let player_aircraft_id = uuid::Uuid::new_v4().to_string();
 
@@ -28,7 +23,7 @@ pub fn create_player(
     conn.execute(
         "INSERT INTO player_aircraft (id, player_id, aircraft_catalog_id, current_airport_id, purchase_price)
          VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![&player_aircraft_id, &player_id, starting_aircraft_id, starting_airport_id, aircraft_price],
+        params![&player_aircraft_id, &player_id, starting_aircraft_id, starting_airport_id, starting_aircraft_price],
     )?;
 
     conn.execute(
@@ -95,63 +90,40 @@ fn get_completed_mission_ids(conn: &Connection, player_id: &str) -> Result<Vec<S
     ids.collect()
 }
 
-pub fn get_owned_aircraft(conn: &Connection, player_id: &str) -> Result<Vec<OwnedAircraft>> {
+pub fn get_owned_aircraft(
+    conn: &Connection,
+    player_id: &str,
+    catalog: &[AircraftCatalog],
+) -> Result<Vec<OwnedAircraft>> {
     let mut stmt = conn.prepare(
-        "SELECT
-            pa.id, pa.player_id, pa.current_airport_id, pa.purchase_date, pa.purchase_price,
-            ac.id, ac.name, ac.manufacturer, ac.type, ac.price, ac.capacity,
-            ac.range, ac.cruise_speed, ac.maintenance_cost_per_hour,
-            ac.max_flight_hours_before_maintenance, ac.image_url,
-            ac.max_speed, ac.fuel_capacity, ac.fuel_consumption,
-            ac.empty_weight, ac.max_takeoff_weight, ac.service_ceiling,
-            ac.rate_of_climb, ac.wingspan, ac.length
-         FROM player_aircraft pa
-         JOIN aircraft_catalog ac ON pa.aircraft_catalog_id = ac.id
-         WHERE pa.player_id = ?1
-         ORDER BY pa.purchase_date"
+        "SELECT id, player_id, current_airport_id, purchase_date, purchase_price, aircraft_catalog_id
+         FROM player_aircraft
+         WHERE player_id = ?1
+         ORDER BY purchase_date"
     )?;
 
-    let owned = stmt.query_map([player_id], |row| {
-        let aircraft_type_str: String = row.get(8)?;
-        let aircraft_type = match aircraft_type_str.as_str() {
-            "passenger" => AircraftType::Passenger,
-            "cargo" => AircraftType::Cargo,
-            "both" => AircraftType::Both,
-            _ => AircraftType::Both,
-        };
+    let rows: Vec<(String, String, String, String, i64, String)> = stmt
+        .query_map([player_id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                row.get(5)?,
+            ))
+        })?
+        .collect::<Result<_>>()?;
 
-        Ok(OwnedAircraft {
-            id: row.get(0)?,
-            player_id: row.get(1)?,
-            current_airport_id: row.get(2)?,
-            purchase_date: row.get(3)?,
-            purchase_price: row.get(4)?,
-            aircraft: AircraftCatalog {
-                id: row.get(5)?,
-                name: row.get(6)?,
-                manufacturer: row.get(7)?,
-                aircraft_type,
-                price: row.get(9)?,
-                capacity: row.get(10)?,
-                range: row.get(11)?,
-                cruise_speed: row.get(12)?,
-                maintenance_cost_per_hour: row.get(13)?,
-                max_flight_hours_before_maintenance: row.get(14)?,
-                image_url: row.get(15)?,
-                max_speed: row.get(16)?,
-                fuel_capacity: row.get(17)?,
-                fuel_consumption: row.get(18)?,
-                empty_weight: row.get(19)?,
-                max_takeoff_weight: row.get(20)?,
-                service_ceiling: row.get(21)?,
-                rate_of_climb: row.get(22)?,
-                wingspan: row.get(23)?,
-                length: row.get(24)?,
-            },
+    let owned = rows
+        .into_iter()
+        .filter_map(|(id, player_id, current_airport_id, purchase_date, purchase_price, catalog_id)| {
+            let aircraft = catalog.iter().find(|ac| ac.id == catalog_id)?.clone();
+            Some(OwnedAircraft { id, player_id, current_airport_id, purchase_date, purchase_price, aircraft })
         })
-    })?;
+        .collect();
 
-    owned.collect()
+    Ok(owned)
 }
 
 pub fn update_player_money(conn: &Connection, player_id: &str, amount: i64) -> Result<()> {

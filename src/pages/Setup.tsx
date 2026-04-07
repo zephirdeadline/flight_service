@@ -6,6 +6,8 @@ import { airportService } from '../services/airportService';
 import { aircraftService } from '../services/aircraftService';
 import './Setup.css';
 
+const STARTING_BUDGET = 55000;
+
 const Setup: React.FC = () => {
   const navigate = useNavigate();
   const { initializePlayer } = usePlayer();
@@ -50,7 +52,7 @@ const Setup: React.FC = () => {
     try {
       const aircraftData = await aircraftService.getAllAircraft();
       // Filtrer uniquement les avions de départ (petits avions)
-      setAircraft(aircraftData.filter(a => a.price <= 250000));
+      setAircraft(aircraftData.filter(a => a.price > 0 && a.price <= STARTING_BUDGET));
     } catch (error) {
       console.error('Error loading aircraft:', error);
     } finally {
@@ -200,7 +202,7 @@ const Setup: React.FC = () => {
           <div className="setup-step">
             <h2>Choose your starting aircraft</h2>
             <div className="starting-budget">
-              Starting budget: <span className="budget-amount">$100,000</span>
+              Starting budget: <span className="budget-amount">${STARTING_BUDGET.toLocaleString()}</span>
             </div>
             <div className="aircraft-grid">
               {aircraft.map((ac) => (
@@ -211,6 +213,7 @@ const Setup: React.FC = () => {
                 >
                   <div className="aircraft-name">{ac.name}</div>
                   <div className="aircraft-manufacturer">{ac.manufacturer}</div>
+                  <div className="aircraft-id">{ac.id}</div>
                   <div className="aircraft-specs-mini">
                     <span>Range: {ac.range} NM</span>
                     <span>Capacity: {ac.capacity}</span>

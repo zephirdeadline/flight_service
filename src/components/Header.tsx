@@ -5,8 +5,8 @@ import { useSimConnect } from '../context/SimConnectContext';
 import './Header.css';
 
 const Header: React.FC = () => {
-  const { player, currentAirport } = usePlayer();
-  const { isStreaming, startStreaming, stopStreaming } = useSimConnect();
+  const { player, currentAirport, selectedAircraft } = usePlayer();
+  const { isConnected } = useSimConnect();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -21,6 +21,15 @@ const Header: React.FC = () => {
               <span className="location-icon">📍</span>
               <span className="location-text">
                 {currentAirport.icao} - {currentAirport.name}
+              </span>
+            </div>
+          )}
+          {selectedAircraft && (
+            <div className="current-location">
+              <span className="location-icon">✈️</span>
+              <span className="location-text">
+                {selectedAircraft.name}
+                <span className="location-sub"> — {selectedAircraft.id}</span>
               </span>
             </div>
           )}
@@ -45,8 +54,11 @@ const Header: React.FC = () => {
           <Link to="/airports" className={isActive('/airports') ? 'nav-link active' : 'nav-link'}>
             Airports
           </Link>
+          <Link to="/aircraft" className={isActive('/aircraft') ? 'nav-link active' : 'nav-link'}>
+            ✈️ Aircraft
+          </Link>
           <Link to="/data" className={isActive('/data') ? 'nav-link active' : 'nav-link'}>
-            ✈️ Data
+            Data
           </Link>
           <Link to="/cheat" className={isActive('/cheat') ? 'nav-link cheat-link active' : 'nav-link cheat-link'}>
             🎮 Cheat
@@ -54,12 +66,10 @@ const Header: React.FC = () => {
         </nav>
 
         <div className="header-right">
-          <button
-            className={`simconnect-btn ${isStreaming ? 'streaming' : ''}`}
-            onClick={isStreaming ? stopStreaming : startStreaming}
-          >
-            {isStreaming ? '🔴 SimConnect' : '⚫ SimConnect'}
-          </button>
+          <div className="simconnect-status">
+            <span className={`simconnect-dot ${isConnected ? 'dot-connected' : 'dot-disconnected'}`} />
+            <span>{isConnected ? 'SimConnect connected' : 'SimConnect disconnected'}</span>
+          </div>
           <div className="money-display">
             <span className="money-icon">💰</span>
             <span className="money-amount">

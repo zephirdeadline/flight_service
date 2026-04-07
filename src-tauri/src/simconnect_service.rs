@@ -122,6 +122,10 @@ impl SimConnectService {
 
             // Connexion dédiée au thread de streaming
             let mut sim = simconnect::SimConnector::new();
+            if !sim.connect("Flight Service Streaming") {
+                streaming.store(false, Ordering::Relaxed);
+                return;
+            }
             Self::setup_data_definitions(&mut sim);
 
             // MSFS pousse les données automatiquement chaque seconde
@@ -147,7 +151,7 @@ impl SimConnectService {
                     Ok(Ok(simconnect::DispatchResult::SimObjectData(data))) => {
                         let data_ptr = std::ptr::addr_of!(data.dwData) as *const u8;
                         let sim_data = unsafe { Self::parse_data(data_ptr) };
-                        Self::handle_sim_data(sim_data, &app_handle, &db, &last_airport_id);
+                        Self::handle_sim_data(sim_data, &app_handle, &db, &mut last_airport_id);
                     }
                     Ok(_) => {} // autres messages SimConnect — ignorer
                 };

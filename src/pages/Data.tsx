@@ -2,7 +2,7 @@ import { useSimConnect } from '../context/SimConnectContext';
 import './Data.css';
 
 export default function Data() {
-  const { isStreaming, lastData: data } = useSimConnect();
+  const { isConnected, lastData: data } = useSimConnect();
 
   const renderGauge = (value: number, max: number, label: string, unit: string) => {
     const percentage = Math.min((value / max) * 100, 100);
@@ -34,13 +34,13 @@ export default function Data() {
         <h1>✈️ Aircraft Data</h1>
       </div>
 
-      {!isStreaming && !data && (
+      {!isConnected && (
         <div className="data-placeholder">
-          <p>Start SimConnect streaming from the header to view real-time aircraft data</p>
+          <p>SimConnect disconnected — MSFS not running</p>
         </div>
       )}
 
-      {isStreaming && !data && (
+      {isConnected && !data && (
         <div className="data-loading">
           Waiting for data...
         </div>

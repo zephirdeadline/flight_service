@@ -22,6 +22,11 @@ pub fn run() {
             std::fs::create_dir_all(&app_data_dir)
                 .expect("Failed to create app data directory");
 
+            // Toujours écraser aircraft.yaml avec la version embarquée dans le binaire
+            let yaml_path = app_data_dir.join("aircraft.yaml");
+            std::fs::write(&yaml_path, include_bytes!("aircraft.yaml"))
+                .expect("Failed to write aircraft.yaml");
+
             // Chemin de la base de données
             let db_path = app_data_dir.join("flight_service.db");
 

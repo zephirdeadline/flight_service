@@ -45,14 +45,13 @@ pub fn purchase_aircraft(
     player_id: String,
     aircraft_id: String,
 ) -> Result<(), String> {
-    // Lock avec mut car on va utiliser transaction()
+    // Récupérer le prix de l'avion depuis le yaml
+    let aircraft = AircraftCatalog::load_from_file()?
+        .iter().find(|ac| ac.id == aircraft_id).cloned()
+        .ok_or("Aircraft not found")?;
+
     let mut db = db.lock()
         .map_err(|e| format!("Failed to lock database: {}", e))?;
-
-    // Récupérer le prix de l'avion
-    let aircraft = queries::get_aircraft_by_id(db.conn(), &aircraft_id)
-        .map_err(|e| format!("Failed to get aircraft: {}", e))?
-        .ok_or("Aircraft not found")?;
 
     let price = aircraft.price;
 
@@ -106,6 +105,10 @@ pub fn create_player(
     starting_airport_id: String,
     starting_aircraft_id: String,
 ) -> Result<String, String> {
+    let aircraft = AircraftCatalog::load_from_file()?
+        .iter().find(|ac| ac.id == starting_aircraft_id).cloned()
+        .ok_or("Aircraft not found in catalog")?;
+
     let db = db.lock()
         .map_err(|e| format!("Failed to lock database: {}", e))?;
 
@@ -114,6 +117,7 @@ pub fn create_player(
         &name,
         &starting_airport_id,
         &starting_aircraft_id,
+        aircraft.price,
     )
     .map_err(|e| format!("Failed to create player: {}", e))
 }
@@ -153,11 +157,8 @@ where
 // ============= EXEMPLE avec helper =============
 
 #[tauri::command]
-pub fn get_all_aircraft(
-    db: tauri::State<Arc<Mutex<Database>>>
-) -> Result<Vec<AircraftCatalog>, String> {
-    // Plus simple avec le helper
-    with_db(&db, |conn| queries::get_all_aircraft(conn))
+pub fn get_all_aircraft() -> Result<Vec<AircraftCatalog>, String> {
+    Ok(AircraftCatalog::load_from_file()?.to_vec())
 }
 
 #[tauri::command]
@@ -210,19 +211,19 @@ pub fn search_missions_to_airport(
 // ============= Aircraft Commands =============
 
 #[tauri::command]
-pub fn get_aircraft_by_id(
-    db: tauri::State<Arc<Mutex<Database>>>,
-    id: String,
-) -> Result<Option<AircraftCatalog>, String> {
-    with_db(&db, |conn| queries::get_aircraft_by_id(conn, &id))
+pub fn get_aircraft_by_id(id: String) -> Result<Option<AircraftCatalog>, String> {
+    Ok(AircraftCatalog::load_from_file()?.iter().find(|ac| ac.id == id).cloned())
 }
 
 #[tauri::command]
-pub fn get_aircraft_by_type(
-    db: tauri::State<Arc<Mutex<Database>>>,
-    aircraft_type: String,
-) -> Result<Vec<AircraftCatalog>, String> {
-    with_db(&db, |conn| queries::get_aircraft_by_type(conn, &aircraft_type))
+pub fn get_aircraft_by_type(aircraft_type: String) -> Result<Vec<AircraftCatalog>, String> {
+    Ok(AircraftCatalog::load_from_file()?.iter().filter(|ac| {
+        matches!((&ac.aircraft_type, aircraft_type.as_str()),
+            (AircraftType::Both, _) |
+            (AircraftType::Passenger, "passenger") |
+            (AircraftType::Cargo, "cargo")
+        )
+    }).cloned().collect())
 }
 
 // ============= Active Mission Commands =============
@@ -296,8 +297,9 @@ pub fn get_owned_aircraft(
     db: tauri::State<Arc<Mutex<Database>>>,
     player_id: String,
 ) -> Result<Vec<crate::models::OwnedAircraft>, String> {
+    let catalog = AircraftCatalog::load_from_file()?;
     with_db(&db, |conn| {
-        queries::get_owned_aircraft(conn, &player_id)
+        queries::get_owned_aircraft(conn, &player_id, catalog)
     })
 }
 

@@ -13,6 +13,7 @@ import Shop from './pages/Shop';
 import Airports from './pages/Airports';
 import Cheat from './pages/Cheat';
 import Data from './pages/Data';
+import AircraftCatalog from './pages/AircraftCatalog';
 import './App.css';
 
 const AppContent: React.FC = () => {
@@ -58,6 +59,7 @@ const AppContent: React.FC = () => {
           <Route path="/shop" element={<Shop />} />
           <Route path="/airports" element={<Airports />} />
           <Route path="/data" element={<Data />} />
+          <Route path="/aircraft" element={<AircraftCatalog />} />
           <Route path="/cheat" element={<Cheat />} />
           <Route path="/setup" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

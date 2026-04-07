@@ -63,16 +63,6 @@ pub fn cheat_set_aircraft_wear(
 }
 
 pub fn cheat_give_aircraft(conn: &Connection, player_id: &str, aircraft_catalog_id: &str) -> Result<()> {
-    let aircraft_exists: bool = conn.query_row(
-        "SELECT COUNT(*) FROM aircraft_catalog WHERE id = ?1",
-        params![aircraft_catalog_id],
-        |row| { let count: i64 = row.get(0)?; Ok(count > 0) },
-    )?;
-
-    if !aircraft_exists {
-        return Err(rusqlite::Error::QueryReturnedNoRows);
-    }
-
     let current_airport_id: String = conn.query_row(
         "SELECT current_airport_id FROM players WHERE id = ?1",
         params![player_id],

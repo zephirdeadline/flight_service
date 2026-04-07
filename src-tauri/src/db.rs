@@ -37,27 +37,6 @@ impl Database {
             self.mark_migration_applied(1)?;
         }
 
-        // Migration 2 : Données de seed
-        if !self.migration_applied(2)? {
-            let seed = include_str!("../migrations/002_seed_data.sql");
-            self.conn.execute_batch(seed)?;
-            self.mark_migration_applied(2)?;
-        }
-
-        // Migration 3 : Spécifications des avions
-        if !self.migration_applied(3)? {
-            let aircraft_specs = include_str!("../migrations/003_aircraft_specs.sql");
-            self.conn.execute_batch(aircraft_specs)?;
-            self.mark_migration_applied(3)?;
-        }
-
-        // Migration 5 : Correction de la FK active_missions.aircraft_id
-        if !self.migration_applied(5)? {
-            let fix_fk = include_str!("../migrations/005_fix_active_missions_fk.sql");
-            self.conn.execute_batch(fix_fk)?;
-            self.mark_migration_applied(5)?;
-        }
-
         Ok(())
     }
 
@@ -116,7 +95,7 @@ mod tests {
             .unwrap();
 
         assert!(tables.contains(&"airports".to_string()));
-        assert!(tables.contains(&"aircraft_catalog".to_string()));
         assert!(tables.contains(&"players".to_string()));
+        assert!(tables.contains(&"player_aircraft".to_string()));
     }
 }

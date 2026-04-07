@@ -44,10 +44,50 @@ pub struct AircraftCatalog {
     pub image_url: Option<String>,
 }
 
+/// Résout les merge keys YAML (<<: *anchor) que serde_yaml 0.9 ne résout pas automatiquement.
+/// Les clés du mapping courant ont priorité sur les clés mergées (comportement YAML standard).
+fn resolve_merge_keys(value: serde_yaml::Value) -> serde_yaml::Value {
+    use serde_yaml::Value;
+    let Value::Mapping(mut map) = value else { return value; };
+
+    let merge_key = Value::String("<<".to_string());
+    if let Some(base) = map.remove(&merge_key) {
+        if let Value::Mapping(base_map) = base {
+            for (k, v) in base_map {
+                map.entry(k).or_insert(v);
+            }
+        }
+    }
+    Value::Mapping(map)
+}
+
+static AIRCRAFT_CACHE: std::sync::OnceLock<Vec<AircraftCatalog>> = std::sync::OnceLock::new();
+
 impl AircraftCatalog {
-    /// Retourne la liste complète des aéronefs, parsée depuis aircraft.yaml (embarqué à la compilation).
-    pub fn load_aircraft_list() -> Vec<AircraftCatalog> {
-        let yaml = include_str!("../aircraft.yaml");
-        serde_yaml::from_str(yaml).expect("aircraft.yaml invalide")
+    /// Charge la liste des aéronefs depuis aircraft.yaml dans AppData (mis en cache au premier appel).
+    pub fn load_from_file() -> Result<&'static [AircraftCatalog], String> {
+        if let Some(cached) = AIRCRAFT_CACHE.get() {
+            return Ok(cached);
+        }
+        let path = dirs::data_dir()
+            .ok_or("Impossible de trouver le répertoire AppData")?
+            .join("com.petrocchim.flight_service")
+            .join("aircraft.yaml");
+        let content = std::fs::read_to_string(&path)
+            .map_err(|e| format!("Impossible de lire aircraft.yaml : {}", e))?;
+        // Passer par Value puis résoudre manuellement les merge keys (<<: *anchor)
+        // car serde_yaml 0.9 ne les résout pas lors de la désérialisation en struct
+        let values: Vec<serde_yaml::Value> = serde_yaml::from_str(&content)
+            .map_err(|e| format!("aircraft.yaml invalide : {}", e))?;
+        let list: Vec<AircraftCatalog> = values
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| {
+                let merged = resolve_merge_keys(v);
+                serde_yaml::from_value(merged)
+                    .map_err(|e| format!("aircraft.yaml invalide à l'entrée {} : {}", i, e))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(AIRCRAFT_CACHE.get_or_init(|| list))
     }
 }

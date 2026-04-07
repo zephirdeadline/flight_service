@@ -1,8 +1,7 @@
 use rusqlite::{params, Connection, Result};
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
-use crate::models::{Airport, MarketAircraft};
-use super::aircraft::get_all_aircraft;
+use crate::models::{Airport, AircraftCatalog, MarketAircraft};
 use super::geo::{calculate_distance, generate_daily_market_seed};
 
 pub fn get_market_aircraft(conn: &Connection, player_id: &str) -> Result<Vec<MarketAircraft>> {
@@ -81,7 +80,9 @@ pub fn get_market_aircraft(conn: &Connection, player_id: &str) -> Result<Vec<Mar
     })
     .collect();
 
-    let all_aircraft = get_all_aircraft(conn)?;
+    let all_aircraft = AircraftCatalog::load_from_file()
+        .map_err(|e| rusqlite::Error::InvalidParameterName(e))?
+        .to_vec();
     let mut market_offers: Vec<MarketAircraft> = Vec::new();
 
     for airport in nearby_airports {
