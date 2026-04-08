@@ -1,289 +1,256 @@
 .missions-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--space-8);
 }
 
+/* ── SimConnect status ────────────────────────────── */
 .simconnect-status {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  margin-bottom: var(--space-3);
+  border: 1.5px solid;
 }
 
 .simconnect-status.connected {
-  background: #eafaf1;
-  color: #1e8449;
-  border: 1px solid #a9dfbf;
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
 }
 
 .simconnect-status.disconnected {
-  background: #fdfefe;
-  color: #7f8c8d;
-  border: 1px solid #d5d8dc;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
 }
 
 .simconnect-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.simconnect-status.connected .simconnect-dot {
-  background: #27ae60;
-}
+.simconnect-status.connected    .simconnect-dot { background: var(--color-success); }
+.simconnect-status.disconnected .simconnect-dot { background: var(--color-text-muted); }
 
-.simconnect-status.disconnected .simconnect-dot {
-  background: #95a5a6;
-}
+.simconnect-coords  { font-family: monospace; opacity: 0.8; }
+.simconnect-distance{ margin-left: auto; font-weight: 600; }
 
-.simconnect-coords {
-  font-family: monospace;
-  opacity: 0.8;
-}
-
-.simconnect-distance {
-  margin-left: auto;
-  font-weight: 600;
-}
-
+/* ── Header ───────────────────────────────────────── */
 .missions-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
 }
 
 .missions-header h1 {
-  font-size: 2.5rem;
-  color: #2c3e50;
-  margin: 0 0 0.5rem 0;
+  font-size: var(--font-2xl);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: -0.02em;
 }
 
 .back-to-current-btn {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  margin-top: var(--space-4);
+  padding: 0.6rem 1.25rem;
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-base);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition);
 }
 
 .back-to-current-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
+/* ── Warning banner ───────────────────────────────── */
 .warning-banner {
-  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  background: var(--color-warning);
   color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
   text-align: center;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
+  font-size: var(--font-base);
 }
 
+/* ── Search section ───────────────────────────────── */
 .mission-search-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
+  background: var(--color-surface);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--color-border);
+  margin-bottom: var(--space-5);
 }
 
 .mission-search-section h3 {
-  margin: 0 0 0.5rem 0;
-  color: #2c3e50;
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: 600;
 }
 
 .search-info {
-  color: #e67e22;
+  color: var(--color-warning-dark);
   font-weight: 600;
-  margin: 0 0 1rem 0;
+  font-size: var(--font-sm);
+  margin: 0 0 var(--space-4) 0;
 }
 
 .search-container {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-3);
 }
 
 .search-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid #ecf0f1;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  padding: 0.6rem var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-base);
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--transition);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: var(--color-primary);
 }
 
 .search-spinner {
   position: absolute;
-  right: 1rem;
+  right: var(--space-4);
   top: 50%;
   transform: translateY(-50%);
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
 }
 
 .search-results {
-  max-height: 300px;
+  max-height: 280px;
   overflow-y: auto;
-  border: 2px solid #ecf0f1;
-  border-radius: 8px;
-  background: #f8f9fa;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .search-result-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #ecf0f1;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background var(--transition);
 }
 
-.search-result-item:last-child {
-  border-bottom: none;
-}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover      { background: var(--color-surface-2); }
 
-.search-result-item:hover {
-  background: white;
-}
-
-.airport-info {
-  flex: 1;
-}
-
-.airport-info strong {
-  color: #2c3e50;
-  font-size: 1.1rem;
-}
+.airport-info       { flex: 1; }
+.airport-info strong{ color: var(--color-text); font-size: var(--font-base); }
 
 .airport-location {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  margin-top: 0.15rem;
 }
 
 .search-mission-btn {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  padding: 0.4rem 0.9rem;
+  background: var(--color-success);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-weight: 600;
+  font-size: var(--font-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition);
 }
 
 .search-mission-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.search-mission-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.search-mission-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── Filters ──────────────────────────────────────── */
 .missions-filters {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-3);
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
   flex-wrap: wrap;
 }
 
 .filter-btn {
-  padding: 0.75rem 1.5rem;
-  background: white;
-  border: 2px solid #ecf0f1;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 0.5rem 1.1rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-sm);
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition);
 }
 
 .filter-btn:hover {
-  border-color: #3498db;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  background: var(--color-primary);
   color: white;
-  border-color: #3498db;
+  border-color: var(--color-primary);
 }
 
+/* ── Grid ─────────────────────────────────────────── */
 .missions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-4);
 }
 
+/* ── Empty state ──────────────────────────────────── */
 .no-missions {
   text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--space-12) var(--space-8);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--color-border);
 }
 
 .no-missions-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
+  font-size: 4rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.4;
 }
 
-.no-missions h2 {
-  color: #2c3e50;
-  margin: 0 0 0.5rem 0;
-}
+.no-missions h2 { color: var(--color-text); margin: 0 0 var(--space-2) 0; }
+.no-missions p  { color: var(--color-text-secondary); font-size: var(--font-md); margin: 0; }
 
-.no-missions p {
-  color: #7f8c8d;
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  font-size: 1.5rem;
-  color: #7f8c8d;
-}
-
+/* ── Responsive ───────────────────────────────────── */
 @media (max-width: 768px) {
-  .missions-container {
-    padding: 1rem;
-  }
-
-  .missions-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .missions-filters {
-    flex-direction: column;
-  }
-
-  .filter-btn {
-    width: 100%;
-  }
+  .missions-container { padding: var(--space-4); }
+  .missions-grid      { grid-template-columns: 1fr; }
+  .missions-filters   { flex-direction: column; }
+  .filter-btn         { width: 100%; text-align: center; border-radius: var(--radius-md); }
 }
