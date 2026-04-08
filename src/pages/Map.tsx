@@ -63,6 +63,15 @@ const tile2lat = (y: number, z: number) => {
 };
 const tile2lon = (x: number, z: number) => (x / Math.pow(2, z)) * 360 - 180;
 
+// Distance from point (px,py) to segment (ax,ay)-(bx,by) in pixels
+const pointToSegmentDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number): number => {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  return Math.sqrt((px - ax - t * dx) ** 2 + (py - ay - t * dy) ** 2);
+};
+
 const bearingDeg = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLon = toRad(lon2 - lon1);
@@ -98,6 +107,12 @@ const FlightMap: React.FC = () => {
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Drag-insert on a leg
+  const dragInsertRef = useRef<{ legIndex: number; wp: Waypoint } | null>(null);
+  // Drag-move of an existing waypoint
+  const dragMoveRef = useRef<{ wpIndex: number; original: Waypoint; current: Waypoint } | null>(null);
+  const suppressNextClickRef = useRef(false);
 
   // Flight plan (module-level for session persistence, localStorage for cross-restart)
   const flightPlanRef = useRef<Waypoint[]>(flightPlanModule);
@@ -319,7 +334,18 @@ const FlightMap: React.FC = () => {
     }
 
     // ── Flight plan ───────────────────────────────────────────────────────────
-    const wp = flightPlanRef.current;
+    const di = dragInsertRef.current;
+    const dm = dragMoveRef.current;
+    const wpBase = flightPlanRef.current;
+    // Build display array: apply drag-move or drag-insert preview
+    let wp: Waypoint[];
+    if (dm) {
+      wp = wpBase.map((w, i) => (i === dm.wpIndex ? dm.current : w));
+    } else if (di) {
+      wp = [...wpBase.slice(0, di.legIndex + 1), di.wp, ...wpBase.slice(di.legIndex + 1)];
+    } else {
+      wp = wpBase;
+    }
     if (wp.length > 0) {
       const pts = wp.map((w) => project(w.lat, w.lon));
 
@@ -359,9 +385,13 @@ const FlightMap: React.FC = () => {
 
       // Waypoint markers
       pts.forEach((p, i) => {
+        const isInsertPreview = di !== null && i === di.legIndex + 1;
+        const isMovePreview = dm !== null && i === dm.wpIndex;
+        ctx.globalAlpha = isInsertPreview ? 0.55 : 1;
+
         // Circle
         ctx.beginPath();
-        ctx.fillStyle = '#f39c12';
+        ctx.fillStyle = isInsertPreview ? '#3498db' : isMovePreview ? '#2ecc71' : '#f39c12';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
@@ -384,6 +414,7 @@ const FlightMap: React.FC = () => {
         ctx.strokeText(wp[i].name, p.x + 11, p.y - 6);
         ctx.fillStyle = '#e67e22';
         ctx.fillText(wp[i].name, p.x + 11, p.y - 6);
+        ctx.globalAlpha = 1;
       });
     }
 
@@ -439,6 +470,22 @@ const FlightMap: React.FC = () => {
     ctx.font = '10px sans-serif';
     ctx.fillText('© OpenStreetMap contributors', W - 188, H - 4);
   }, [getTile]);
+
+  // Returns a project() function based on current map state
+  const getProjector = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const zoom = zoomRef.current;
+    const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+    const ts = TILE_SIZE * Math.pow(2, zoom - tz);
+    const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+    const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+    const W = canvas.width, H = canvas.height;
+    return (lat: number, lon: number) => ({
+      x: (lon2tile(lon, tz) - cTileX) * ts + W / 2,
+      y: (lat2tile(lat, tz) - cTileY) * ts + H / 2,
+    });
+  }, []);
 
   // Convert canvas pixel to lat/lon
   const pixelToLatLon = useCallback((px: number, py: number) => {
@@ -553,8 +600,49 @@ const FlightMap: React.FC = () => {
     draw();
   };
 
+  // Left mousedown: drag-move waypoint (priority) or drag-insert on leg (edit mode only)
+  const handleLeftMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 || !isEditingPlanRef.current) return;
+    const wp = flightPlanRef.current;
+    if (wp.length === 0) return;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const proj = getProjector();
+    if (!proj) return;
+
+    const HIT_WP = 14;  // px radius for waypoint hit
+    const HIT_LEG = 10; // px from segment line
+
+    // 1. Check if on an existing waypoint → drag-move
+    for (let i = 0; i < wp.length; i++) {
+      const { x, y } = proj(wp[i].lat, wp[i].lon);
+      if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT_WP) {
+        dragMoveRef.current = { wpIndex: i, original: wp[i], current: wp[i] };
+        suppressNextClickRef.current = true;
+        return;
+      }
+    }
+
+    // 2. Check if on a leg → drag-insert
+    if (wp.length < 2) return;
+    for (let i = 0; i < wp.length - 1; i++) {
+      const a = proj(wp[i].lat, wp[i].lon);
+      const b = proj(wp[i + 1].lat, wp[i + 1].lon);
+      if (pointToSegmentDist(px, py, a.x, a.y, b.x, b.y) <= HIT_LEG) {
+        const ll = pixelToLatLon(px, py);
+        if (!ll) return;
+        dragInsertRef.current = { legIndex: i, wp: { lat: ll.lat, lon: ll.lon, name: '…' } };
+        suppressNextClickRef.current = true;
+        return;
+      }
+    }
+  };
+
   // Left click: add waypoint (only in edit mode)
   const handleClick = (e: React.MouseEvent) => {
+    if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
     if (e.button !== 0 || !isEditingPlanRef.current) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const px = e.clientX - rect.left;
@@ -625,19 +713,80 @@ const FlightMap: React.FC = () => {
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
+    // Confirm drag-move on left button release
+    if (e.button === 0 && dragMoveRef.current) {
+      const { wpIndex, current } = dragMoveRef.current;
+      flightPlanRef.current[wpIndex] = current;
+      dragMoveRef.current = null;
+      updatePlanInfo();
+      draw();
+      return;
+    }
+
+    // Confirm drag-insert on left button release
+    if (e.button === 0 && dragInsertRef.current) {
+      const { legIndex, wp: newWp } = dragInsertRef.current;
+      if (newWp.name !== '…') {
+        flightPlanRef.current.splice(legIndex + 1, 0, newWp);
+      } else {
+        flightPlanRef.current.splice(legIndex + 1, 0, { ...newWp, name: `WPT${flightPlanRef.current.length + 1}` });
+      }
+      dragInsertRef.current = null;
+      updatePlanInfo();
+      draw();
+      return;
+    }
+    if (e.button === 0 && dragInsertRef.current === null) {
+      // cancelled (e.g. dragged back off)
+    }
     if (e.button !== 2) return;
     isDraggingRef.current = false;
     setIsDragging(false);
   };
 
   const handleMouseLeave = () => {
+    if (dragMoveRef.current) { dragMoveRef.current = null; draw(); }
+    if (dragInsertRef.current) {
+      dragInsertRef.current = null;
+      draw();
+    }
     isDraggingRef.current = false;
     setIsDragging(false);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    mousePosRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    mousePosRef.current = { x: px, y: py };
+
+    // Drag-move: update existing waypoint position
+    if (dragMoveRef.current) {
+      const snapped = findNearestSnap(px, py);
+      dragMoveRef.current = {
+        ...dragMoveRef.current,
+        current: snapped ?? (pixelToLatLon(px, py)
+          ? { lat: pixelToLatLon(px, py)!.lat, lon: pixelToLatLon(px, py)!.lon, name: dragMoveRef.current.original.name }
+          : dragMoveRef.current.current),
+      };
+      draw();
+      return;
+    }
+
+    // Drag-insert: update preview waypoint position
+    if (dragInsertRef.current) {
+      const snapped = findNearestSnap(px, py);
+      if (snapped) {
+        dragInsertRef.current = { ...dragInsertRef.current, wp: snapped };
+      } else {
+        const ll = pixelToLatLon(px, py);
+        if (ll) dragInsertRef.current = { ...dragInsertRef.current, wp: { lat: ll.lat, lon: ll.lon, name: '…' } };
+      }
+      draw();
+      return;
+    }
+
+    // Pan
     if (!isDraggingRef.current) return;
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
@@ -832,7 +981,7 @@ const FlightMap: React.FC = () => {
         className={`map-canvas-container ${cursorClass}`}
         onWheel={handleWheel}
         onClick={handleClick}
-        onMouseDown={handleMouseDown}
+        onMouseDown={(e) => { handleLeftMouseDown(e); handleMouseDown(e); }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
