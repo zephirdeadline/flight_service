@@ -9,10 +9,17 @@ interface TrailPoint {
   lon: number;
 }
 
+interface Waypoint {
+  lat: number;
+  lon: number;
+  name: string; // airport ident or custom label
+}
+
 const TILE_SIZE = 256;
 const MIN_ZOOM = 2;
 const MAX_ZOOM = 15;
 const MAX_TRAIL = 2000;
+const SNAP_PX = 18; // pixels radius to snap to an airport
 
 const tileCache = new Map<string, HTMLImageElement>();
 let airportsCache: Airport[] | null = null;
@@ -29,6 +36,16 @@ const tile2lat = (y: number, z: number) => {
 };
 const tile2lon = (x: number, z: number) => (x / Math.pow(2, z)) * 360 - 180;
 
+const haversineNm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 3440.065;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 const FlightMap: React.FC = () => {
   const { lastData, isConnected } = useSimConnect();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,22 +55,33 @@ const FlightMap: React.FC = () => {
   const lastDataRef = useRef(lastData);
   const redrawPendingRef = useRef(false);
 
-  // Map center (used when not following)
   const mapCenterRef = useRef({ lat: 46.0, lon: 2.0 });
   const followRef = useRef(true);
   const [isFollowing, setIsFollowing] = useState(true);
 
-  // Mouse position on canvas (for zoom-on-cursor)
   const mousePosRef = useRef({ x: 0, y: 0 });
-
-  // Pan drag state
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
+  // Flight plan
+  const flightPlanRef = useRef<Waypoint[]>([]);
+  const [isEditingPlan, setIsEditingPlan] = useState(false);
+  const isEditingPlanRef = useRef(false);
+  const [planInfo, setPlanInfo] = useState<{ count: number; totalNm: number }>({ count: 0, totalNm: 0 });
+
   useEffect(() => {
     lastDataRef.current = lastData;
   }, [lastData]);
+
+  const updatePlanInfo = () => {
+    const wp = flightPlanRef.current;
+    let total = 0;
+    for (let i = 1; i < wp.length; i++) {
+      total += haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
+    }
+    setPlanInfo({ count: wp.length, totalNm: Math.round(total) });
+  };
 
   const getTile = useCallback(
     (tx: number, ty: number, tz: number, scheduleRedraw: () => void): HTMLImageElement | null => {
@@ -85,7 +113,6 @@ const FlightMap: React.FC = () => {
     const data = lastDataRef.current;
     const zoom = zoomRef.current;
 
-    // Update map center from aircraft if following
     if (followRef.current && data) {
       mapCenterRef.current = { lat: data.latitude, lon: data.longitude };
     }
@@ -168,15 +195,77 @@ const FlightMap: React.FC = () => {
         ctx.fill();
         ctx.stroke();
 
-        {
-          ctx.font = `bold ${airport.type === 'large_airport' ? 11 : 10}px monospace`;
-          ctx.fillStyle = '#1a2535';
-          ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-          ctx.lineWidth = 2.5;
-          ctx.strokeText(airport.id, x + dotRadius + 2, y + 4);
-          ctx.fillText(airport.id, x + dotRadius + 2, y + 4);
+        ctx.font = `bold ${airport.type === 'large_airport' ? 11 : 10}px monospace`;
+        ctx.fillStyle = '#1a2535';
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(airport.id, x + dotRadius + 2, y + 4);
+        ctx.fillText(airport.id, x + dotRadius + 2, y + 4);
+      }
+    }
+
+    // ── Flight plan ───────────────────────────────────────────────────────────
+    const wp = flightPlanRef.current;
+    if (wp.length > 0) {
+      const pts = wp.map((w) => project(w.lat, w.lon));
+
+      // Leg lines
+      if (pts.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#f39c12';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([8, 5]);
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // Distance label on each leg
+        ctx.font = 'bold 11px sans-serif';
+        for (let i = 1; i < wp.length; i++) {
+          const nm = haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
+          const mx = (pts[i - 1].x + pts[i].x) / 2;
+          const my = (pts[i - 1].y + pts[i].y) / 2;
+          const label = `${Math.round(nm)} NM`;
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 3;
+          ctx.strokeText(label, mx + 4, my - 4);
+          ctx.fillStyle = '#e67e22';
+          ctx.fillText(label, mx + 4, my - 4);
         }
       }
+
+      // Waypoint markers
+      pts.forEach((p, i) => {
+        // Circle
+        ctx.beginPath();
+        ctx.fillStyle = '#f39c12';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Index number inside circle
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#1a1a1a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), p.x, p.y);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        // Name label
+        ctx.font = 'bold 11px monospace';
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(wp[i].name, p.x + 11, p.y - 6);
+        ctx.fillStyle = '#e67e22';
+        ctx.fillText(wp[i].name, p.x + 11, p.y - 6);
+      });
     }
 
     // ── Trail ─────────────────────────────────────────────────────────────────
@@ -232,38 +321,120 @@ const FlightMap: React.FC = () => {
     ctx.fillText('© OpenStreetMap contributors', W - 188, H - 4);
   }, [getTile]);
 
-  // Pan the map by pixel delta (converts to lat/lon offset)
+  // Convert canvas pixel to lat/lon
+  const pixelToLatLon = useCallback((px: number, py: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const zoom = zoomRef.current;
+    const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+    const scale = Math.pow(2, zoom - tz);
+    const ts = TILE_SIZE * scale;
+    const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+    const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+    const tileX = (px - canvas.width / 2) / ts + cTileX;
+    const tileY = (py - canvas.height / 2) / ts + cTileY;
+    return { lat: tile2lat(tileY, tz), lon: tile2lon(tileX, tz) };
+  }, []);
+
+  // Find nearest visible airport within SNAP_PX pixels of a canvas position
+  const findNearestAirport = useCallback((px: number, py: number): Airport | null => {
+    if (!airportsCache) return null;
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const W = canvas.width;
+    const H = canvas.height;
+    const zoom = zoomRef.current;
+    const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+    const scale = Math.pow(2, zoom - tz);
+    const ts = TILE_SIZE * scale;
+    const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+    const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+
+    const project = (lat: number, lon: number) => ({
+      x: (lon2tile(lon, tz) - cTileX) * ts + W / 2,
+      y: (lat2tile(lat, tz) - cTileY) * ts + H / 2,
+    });
+
+    let best: Airport | null = null;
+    let bestDist = SNAP_PX;
+
+    for (const airport of airportsCache) {
+      if (zoom < 7 && airport.type !== 'large_airport') continue;
+      if (zoom < 8.5 && airport.type === 'small_airport') continue;
+      const { x, y } = project(airport.latitude, airport.longitude);
+      const d = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+      if (d < bestDist) {
+        bestDist = d;
+        best = airport;
+      }
+    }
+    return best;
+  }, []);
+
   const panByPixels = useCallback((dx: number, dy: number) => {
     const zoom = zoomRef.current;
     const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
     const scale = Math.pow(2, zoom - tz);
     const ts = TILE_SIZE * scale;
-
     const dTileX = -dx / ts;
     const dTileY = -dy / ts;
-
     const currentTileY = lat2tile(mapCenterRef.current.lat, tz);
     const newTileY = currentTileY + dTileY;
-    const newLat = tile2lat(newTileY, tz);
     const dLon = (dTileX / Math.pow(2, tz)) * 360;
-
     mapCenterRef.current = {
-      lat: Math.max(-85, Math.min(85, newLat)),
+      lat: Math.max(-85, Math.min(85, tile2lat(newTileY, tz))),
       lon: mapCenterRef.current.lon + dLon,
     };
   }, []);
 
-  // Sync mapCenter with aircraft when switching to follow mode
   const toggleFollow = () => {
     const next = !followRef.current;
     followRef.current = next;
     setIsFollowing(next);
     if (next && lastDataRef.current) {
-      mapCenterRef.current = {
-        lat: lastDataRef.current.latitude,
-        lon: lastDataRef.current.longitude,
-      };
+      mapCenterRef.current = { lat: lastDataRef.current.latitude, lon: lastDataRef.current.longitude };
     }
+    draw();
+  };
+
+  const toggleEditPlan = () => {
+    const next = !isEditingPlanRef.current;
+    isEditingPlanRef.current = next;
+    setIsEditingPlan(next);
+  };
+
+  const clearPlan = () => {
+    flightPlanRef.current = [];
+    updatePlanInfo();
+    draw();
+  };
+
+  const undoLastWaypoint = () => {
+    flightPlanRef.current.pop();
+    updatePlanInfo();
+    draw();
+  };
+
+  // Left click: add waypoint (only in edit mode)
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.button !== 0 || !isEditingPlanRef.current) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const snapped = findNearestAirport(px, py);
+    let wp: Waypoint;
+    if (snapped) {
+      wp = { lat: snapped.latitude, lon: snapped.longitude, name: snapped.id };
+    } else {
+      const ll = pixelToLatLon(px, py);
+      if (!ll) return;
+      const idx = flightPlanRef.current.length + 1;
+      wp = { lat: ll.lat, lon: ll.lon, name: `WPT${idx}` };
+    }
+
+    flightPlanRef.current.push(wp);
+    updatePlanInfo();
     draw();
   };
 
@@ -273,15 +444,11 @@ const FlightMap: React.FC = () => {
     isDraggingRef.current = true;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     setIsDragging(true);
-    // Disable follow when user manually pans
     if (followRef.current) {
       followRef.current = false;
       setIsFollowing(false);
       if (lastDataRef.current) {
-        mapCenterRef.current = {
-          lat: lastDataRef.current.latitude,
-          lon: lastDataRef.current.longitude,
-        };
+        mapCenterRef.current = { lat: lastDataRef.current.latitude, lon: lastDataRef.current.longitude };
       }
     }
   };
@@ -318,44 +485,31 @@ const FlightMap: React.FC = () => {
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldZoom * factor));
     if (newZoom === oldZoom) return;
 
-    // Pixel position of cursor on canvas
     const { x: mx, y: my } = mousePosRef.current;
     const W = canvas.width;
     const H = canvas.height;
 
-    // Compute lat/lon under the cursor before zoom
     const oldTz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(oldZoom)));
-    const oldScale = Math.pow(2, oldZoom - oldTz);
-    const oldTs = TILE_SIZE * oldScale;
+    const oldTs = TILE_SIZE * Math.pow(2, oldZoom - oldTz);
     const cTileX = lon2tile(mapCenterRef.current.lon, oldTz);
     const cTileY = lat2tile(mapCenterRef.current.lat, oldTz);
-    const mouseTileX = (mx - W / 2) / oldTs + cTileX;
-    const mouseTileY = (my - H / 2) / oldTs + cTileY;
-    const mouseLon = tile2lon(mouseTileX, oldTz);
-    const mouseLat = tile2lat(mouseTileY, oldTz);
+    const mouseLon = tile2lon((mx - W / 2) / oldTs + cTileX, oldTz);
+    const mouseLat = tile2lat((my - H / 2) / oldTs + cTileY, oldTz);
 
     zoomRef.current = newZoom;
 
-    // After zoom, shift mapCenter so the same lat/lon stays under cursor
     const newTz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(newZoom)));
-    const newScale = Math.pow(2, newZoom - newTz);
-    const newTs = TILE_SIZE * newScale;
-    const newCenterTileX = lon2tile(mouseLon, newTz) - (mx - W / 2) / newTs;
-    const newCenterTileY = lat2tile(mouseLat, newTz) - (my - H / 2) / newTs;
+    const newTs = TILE_SIZE * Math.pow(2, newZoom - newTz);
     mapCenterRef.current = {
-      lat: Math.max(-85, Math.min(85, tile2lat(newCenterTileY, newTz))),
-      lon: tile2lon(newCenterTileX, newTz),
+      lat: Math.max(-85, Math.min(85, tile2lat(lat2tile(mouseLat, newTz) - (my - H / 2) / newTs, newTz))),
+      lon: tile2lon(lon2tile(mouseLon, newTz) - (mx - W / 2) / newTs, newTz),
     };
 
-    // Disable follow when user zooms off-center
     if (followRef.current) {
       const data = lastDataRef.current;
-      if (data) {
-        const dist = Math.abs(mouseLat - data.latitude) + Math.abs(mouseLon - data.longitude);
-        if (dist > 0.01) {
-          followRef.current = false;
-          setIsFollowing(false);
-        }
+      if (data && Math.abs(mouseLat - data.latitude) + Math.abs(mouseLon - data.longitude) > 0.01) {
+        followRef.current = false;
+        setIsFollowing(false);
       }
     }
 
@@ -381,7 +535,6 @@ const FlightMap: React.FC = () => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
-
     const observer = new ResizeObserver(() => {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
@@ -391,15 +544,11 @@ const FlightMap: React.FC = () => {
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     draw();
-
     return () => observer.disconnect();
   }, [draw]);
 
   useEffect(() => {
-    if (!lastData) {
-      draw();
-      return;
-    }
+    if (!lastData) { draw(); return; }
     const { latitude, longitude } = lastData;
     const trail = trailRef.current;
     const last = trail[trail.length - 1];
@@ -409,6 +558,12 @@ const FlightMap: React.FC = () => {
     }
     draw();
   }, [lastData, draw]);
+
+  const cursorClass = isDragging
+    ? 'map-canvas-container--dragging'
+    : isEditingPlan
+      ? 'map-canvas-container--editing'
+      : '';
 
   return (
     <div className="map-page">
@@ -428,30 +583,14 @@ const FlightMap: React.FC = () => {
         <div className="map-data-row">
           {lastData ? (
             <>
-              <span className="map-data-item">
-                <span className="map-data-label">LAT</span>
-                {lastData.latitude.toFixed(4)}°
-              </span>
-              <span className="map-data-item">
-                <span className="map-data-label">LON</span>
-                {lastData.longitude.toFixed(4)}°
-              </span>
-              <span className="map-data-item">
-                <span className="map-data-label">ALT</span>
-                {Math.round(lastData.altitude).toLocaleString()} ft
-              </span>
-              <span className="map-data-item">
-                <span className="map-data-label">HDG</span>
-                {Math.round(lastData.heading)}°
-              </span>
-              <span className="map-data-item">
-                <span className="map-data-label">IAS</span>
-                {Math.round(lastData.airspeed_indicated)} kts
-              </span>
+              <span className="map-data-item"><span className="map-data-label">LAT</span>{lastData.latitude.toFixed(4)}°</span>
+              <span className="map-data-item"><span className="map-data-label">LON</span>{lastData.longitude.toFixed(4)}°</span>
+              <span className="map-data-item"><span className="map-data-label">ALT</span>{Math.round(lastData.altitude).toLocaleString()} ft</span>
+              <span className="map-data-item"><span className="map-data-label">HDG</span>{Math.round(lastData.heading)}°</span>
+              <span className="map-data-item"><span className="map-data-label">IAS</span>{Math.round(lastData.airspeed_indicated)} kts</span>
               <span className="map-data-item">
                 <span className="map-data-label">VS</span>
-                {lastData.vertical_speed > 0 ? '+' : ''}
-                {Math.round(lastData.vertical_speed)} ft/min
+                {lastData.vertical_speed > 0 ? '+' : ''}{Math.round(lastData.vertical_speed)} ft/min
               </span>
             </>
           ) : (
@@ -462,24 +601,49 @@ const FlightMap: React.FC = () => {
         </div>
 
         <div className="map-toolbar-right">
+          {/* Flight plan controls */}
+          <div className="map-plan-controls">
+            <button
+              className={`map-plan-btn ${isEditingPlan ? 'map-plan-btn--active' : ''}`}
+              onClick={toggleEditPlan}
+              title="Clic gauche pour ajouter un waypoint"
+            >
+              {isEditingPlan ? '✏️ Édition' : '✏️ Plan de vol'}
+            </button>
+            {planInfo.count > 0 && (
+              <>
+                <span className="map-plan-info">
+                  {planInfo.count} WPT · {planInfo.totalNm} NM
+                </span>
+                <button className="map-plan-undo" onClick={undoLastWaypoint} title="Supprimer le dernier waypoint">
+                  ↩
+                </button>
+                <button className="map-plan-clear" onClick={clearPlan}>
+                  Effacer plan
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="map-toolbar-sep" />
+
           <button
             className={`map-follow-btn ${isFollowing ? 'map-follow-btn--active' : ''}`}
             onClick={toggleFollow}
-            title={isFollowing ? 'Désactiver le suivi' : 'Centrer sur l\'avion'}
           >
-            {isFollowing ? '✈️ Suivi actif' : '✈️ Suivre l\'avion'}
+            {isFollowing ? '✈️ Suivi actif' : '✈️ Suivre'}
           </button>
-          <span className="map-hint">Clic droit pour déplacer</span>
           <button className="map-clear-btn" onClick={clearTrail}>
-            Effacer trajectoire
+            Effacer trace
           </button>
         </div>
       </div>
 
       <div
         ref={containerRef}
-        className={`map-canvas-container ${isDragging ? 'map-canvas-container--dragging' : ''}`}
+        className={`map-canvas-container ${cursorClass}`}
         onWheel={handleWheel}
+        onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -487,13 +651,16 @@ const FlightMap: React.FC = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <canvas ref={canvasRef} className="map-canvas" />
+        {isEditingPlan && (
+          <div className="map-edit-hint">
+            Clic gauche pour ajouter un waypoint · Snap automatique sur les aéroports
+          </div>
+        )}
         {!lastData && (
           <div className="map-overlay">
             <div className="map-overlay-icon">✈️</div>
             <div className="map-overlay-text">
-              {isConnected
-                ? 'En attente des données SimConnect...'
-                : 'Connectez-vous à Flight Simulator pour voir la carte'}
+              {isConnected ? 'En attente des données SimConnect...' : 'Connectez-vous à Flight Simulator pour voir la carte'}
             </div>
           </div>
         )}

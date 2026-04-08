@@ -179,6 +179,107 @@
   cursor: grabbing;
 }
 
+.map-canvas-container--editing {
+  cursor: crosshair;
+}
+
+.map-edit-hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(243, 156, 18, 0.92);
+  color: #1a1a1a;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.map-plan-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-plan-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #2a3f5a;
+  border-radius: 4px;
+  color: #6a8aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.map-plan-btn:hover {
+  background: #252e42;
+  color: #b0c8e0;
+}
+
+.map-plan-btn--active {
+  background: rgba(243, 156, 18, 0.15);
+  border-color: #f39c12;
+  color: #f39c12;
+}
+
+.map-plan-btn--active:hover {
+  background: rgba(243, 156, 18, 0.25);
+}
+
+.map-plan-info {
+  font-size: 11px;
+  font-family: monospace;
+  color: #f39c12;
+  white-space: nowrap;
+}
+
+.map-plan-undo {
+  font-size: 13px;
+  padding: 2px 7px;
+  background: transparent;
+  border: 1px solid #2a3f5a;
+  border-radius: 4px;
+  color: #6a8aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.map-plan-undo:hover {
+  background: #252e42;
+  color: #f39c12;
+  border-color: #f39c12;
+}
+
+.map-plan-clear {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #3a2020;
+  border-radius: 4px;
+  color: #8a5a5a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.map-plan-clear:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.map-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: #2a3548;
+  flex-shrink: 0;
+}
+
 .map-canvas {
   display: block;
   width: 100%;
