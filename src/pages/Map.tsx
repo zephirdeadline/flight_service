@@ -13,7 +13,8 @@ interface TrailPoint {
 interface Waypoint {
   lat: number;
   lon: number;
-  name: string; // airport ident or custom label
+  name: string;
+  note?: string;
 }
 
 const TILE_SIZE = 256;
@@ -109,6 +110,7 @@ const FlightMap: React.FC = () => {
   const [isFollowing, setIsFollowing] = useState(true);
   const [navaidPopup, setNavaidPopup] = useState<{ navaid: Navaid; x: number; y: number } | null>(null);
   const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
+  const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
 
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
@@ -118,7 +120,7 @@ const FlightMap: React.FC = () => {
   // Drag-insert on a leg
   const dragInsertRef = useRef<{ legIndex: number; wp: Waypoint } | null>(null);
   // Drag-move of an existing waypoint
-  const dragMoveRef = useRef<{ wpIndex: number; original: Waypoint; current: Waypoint } | null>(null);
+  const dragMoveRef = useRef<{ wpIndex: number; original: Waypoint; current: Waypoint; startX: number; startY: number; moved: boolean } | null>(null);
   const suppressNextClickRef = useRef(false);
 
   // Flight plan (module-level for session persistence, localStorage for cross-restart)
@@ -421,6 +423,25 @@ const FlightMap: React.FC = () => {
         ctx.strokeText(wp[i].name, p.x + 11, p.y - 6);
         ctx.fillStyle = '#e67e22';
         ctx.fillText(wp[i].name, p.x + 11, p.y - 6);
+
+        // Note indicator: small amber dot top-right + truncated note text
+        if (wp[i].note) {
+          ctx.globalAlpha = isInsertPreview ? 0.55 : 1;
+          // Dot
+          ctx.beginPath();
+          ctx.fillStyle = '#f1c40f';
+          ctx.arc(p.x + 7, p.y - 7, 3, 0, Math.PI * 2);
+          ctx.fill();
+          // Text
+          const noteText = wp[i].note!.length > 22 ? wp[i].note!.slice(0, 22) + '…' : wp[i].note!;
+          ctx.font = 'italic 9px sans-serif';
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+          ctx.lineWidth = 2;
+          ctx.strokeText(noteText, p.x + 11, p.y + 7);
+          ctx.fillStyle = '#b8860b';
+          ctx.fillText(noteText, p.x + 11, p.y + 7);
+        }
+
         ctx.globalAlpha = 1;
       });
     }
@@ -626,7 +647,7 @@ const FlightMap: React.FC = () => {
     for (let i = 0; i < wp.length; i++) {
       const { x, y } = proj(wp[i].lat, wp[i].lon);
       if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT_WP) {
-        dragMoveRef.current = { wpIndex: i, original: wp[i], current: wp[i] };
+        dragMoveRef.current = { wpIndex: i, original: wp[i], current: wp[i], startX: px, startY: py, moved: false };
         suppressNextClickRef.current = true;
         return;
       }
@@ -767,11 +788,25 @@ const FlightMap: React.FC = () => {
   const handleMouseUp = (e: React.MouseEvent) => {
     // Confirm drag-move on left button release
     if (e.button === 0 && dragMoveRef.current) {
-      const { wpIndex, current } = dragMoveRef.current;
-      flightPlanRef.current[wpIndex] = current;
-      dragMoveRef.current = null;
-      updatePlanInfo();
-      draw();
+      const dm = dragMoveRef.current;
+      if (dm.moved) {
+        // It was a real drag → apply new position
+        flightPlanRef.current[dm.wpIndex] = { ...dm.current, note: dm.original.note };
+        dragMoveRef.current = null;
+        updatePlanInfo();
+        draw();
+      } else {
+        // It was a click → open note editor
+        dragMoveRef.current = null;
+        suppressNextClickRef.current = false;
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setNoteEditor({
+          wpIndex: dm.wpIndex,
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+          value: dm.original.note ?? '',
+        });
+      }
       return;
     }
 
@@ -814,14 +849,18 @@ const FlightMap: React.FC = () => {
 
     // Drag-move: update existing waypoint position
     if (dragMoveRef.current) {
-      const snapped = findNearestSnap(px, py);
-      dragMoveRef.current = {
-        ...dragMoveRef.current,
-        current: snapped ?? (pixelToLatLon(px, py)
-          ? { lat: pixelToLatLon(px, py)!.lat, lon: pixelToLatLon(px, py)!.lon, name: dragMoveRef.current.original.name }
-          : dragMoveRef.current.current),
-      };
-      draw();
+      const dm = dragMoveRef.current;
+      const dist = Math.sqrt((px - dm.startX) ** 2 + (py - dm.startY) ** 2);
+      if (dist > 4) {
+        const snapped = findNearestSnap(px, py);
+        const ll = pixelToLatLon(px, py);
+        dragMoveRef.current = {
+          ...dm,
+          moved: true,
+          current: snapped ?? (ll ? { lat: ll.lat, lon: ll.lon, name: dm.original.name, note: dm.original.note } : dm.current),
+        };
+        draw();
+      }
       return;
     }
 
@@ -1130,6 +1169,40 @@ const FlightMap: React.FC = () => {
                 <div className="navaid-popup-row">
                   <span>✈️ Scheduled</span><span>{ap.scheduledService ? '✅ Yes' : '❌ No'}</span>
                 </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {noteEditor && (() => {
+          const containerW = containerRef.current?.clientWidth ?? 800;
+          const containerH = containerRef.current?.clientHeight ?? 600;
+          const left = Math.min(noteEditor.x + 14, containerW - 230);
+          const top = Math.min(noteEditor.y - 10, containerH - 130);
+          const wp = flightPlanRef.current[noteEditor.wpIndex];
+          const saveNote = (val: string) => {
+            flightPlanRef.current[noteEditor.wpIndex] = { ...wp, note: val.trim() || undefined };
+            updatePlanInfo();
+            draw();
+            setNoteEditor(null);
+          };
+          return (
+            <div className="note-editor" style={{ left, top }}>
+              <div className="note-editor-header">
+                <span>📝 {wp?.name}</span>
+                <button onClick={() => setNoteEditor(null)}>✕</button>
+              </div>
+              <textarea
+                className="note-editor-input"
+                autoFocus
+                value={noteEditor.value}
+                placeholder="Ajouter une note..."
+                onChange={(e) => setNoteEditor({ ...noteEditor, value: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(noteEditor.value); } if (e.key === 'Escape') setNoteEditor(null); }}
+              />
+              <div className="note-editor-footer">
+                <span className="note-editor-hint">Enter pour valider · Échap pour annuler</span>
+                <button className="note-editor-save" onClick={() => saveNote(noteEditor.value)}>OK</button>
               </div>
             </div>
           );
