@@ -1,3 +1,19 @@
+export interface Navaid {
+  id: string;
+  ident: string;
+  name: string;
+  type: string; // NDB, VOR, VOR-DME, DME, NDB-DME, TACAN, etc.
+  frequencyKhz: number;
+  latitude: number;
+  longitude: number;
+  elevationFt: number | null;
+  isoCountry: string;
+  magneticVariationDeg: number | null;
+  usageType: string | null; // LO, HI, BOTH, TERMINAL
+  power: string | null;     // LOW, MEDIUM, HIGH
+  associatedAirport: string | null;
+}
+
 export interface Airport {
   id: string;
   icao: string;

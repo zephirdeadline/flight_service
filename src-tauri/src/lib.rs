@@ -54,6 +54,8 @@ pub fn run() {
             commands::get_all_airports,
             commands::get_airport_by_id,
             commands::search_airports,
+            commands::get_all_navaids,
+            commands::search_navaids,
             // Commandes Aircraft
             commands::get_all_aircraft,
             commands::get_aircraft_by_id,

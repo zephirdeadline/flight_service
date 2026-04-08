@@ -20,6 +20,75 @@
   font-size: 1.1rem;
 }
 
+/* Mode switch */
+.mode-switch {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.mode-btn {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #7f8c8d;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  background: #f0f4f8;
+  color: #2c3e50;
+}
+
+.mode-btn--active {
+  background: #3498db;
+  color: white;
+}
+
+.mode-btn--navaid.mode-btn--active {
+  background: #8e44ad;
+}
+
+/* Navaid card & badges */
+.navaid-card {
+  border-color: #e8d5f5;
+}
+
+.navaid-card:hover {
+  border-color: #8e44ad;
+  box-shadow: 0 4px 12px rgba(142, 68, 173, 0.2);
+}
+
+.navaid-type-badge {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-weight: 700;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+}
+
+.navaid-freq {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #8e44ad;
+}
+
+.navaid-freq-lg {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #8e44ad;
+}
+
 /* Filters */
 .airports-filters {
   background: white;

@@ -171,3 +171,24 @@ AFTER UPDATE ON aircraft_maintenances
 BEGIN
     UPDATE aircraft_maintenances SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- Navaids (VOR, NDB, DME, etc.)
+CREATE TABLE IF NOT EXISTS navaids (
+    id TEXT PRIMARY KEY,
+    ident TEXT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    frequency_khz INTEGER NOT NULL DEFAULT 0,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    elevation_ft INTEGER,
+    iso_country TEXT NOT NULL DEFAULT '',
+    magnetic_variation_deg REAL,
+    usage_type TEXT,
+    power TEXT,
+    associated_airport TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_navaids_ident ON navaids(ident);
+CREATE INDEX IF NOT EXISTS idx_navaids_type ON navaids(type);
+CREATE INDEX IF NOT EXISTS idx_navaids_airport ON navaids(associated_airport);

@@ -173,6 +173,21 @@ pub fn search_airports(
     with_db(&db, |conn| queries::search_airports(conn, &query))
 }
 
+#[tauri::command]
+pub fn get_all_navaids(
+    db: tauri::State<Arc<Mutex<Database>>>
+) -> Result<Vec<Navaid>, String> {
+    with_db(&db, |conn| queries::get_all_navaids(conn))
+}
+
+#[tauri::command]
+pub fn search_navaids(
+    db: tauri::State<Arc<Mutex<Database>>>,
+    query: String,
+) -> Result<Vec<Navaid>, String> {
+    with_db(&db, |conn| queries::search_navaids(conn, &query))
+}
+
 // ============= Mission Commands =============
 
 #[tauri::command]

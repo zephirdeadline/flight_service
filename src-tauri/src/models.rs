@@ -8,9 +8,11 @@ pub mod owned_aircraft;
 pub mod maintenance;
 pub mod active_mission;
 pub mod market_aircraft;
+pub mod navaid;
 
 // Re-export des types principaux pour faciliter l'utilisation
 pub use airport::Airport;
+pub use navaid::Navaid;
 pub use aircraft::{AircraftCatalog, AircraftType};
 pub use mission::{Mission, MissionType, CargoDetails, PassengerDetails};
 pub use player::Player;

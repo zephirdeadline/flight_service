@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSimConnect } from '../context/SimConnectContext';
 import { airportService } from '../services/airportService';
-import type { Airport } from '../types';
+import { navaidService } from '../services/navaidService';
+import type { Airport, Navaid } from '../types';
 import './Map.css';
 
 interface TrailPoint {
@@ -24,6 +25,32 @@ const SNAP_PX = 18; // pixels radius to snap to an airport
 const tileCache = new Map<string, HTMLImageElement>();
 let airportsCache: Airport[] | null = null;
 let airportsFetching = false;
+let navaidsCache: Navaid[] | null = null;
+let navaidsFetching = false;
+
+const FLIGHT_PLAN_KEY = 'flightPlan';
+let flightPlanModule: Waypoint[] = (() => {
+  try {
+    const saved = localStorage.getItem(FLIGHT_PLAN_KEY);
+    return saved ? (JSON.parse(saved) as Waypoint[]) : [];
+  } catch {
+    return [];
+  }
+})();
+const saveFlightPlan = () => {
+  try { localStorage.setItem(FLIGHT_PLAN_KEY, JSON.stringify(flightPlanModule)); } catch {}
+};
+
+const NAVAID_COLORS: Record<string, string> = {
+  'VOR':     '#8e44ad',
+  'VOR-DME': '#8e44ad',
+  'VORTAC':  '#8e44ad',
+  'TACAN':   '#1a5276',
+  'NDB':     '#e67e22',
+  'NDB-DME': '#e67e22',
+  'DME':     '#7d3c98',
+};
+const navaidColor = (type: string) => NAVAID_COLORS[type] ?? '#7f8c8d';
 
 const lon2tile = (lon: number, z: number) => ((lon + 180) / 360) * Math.pow(2, z);
 const lat2tile = (lat: number, z: number) => {
@@ -35,6 +62,14 @@ const tile2lat = (y: number, z: number) => {
   return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 };
 const tile2lon = (x: number, z: number) => (x / Math.pow(2, z)) * 360 - 180;
+
+const bearingDeg = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+};
 
 const haversineNm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 3440.065;
@@ -64,11 +99,18 @@ const FlightMap: React.FC = () => {
   const dragStartRef = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
-  // Flight plan
-  const flightPlanRef = useRef<Waypoint[]>([]);
+  // Flight plan (module-level for session persistence, localStorage for cross-restart)
+  const flightPlanRef = useRef<Waypoint[]>(flightPlanModule);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   const isEditingPlanRef = useRef(false);
-  const [planInfo, setPlanInfo] = useState<{ count: number; totalNm: number }>({ count: 0, totalNm: 0 });
+  const [planInfo, setPlanInfo] = useState<{ count: number; totalNm: number }>(() => {
+    const wp = flightPlanModule;
+    let total = 0;
+    for (let i = 1; i < wp.length; i++) {
+      total += haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
+    }
+    return { count: wp.length, totalNm: Math.round(total) };
+  });
 
   useEffect(() => {
     lastDataRef.current = lastData;
@@ -76,6 +118,8 @@ const FlightMap: React.FC = () => {
 
   const updatePlanInfo = () => {
     const wp = flightPlanRef.current;
+    flightPlanModule = wp; // keep module in sync
+    saveFlightPlan();      // persist to localStorage
     let total = 0;
     for (let i = 1; i < wp.length; i++) {
       total += haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
@@ -204,6 +248,76 @@ const FlightMap: React.FC = () => {
       }
     }
 
+    // ── Navaids ───────────────────────────────────────────────────────────────
+    if (zoom >= 6 && navaidsCache) {
+      const margin = 40;
+      for (const nav of navaidsCache) {
+        // Zoom-based filter: only VOR-family at low zoom, all from 8.5
+        const isVor = nav.type.startsWith('VOR') || nav.type === 'VORTAC' || nav.type === 'TACAN';
+        if (zoom < 8.5 && !isVor) continue;
+
+        const { x, y } = project(nav.latitude, nav.longitude);
+        if (x < -margin || x > W + margin || y < -margin || y > H + margin) continue;
+
+        const color = navaidColor(nav.type);
+        const r = 7;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        if (nav.type.startsWith('VOR') || nav.type === 'VORTAC') {
+          // Hexagon for VOR types
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i - Math.PI / 6;
+            i === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a)) : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+          }
+          ctx.closePath();
+          ctx.fillStyle = color + '33';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.8;
+          ctx.fill();
+          ctx.stroke();
+        } else if (nav.type.startsWith('NDB')) {
+          // Circle with inner dot for NDB
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.fillStyle = color + '33';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.8;
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        } else {
+          // Diamond for DME / TACAN
+          ctx.beginPath();
+          ctx.moveTo(0, -r);
+          ctx.lineTo(r, 0);
+          ctx.lineTo(0, r);
+          ctx.lineTo(-r, 0);
+          ctx.closePath();
+          ctx.fillStyle = color + '33';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.8;
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        ctx.restore();
+
+        // Ident label
+        ctx.font = 'bold 10px monospace';
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(nav.ident, x + r + 2, y + 4);
+        ctx.fillStyle = color;
+        ctx.fillText(nav.ident, x + r + 2, y + 4);
+      }
+    }
+
     // ── Flight plan ───────────────────────────────────────────────────────────
     const wp = flightPlanRef.current;
     if (wp.length > 0) {
@@ -223,18 +337,23 @@ const FlightMap: React.FC = () => {
         ctx.setLineDash([]);
         ctx.restore();
 
-        // Distance label on each leg
+        // Distance + bearing label on each leg
         ctx.font = 'bold 11px sans-serif';
         for (let i = 1; i < wp.length; i++) {
           const nm = haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
+          const brg = bearingDeg(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
           const mx = (pts[i - 1].x + pts[i].x) / 2;
           const my = (pts[i - 1].y + pts[i].y) / 2;
-          const label = `${Math.round(nm)} NM`;
+          const line1 = `${Math.round(nm)} NM`;
+          const line2 = `${Math.round(brg).toString().padStart(3, '0')}°`;
           ctx.strokeStyle = 'rgba(255,255,255,0.9)';
           ctx.lineWidth = 3;
-          ctx.strokeText(label, mx + 4, my - 4);
+          ctx.strokeText(line1, mx + 4, my - 5);
+          ctx.strokeText(line2, mx + 4, my + 8);
           ctx.fillStyle = '#e67e22';
-          ctx.fillText(label, mx + 4, my - 4);
+          ctx.fillText(line1, mx + 4, my - 5);
+          ctx.fillStyle = '#f5cba7';
+          ctx.fillText(line2, mx + 4, my + 8);
         }
       }
 
@@ -336,9 +455,8 @@ const FlightMap: React.FC = () => {
     return { lat: tile2lat(tileY, tz), lon: tile2lon(tileX, tz) };
   }, []);
 
-  // Find nearest visible airport within SNAP_PX pixels of a canvas position
-  const findNearestAirport = useCallback((px: number, py: number): Airport | null => {
-    if (!airportsCache) return null;
+  // Find nearest visible airport or navaid within SNAP_PX pixels
+  const findNearestSnap = useCallback((px: number, py: number): Waypoint | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const W = canvas.width;
@@ -350,24 +468,43 @@ const FlightMap: React.FC = () => {
     const cTileX = lon2tile(mapCenterRef.current.lon, tz);
     const cTileY = lat2tile(mapCenterRef.current.lat, tz);
 
-    const project = (lat: number, lon: number) => ({
+    const proj = (lat: number, lon: number) => ({
       x: (lon2tile(lon, tz) - cTileX) * ts + W / 2,
       y: (lat2tile(lat, tz) - cTileY) * ts + H / 2,
     });
 
-    let best: Airport | null = null;
     let bestDist = SNAP_PX;
+    let best: Waypoint | null = null;
 
-    for (const airport of airportsCache) {
-      if (zoom < 7 && airport.type !== 'large_airport') continue;
-      if (zoom < 8.5 && airport.type === 'small_airport') continue;
-      const { x, y } = project(airport.latitude, airport.longitude);
-      const d = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
-      if (d < bestDist) {
-        bestDist = d;
-        best = airport;
+    // Check airports
+    if (airportsCache) {
+      for (const airport of airportsCache) {
+        if (zoom < 7 && airport.type !== 'large_airport') continue;
+        if (zoom < 8.5 && airport.type === 'small_airport') continue;
+        const { x, y } = proj(airport.latitude, airport.longitude);
+        const d = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { lat: airport.latitude, lon: airport.longitude, name: airport.id };
+        }
       }
     }
+
+    // Check navaids
+    if (navaidsCache) {
+      for (const nav of navaidsCache) {
+        const isVor = nav.type.startsWith('VOR') || nav.type === 'VORTAC' || nav.type === 'TACAN';
+        if (zoom < 8.5 && !isVor) continue;
+        if (zoom < 6) continue;
+        const { x, y } = proj(nav.latitude, nav.longitude);
+        const d = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { lat: nav.latitude, lon: nav.longitude, name: nav.ident };
+        }
+      }
+    }
+
     return best;
   }, []);
 
@@ -405,6 +542,7 @@ const FlightMap: React.FC = () => {
 
   const clearPlan = () => {
     flightPlanRef.current = [];
+    flightPlanModule = [];
     updatePlanInfo();
     draw();
   };
@@ -422,10 +560,10 @@ const FlightMap: React.FC = () => {
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
 
-    const snapped = findNearestAirport(px, py);
+    const snapped = findNearestSnap(px, py);
     let wp: Waypoint;
     if (snapped) {
-      wp = { lat: snapped.latitude, lon: snapped.longitude, name: snapped.id };
+      wp = snapped;
     } else {
       const ll = pixelToLatLon(px, py);
       if (!ll) return;
@@ -441,6 +579,39 @@ const FlightMap: React.FC = () => {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 2) return;
     e.preventDefault();
+
+    // Check if right-click hits a waypoint — delete it if so
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const canvas = canvasRef.current;
+    if (canvas && flightPlanRef.current.length > 0) {
+      const zoom = zoomRef.current;
+      const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+      const ts = TILE_SIZE * Math.pow(2, zoom - tz);
+      const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+      const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+      const proj = (lat: number, lon: number) => ({
+        x: (lon2tile(lon, tz) - cTileX) * ts + canvas.width / 2,
+        y: (lat2tile(lat, tz) - cTileY) * ts + canvas.height / 2,
+      });
+
+      const HIT_RADIUS = 14;
+      const idx = flightPlanRef.current.findIndex((wp) => {
+        const { x, y } = proj(wp.lat, wp.lon);
+        return Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT_RADIUS;
+      });
+
+      if (idx !== -1) {
+        flightPlanRef.current.splice(idx, 1);
+        updatePlanInfo();
+        draw();
+        return; // don't start panning
+      }
+    }
+
+    // No waypoint hit → start panning
     isDraggingRef.current = true;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     setIsDragging(true);
@@ -532,6 +703,16 @@ const FlightMap: React.FC = () => {
   }, [draw]);
 
   useEffect(() => {
+    if (navaidsCache || navaidsFetching) return;
+    navaidsFetching = true;
+    navaidService.getAllNavaids().then((navaids) => {
+      navaidsCache = navaids;
+      navaidsFetching = false;
+      draw();
+    });
+  }, [draw]);
+
+  useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
@@ -577,6 +758,13 @@ const FlightMap: React.FC = () => {
             <span className="legend-label">Medium</span>
             <span className="legend-dot legend-small" />
             <span className="legend-label">Small</span>
+            <span className="legend-sep" />
+            <span className="legend-navaid legend-vor" />
+            <span className="legend-label">VOR</span>
+            <span className="legend-navaid legend-ndb" />
+            <span className="legend-label">NDB</span>
+            <span className="legend-navaid legend-dme" />
+            <span className="legend-label">DME</span>
           </div>
         </div>
 

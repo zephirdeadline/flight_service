@@ -70,6 +70,37 @@
   margin-right: 4px;
 }
 
+.legend-sep {
+  width: 1px;
+  height: 12px;
+  background: #2a3548;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Navaid legend shapes (SVG-like via clip-path) */
+.legend-navaid {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.legend-vor {
+  background: #8e44ad;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.legend-ndb {
+  background: #e67e22;
+  border-radius: 50%;
+}
+
+.legend-dme {
+  background: #7d3c98;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
 .map-trail-count {
   font-size: 10px;
   color: #e74c3c;
