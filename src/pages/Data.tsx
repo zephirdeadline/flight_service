@@ -2,7 +2,7 @@ import { useSimConnect } from '../context/SimConnectContext';
 import './Data.css';
 
 export default function Data() {
-  const { isConnected, lastData: data } = useSimConnect();
+  const { isConnected, lastData: data, lastDataTime } = useSimConnect();
 
   const renderGauge = (value: number, max: number, label: string, unit: string) => {
     const percentage = Math.min((value / max) * 100, 100);
@@ -32,6 +32,11 @@ export default function Data() {
     <div className="data-page">
       <div className="data-header">
         <h1>✈️ Aircraft Data</h1>
+        {lastDataTime && (
+          <span className="last-data-time">
+            Last update: {lastDataTime.toLocaleTimeString()}
+          </span>
+        )}
       </div>
 
       {!isConnected && (
@@ -71,11 +76,11 @@ export default function Data() {
               </div>
               <div className="data-item">
                 <span className="label">Altitude MSL</span>
-                <span className="value">{data.altitude.toFixed(0)} ft</span>
+                <span className="value">{data.altitude.toFixed(0)} ft ({(data.altitude * 0.3048).toFixed(0)} m)</span>
               </div>
               <div className="data-item">
                 <span className="label">Altitude AGL</span>
-                <span className="value">{data.plane_alt_above_ground.toFixed(0)} ft</span>
+                <span className="value">{data.plane_alt_above_ground.toFixed(0)} ft ({(data.plane_alt_above_ground * 0.3048).toFixed(0)} m)</span>
               </div>
               <div className="data-item">
                 <span className="label">Heading</span>
@@ -83,15 +88,15 @@ export default function Data() {
               </div>
               <div className="data-item">
                 <span className="label">Ground Speed</span>
-                <span className="value">{data.ground_velocity.toFixed(1)} kts</span>
+                <span className="value">{data.ground_velocity.toFixed(1)} kts ({(data.ground_velocity * 1.852).toFixed(0)} km/h)</span>
               </div>
               <div className="data-item">
                 <span className="label">Airspeed (IAS)</span>
-                <span className="value">{data.airspeed_indicated.toFixed(1)} kts</span>
+                <span className="value">{data.airspeed_indicated.toFixed(1)} kts ({(data.airspeed_indicated * 1.852).toFixed(0)} km/h)</span>
               </div>
               <div className="data-item">
                 <span className="label">Airspeed (TAS)</span>
-                <span className="value">{data.airspeed_true.toFixed(1)} kts</span>
+                <span className="value">{data.airspeed_true.toFixed(1)} kts ({(data.airspeed_true * 1.852).toFixed(0)} km/h)</span>
               </div>
               <div className="data-item">
                 <span className="label">Vertical Speed</span>

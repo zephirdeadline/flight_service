@@ -8,6 +8,7 @@ interface SimConnectContextType {
   isConnected: boolean;
   isStreaming: boolean;
   lastData: SimData | null;
+  lastDataTime: Date | null;
   startStreaming: () => Promise<void>;
   stopStreaming: () => Promise<void>;
 }
@@ -18,12 +19,14 @@ export const SimConnectProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [isConnected, setIsConnected] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastData, setLastData] = useState<SimData | null>(null);
+  const [lastDataTime, setLastDataTime] = useState<Date | null>(null);
   const unlistenRef = useRef<UnlistenFn | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     listen<SimData>('simconnect-data', (event) => {
       setLastData(event.payload);
+      setLastDataTime(new Date());
     }).then((unlisten) => {
       unlistenRef.current = unlisten;
     });
@@ -84,7 +87,7 @@ export const SimConnectProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   return (
-    <SimConnectContext.Provider value={{ isConnected, isStreaming, lastData, startStreaming, stopStreaming }}>
+    <SimConnectContext.Provider value={{ isConnected, isStreaming, lastData, lastDataTime, startStreaming, stopStreaming }}>
       {children}
     </SimConnectContext.Provider>
   );

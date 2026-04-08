@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Insérer dans la base de données
         match stmt.execute(params![
             airport_id,
-            icao_code,
+            ident,
             iata,
             name,
             airport_type,

@@ -447,6 +447,14 @@ const ActiveMissions: React.FC = () => {
                             <strong>{expectedPayload.toLocaleString()} kg</strong>
                           </div>
                           <div className="live-metric">
+                            <span>Fuel</span>
+                            <strong className="metric-green">
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.fuel_weight).toLocaleString()} kg`
+                                : `~${Math.round(aircraft.fuelCapacity * 0.8).toLocaleString()} kg`}
+                            </strong>
+                          </div>
+                          <div className="live-metric">
                             <span>Total</span>
                             <strong>{total.toLocaleString()} kg</strong>
                           </div>
