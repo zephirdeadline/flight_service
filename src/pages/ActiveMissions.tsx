@@ -60,17 +60,24 @@ const ActiveMissions: React.FC = () => {
     if (!simConnected || !simPosition || !aircraft) {
       return { aircraftOk: false, simTitle: '', payloadOk: false, actualPayload: 0, expectedPayload: 0, ready: false };
     }
-    const mission = activeMission.mission;
     const simTitle = simData?.aircraft_title?.trim() ?? '';
     // aircraft.id = titre SimConnect exact (cf. aircraft.yaml)
     const aircraftOk = simTitle !== '' && simTitle === aircraft.id.trim();
-    const missionPayloadPreflight = mission.cargo
-      ? mission.cargo.weight
-      : mission.passengers ? mission.passengers.list.reduce((s, p) => s + p.weight, 0) : 0;
-    const expectedPayload = PILOT_WEIGHT + missionPayloadPreflight;
-    const actualPayload = Math.max(0, Math.round(
-      simPosition.total_weight - simPosition.empty_weight - simPosition.fuel_weight
-    ));
+    const expectedPayload = PILOT_WEIGHT + getMissionPayload(activeMission);
+    // Somme directe des stations SimConnect — évite les 11 kg d'huile/fluides internes MSFS
+    const stationCount = Math.max(1, Math.floor(simPosition.payload_station_count));
+    const actualPayload = Math.round([
+      simPosition.payload_station_weight_1,  simPosition.payload_station_weight_2,
+      simPosition.payload_station_weight_3,  simPosition.payload_station_weight_4,
+      simPosition.payload_station_weight_5,  simPosition.payload_station_weight_6,
+      simPosition.payload_station_weight_7,  simPosition.payload_station_weight_8,
+      simPosition.payload_station_weight_9,  simPosition.payload_station_weight_10,
+      simPosition.payload_station_weight_11, simPosition.payload_station_weight_12,
+      simPosition.payload_station_weight_13, simPosition.payload_station_weight_14,
+      simPosition.payload_station_weight_15, simPosition.payload_station_weight_16,
+      simPosition.payload_station_weight_17, simPosition.payload_station_weight_18,
+      simPosition.payload_station_weight_19, simPosition.payload_station_weight_20,
+    ].slice(0, stationCount).reduce((s, w) => s + w, 0));
     const tolerance = Math.max(10, expectedPayload * 0.05);
     const payloadOk = Math.abs(actualPayload - expectedPayload) <= tolerance;
     return { aircraftOk, simTitle, payloadOk, actualPayload, expectedPayload, ready: aircraftOk && payloadOk };
@@ -166,7 +173,7 @@ const ActiveMissions: React.FC = () => {
   const getMissionPayload = (activeMission: ActiveMission): number => {
     const mission = activeMission.mission;
     if (mission.cargo) return mission.cargo.weight;
-    if (mission.passengers) return mission.passengers.list.reduce((s, p) => s + p.weight, 0);
+    if (mission.passengers) return mission.passengers.list.reduce((s, p) => s + p.weight + p.baggage, 0);
     return 0;
   };
 
@@ -177,16 +184,16 @@ const ActiveMissions: React.FC = () => {
 
   const getStationTypes = (simPos: typeof simPosition, stationCount: number): ('seat' | 'cargo')[] => {
     const names = simPos ? [
-      simPos.payload_station_name_1,
-      simPos.payload_station_name_2,
-      simPos.payload_station_name_3,
-      simPos.payload_station_name_4,
-      simPos.payload_station_name_5,
-      simPos.payload_station_name_6,
-      simPos.payload_station_name_7,
-      simPos.payload_station_name_8,
-      simPos.payload_station_name_9,
-      simPos.payload_station_name_10,
+      simPos.payload_station_name_1,  simPos.payload_station_name_2,
+      simPos.payload_station_name_3,  simPos.payload_station_name_4,
+      simPos.payload_station_name_5,  simPos.payload_station_name_6,
+      simPos.payload_station_name_7,  simPos.payload_station_name_8,
+      simPos.payload_station_name_9,  simPos.payload_station_name_10,
+      simPos.payload_station_name_11, simPos.payload_station_name_12,
+      simPos.payload_station_name_13, simPos.payload_station_name_14,
+      simPos.payload_station_name_15, simPos.payload_station_name_16,
+      simPos.payload_station_name_17, simPos.payload_station_name_18,
+      simPos.payload_station_name_19, simPos.payload_station_name_20,
     ] : [];
     return Array.from({ length: stationCount }, (_, i) =>
       isSeatStationName(names[i] ?? '') ? 'seat' : 'cargo'
@@ -206,7 +213,7 @@ const ActiveMissions: React.FC = () => {
       seatIndices.forEach(si => { seatWeights[si] = 0; });
       paxList.forEach((pax, i) => {
         const si = seatIndices[assignment[i] ?? 0] ?? seatIndices[0];
-        if (si !== undefined) seatWeights[si] = (seatWeights[si] ?? 0) + pax.weight;
+        if (si !== undefined) seatWeights[si] = (seatWeights[si] ?? 0) + pax.weight + pax.baggage;
       });
       return Array.from({ length: stationCount }, (_, i) => {
         if (i === 0) return PILOT_WEIGHT;
@@ -240,7 +247,7 @@ const ActiveMissions: React.FC = () => {
       seatIndices.forEach(si => { seatWeights[si] = 0; });
       paxList.forEach((pax, i) => {
         const seatIdx = seatIndices[assignment[i] ?? 0] ?? seatIndices[0];
-        if (seatIdx !== undefined) seatWeights[seatIdx] = (seatWeights[seatIdx] ?? 0) + pax.weight;
+        if (seatIdx !== undefined) seatWeights[seatIdx] = (seatWeights[seatIdx] ?? 0) + pax.weight + pax.baggage;
       });
       return Array.from({ length: stationCount }, (_, i) => {
         if (i === 0) return PILOT_WEIGHT;
@@ -319,9 +326,7 @@ const ActiveMissions: React.FC = () => {
             const aircraft = ownedAircraft.find(o => o.id === activeMission.aircraftId)?.aircraft;
             const preflight = checkPreflight(activeMission, aircraft);
             const { progress, distanceRemaining, canComplete } = calculateMissionProgress(activeMission);
-            const expectedPayload = PILOT_WEIGHT + (mission.cargo
-              ? mission.cargo.weight
-              : mission.passengers ? mission.passengers.list.reduce((s, p) => s + p.weight, 0) : 0);
+            const expectedPayload = PILOT_WEIGHT + getMissionPayload(activeMission);
             const total = simConnected && simPosition
               ? Math.round(simPosition.total_weight)
               : aircraft ? aircraft.emptyWeight + expectedPayload : 0;
@@ -441,7 +446,12 @@ const ActiveMissions: React.FC = () => {
                         </div>
                         <div className={`preflight-row ${preflight.payloadOk ? 'ok' : 'fail'}`}>
                           <span>{preflight.payloadOk ? '✅' : '❌'} Payload</span>
-                          <span className="preflight-sub">{preflight.actualPayload} / {preflight.expectedPayload} kg</span>
+                          <span className="preflight-sub">
+                            {preflight.actualPayload} / {preflight.expectedPayload} kg
+                            {preflight.payloadOk && preflight.actualPayload !== preflight.expectedPayload && (
+                              <> (Δ {preflight.actualPayload - preflight.expectedPayload} kg MSFS)</>
+                            )}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -474,7 +484,7 @@ const ActiveMissions: React.FC = () => {
                               {mission.cargo
                                 ? `pilot + ${mission.cargo.weight} kg cargo`
                                 : mission.passengers
-                                  ? `pilot + ${mission.passengers.list.reduce((s, p) => s + p.weight, 0)} kg pax`
+                                  ? `pilot + ${mission.passengers.list.reduce((s, p) => s + p.weight + p.baggage, 0)} kg pax (bagages inclus)`
                                   : '—'}
                             </span>
                           </div>
@@ -484,6 +494,8 @@ const ActiveMissions: React.FC = () => {
                                 <div key={i} className="pax-row">
                                   <span>👤 Pax {i + 1}</span>
                                   <span>{p.weight} kg</span>
+                                  <span className="pax-baggage">🧳 {p.baggage} kg</span>
+                                  <span className="pax-total">= {p.weight + p.baggage} kg</span>
                                 </div>
                               ))}
                             </div>
@@ -553,13 +565,17 @@ const ActiveMissions: React.FC = () => {
                                         <div className="pax-assignment">
                                           <div className="pax-assignment-header">
                                             <span>Passager</span>
-                                            <span>Poids</span>
+                                            <span>Corps</span>
+                                            <span>🧳</span>
+                                            <span>Total</span>
                                             <span>Siège</span>
                                           </div>
                                           {paxList.map((pax, i) => (
                                             <div key={i} className="pax-assignment-row">
                                               <span>Pax {i + 1}</span>
                                               <span>{pax.weight} kg</span>
+                                              <span className="pax-baggage">{pax.baggage} kg</span>
+                                              <span className="pax-total">{pax.weight + pax.baggage} kg</span>
                                               <div className="pax-seat-btns">
                                                 {seatIndices.map((si, slot) => (
                                                   <button
@@ -580,7 +596,7 @@ const ActiveMissions: React.FC = () => {
                                           {allNonPilotIndices.filter(si => seatIndices.includes(si)).map((si) => {
                                             const slot = seatIndices.indexOf(si);
                                             const paxHere = paxList.filter((_, i) => assignment[i] === slot);
-                                            const paxW = paxHere.reduce((s, p) => s + p.weight, 0);
+                                            const paxW = paxHere.reduce((s, p) => s + p.weight + p.baggage, 0);
                                             return (
                                               <div key={si} className="station-summary-row">
                                                 <span>🪑 Sta. {si}</span>
@@ -622,16 +638,16 @@ const ActiveMissions: React.FC = () => {
                                 <details className="payload-station-names-debug">
                                   <summary>Noms bruts SimConnect</summary>
                                   {[
-                                    simPosition.payload_station_name_1,
-                                    simPosition.payload_station_name_2,
-                                    simPosition.payload_station_name_3,
-                                    simPosition.payload_station_name_4,
-                                    simPosition.payload_station_name_5,
-                                    simPosition.payload_station_name_6,
-                                    simPosition.payload_station_name_7,
-                                    simPosition.payload_station_name_8,
-                                    simPosition.payload_station_name_9,
-                                    simPosition.payload_station_name_10,
+                                    simPosition.payload_station_name_1,  simPosition.payload_station_name_2,
+                                    simPosition.payload_station_name_3,  simPosition.payload_station_name_4,
+                                    simPosition.payload_station_name_5,  simPosition.payload_station_name_6,
+                                    simPosition.payload_station_name_7,  simPosition.payload_station_name_8,
+                                    simPosition.payload_station_name_9,  simPosition.payload_station_name_10,
+                                    simPosition.payload_station_name_11, simPosition.payload_station_name_12,
+                                    simPosition.payload_station_name_13, simPosition.payload_station_name_14,
+                                    simPosition.payload_station_name_15, simPosition.payload_station_name_16,
+                                    simPosition.payload_station_name_17, simPosition.payload_station_name_18,
+                                    simPosition.payload_station_name_19, simPosition.payload_station_name_20,
                                   ].slice(0, stationCount).map((name, i) => (
                                     <div key={i}><code>Sta. {i + 1}: "{name}"</code></div>
                                   ))}
@@ -733,7 +749,11 @@ const ActiveMissions: React.FC = () => {
                           <div className="live-section-title">Weight</div>
                           <div className="live-metric">
                             <span>Empty</span>
-                            <strong>{aircraft.emptyWeight.toLocaleString()} kg</strong>
+                            <strong>
+                              {simConnected && simPosition
+                                ? `${Math.round(simPosition.empty_weight).toLocaleString()} kg`
+                                : `${aircraft.emptyWeight.toLocaleString()} kg`}
+                            </strong>
                           </div>
                           <div className="live-metric">
                             <span>Payload (pilot incl.)</span>

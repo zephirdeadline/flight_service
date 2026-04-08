@@ -51,12 +51,15 @@ const MissionCard: React.FC<MissionCardProps> = ({ mission, onAccept, disabledRe
           <span className="detail-value">{mission.distance} NM</span>
         </div>
 
-        {mission.passengers && (
-          <div className="detail-item">
-            <span className="detail-label">Passengers:</span>
-            <span className="detail-value">{mission.passengers.count}</span>
-          </div>
-        )}
+        {mission.passengers && (() => {
+          const totalWeight = mission.passengers.list.reduce((s, p) => s + p.weight + p.baggage, 0);
+          return (
+            <div className="detail-item">
+              <span className="detail-label">Passengers:</span>
+              <span className="detail-value">{mission.passengers.count} pax · {totalWeight} kg</span>
+            </div>
+          );
+        })()}
 
         {mission.cargo && (
           <div className="detail-item">
@@ -68,6 +71,28 @@ const MissionCard: React.FC<MissionCardProps> = ({ mission, onAccept, disabledRe
 
       {mission.cargo && (
         <div className="cargo-description">{mission.cargo.description}</div>
+      )}
+
+      {mission.passengers && (
+        <details className="pax-details">
+          <summary>Détail passagers</summary>
+          <div className="pax-details-list">
+            <div className="pax-details-header">
+              <span>Pax</span>
+              <span>Corps</span>
+              <span>🧳 Bagages</span>
+              <span>Total</span>
+            </div>
+            {mission.passengers.list.map((p, i) => (
+              <div key={i} className="pax-details-row">
+                <span>#{i + 1}</span>
+                <span>{p.weight} kg</span>
+                <span>{p.baggage} kg</span>
+                <span className="pax-details-total">{p.weight + p.baggage} kg</span>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       {onAccept && (

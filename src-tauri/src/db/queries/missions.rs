@@ -53,6 +53,7 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
             let passenger_count = rng.gen_range(1..=8);
             let passengers: Vec<Passenger> = (0..passenger_count).map(|_| Passenger {
                 weight: rng.gen_range(55..=110),
+                baggage: rng.gen_range(0..=32),
             }).collect();
             let reward = (distance as i64) * 20 * (passenger_count as i64);
 

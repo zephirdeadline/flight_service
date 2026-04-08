@@ -67,7 +67,7 @@ export interface Mission {
   };
   passengers?: {
     count: number;
-    list: Array<{ weight: number }>;
+    list: Array<{ weight: number; baggage: number }>;
   };
   deadline?: string; // ISO date
   requiredAircraftType?: 'passenger' | 'cargo' | 'both';
@@ -167,6 +167,16 @@ export interface SimData {
   payload_station_weight_8: number;
   payload_station_weight_9: number;
   payload_station_weight_10: number;
+  payload_station_weight_11: number;
+  payload_station_weight_12: number;
+  payload_station_weight_13: number;
+  payload_station_weight_14: number;
+  payload_station_weight_15: number;
+  payload_station_weight_16: number;
+  payload_station_weight_17: number;
+  payload_station_weight_18: number;
+  payload_station_weight_19: number;
+  payload_station_weight_20: number;
   payload_station_name_1: string;
   payload_station_name_2: string;
   payload_station_name_3: string;
@@ -177,6 +187,16 @@ export interface SimData {
   payload_station_name_8: string;
   payload_station_name_9: string;
   payload_station_name_10: string;
+  payload_station_name_11: string;
+  payload_station_name_12: string;
+  payload_station_name_13: string;
+  payload_station_name_14: string;
+  payload_station_name_15: string;
+  payload_station_name_16: string;
+  payload_station_name_17: string;
+  payload_station_name_18: string;
+  payload_station_name_19: string;
+  payload_station_name_20: string;
   stall_warning: boolean;
   overspeed_warning: boolean;
   gear_handle_position: boolean;

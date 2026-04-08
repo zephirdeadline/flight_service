@@ -92,7 +92,7 @@ pub fn get_active_missions(conn: &Connection, player_id: &str) -> Result<Vec<Act
                 .unwrap_or_else(|| {
                     // Fallback pour les anciennes missions sans JSON
                     let count = passenger_count.unwrap_or(1) as usize;
-                    vec![Passenger { weight: 80 }; count]
+                    vec![Passenger { weight: 80, baggage: 0 }; count]
                 });
             Mission::new_passenger(
                 format!("active-{}", active_mission_id),

@@ -17,6 +17,7 @@ pub struct CargoDetails {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passenger {
     pub weight: i32,   // poids corporel en kg
+    pub baggage: i32,  // poids des bagages en kg
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -183,6 +183,16 @@ export default function Data() {
                   [data.payload_station_weight_8,  data.payload_station_name_8],
                   [data.payload_station_weight_9,  data.payload_station_name_9],
                   [data.payload_station_weight_10, data.payload_station_name_10],
+                  [data.payload_station_weight_11, data.payload_station_name_11],
+                  [data.payload_station_weight_12, data.payload_station_name_12],
+                  [data.payload_station_weight_13, data.payload_station_name_13],
+                  [data.payload_station_weight_14, data.payload_station_name_14],
+                  [data.payload_station_weight_15, data.payload_station_name_15],
+                  [data.payload_station_weight_16, data.payload_station_name_16],
+                  [data.payload_station_weight_17, data.payload_station_name_17],
+                  [data.payload_station_weight_18, data.payload_station_name_18],
+                  [data.payload_station_weight_19, data.payload_station_name_19],
+                  [data.payload_station_weight_20, data.payload_station_name_20],
                 ] as [number, string][]).slice(0, data.payload_station_count).map(([weight, name], i) => (
                   <div key={i + 1} className="payload-station">
                     <span className="station-name">{name || `Station ${i + 1}`}</span>

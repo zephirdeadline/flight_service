@@ -62,11 +62,21 @@ pub struct SimData {
     pub payload_station_weight_8: f64,
     pub payload_station_weight_9: f64,
     pub payload_station_weight_10: f64,
+    pub payload_station_weight_11: f64,
+    pub payload_station_weight_12: f64,
+    pub payload_station_weight_13: f64,
+    pub payload_station_weight_14: f64,
+    pub payload_station_weight_15: f64,
+    pub payload_station_weight_16: f64,
+    pub payload_station_weight_17: f64,
+    pub payload_station_weight_18: f64,
+    pub payload_station_weight_19: f64,
+    pub payload_station_weight_20: f64,
     // Warnings
     pub stall_warning: bool,
     pub overspeed_warning: bool,
     pub gear_handle_position: bool,
-    // Station names (STRING32 each)
+    // Station names (STRING32 each, stations 1-20)
     pub payload_station_name_1: String,
     pub payload_station_name_2: String,
     pub payload_station_name_3: String,
@@ -77,6 +87,16 @@ pub struct SimData {
     pub payload_station_name_8: String,
     pub payload_station_name_9: String,
     pub payload_station_name_10: String,
+    pub payload_station_name_11: String,
+    pub payload_station_name_12: String,
+    pub payload_station_name_13: String,
+    pub payload_station_name_14: String,
+    pub payload_station_name_15: String,
+    pub payload_station_name_16: String,
+    pub payload_station_name_17: String,
+    pub payload_station_name_18: String,
+    pub payload_station_name_19: String,
+    pub payload_station_name_20: String,
 }
 
 struct SendableSimConnector(simconnect::SimConnector);
@@ -279,7 +299,7 @@ impl SimConnectService {
             .map_err(|e| format!("Failed to lock connection: {}", e))?;
 
         if let Some(sim) = conn.as_ref() {
-            let count = weights.len().min(10);
+            let count = weights.len().min(20);
             for i in 0..count {
                 // DEF_IDs 1-10 reserved for writable payload stations
                 let def_id = (i + 1) as u32;
@@ -334,46 +354,47 @@ impl SimConnectService {
         sim.add_data_definition(DEF_ID, "EMPTY WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "FUEL TOTAL QUANTITY WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "PAYLOAD STATION COUNT", "number", f64_type, UNUSED, 0.0);
-        for i in 1..=10 {
+        for i in 1..=20 {
             sim.add_data_definition(DEF_ID, &format!("PAYLOAD STATION WEIGHT:{}", i), "kilograms", f64_type, UNUSED, 0.0);
         }
         sim.add_data_definition(DEF_ID, "STALL WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "OVERSPEED WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GEAR HANDLE POSITION", "number", f64_type, UNUSED, 0.0);
-        // TITLE — STRING256 (256 bytes) à l'offset 49*8 = 392
+        // TITLE — STRING256 (256 bytes) à l'offset 59*8 = 472 (35 champs avant + 20 poids + 3 warnings + 1 count = 59 f64)
         let str256_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
         sim.add_data_definition(DEF_ID, "TITLE", "", str256_type, UNUSED, 0.0);
-        // PAYLOAD STATION NAME:1..10 — STRING32 (32 bytes each) à l'offset 392+256 = 648
+        // PAYLOAD STATION NAME:1..20 — STRING32 (32 bytes each) à l'offset 472+256 = 728
         let str32_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING32;
-        for i in 1..=10 {
+        for i in 1..=20 {
             sim.add_data_definition(DEF_ID, &format!("PAYLOAD STATION NAME:{}", i), "", str32_type, UNUSED, 0.0);
         }
 
-        // DEF_IDs 1-10 : variables d'écriture pour les payload stations
-        for i in 1u32..=10 {
+        // DEF_IDs 1-20 : variables d'écriture pour les payload stations
+        for i in 1u32..=20 {
             sim.add_data_definition(i, &format!("PAYLOAD STATION WEIGHT:{}", i), "kilograms", f64_type, 0, 0.0);
         }
 
-        // DEF_ID 11 : TITLE (string256) — DEF_ID séparé car type différent
-        sim.add_data_definition(11, "TITLE", "", str256_type, UNUSED, 0.0);
+        // DEF_ID 21 : TITLE (string256) — DEF_ID séparé car type différent
+        sim.add_data_definition(21, "TITLE", "", str256_type, UNUSED, 0.0);
     }
 
     unsafe fn parse_data(ptr: *const u8) -> SimData {
         // Tout est FLOAT64 : 8 bytes par champ, même ordre que setup_data_definitions
         let r = |i: usize| std::ptr::read_unaligned(ptr.add(i * 8) as *const f64);
 
-        // TITLE : STRING256 à l'offset 49*8 = 392
-        let title_bytes = std::slice::from_raw_parts(ptr.add(49 * 8), 256);
+        // TITLE : STRING256 à l'offset 59*8 = 472
+        let title_bytes = std::slice::from_raw_parts(ptr.add(59 * 8), 256);
         let title_end = title_bytes.iter().position(|&b| b == 0).unwrap_or(256);
         let aircraft_title = String::from_utf8_lossy(&title_bytes[..title_end]).to_string();
 
-        // PAYLOAD STATION NAME:1..10 : STRING32 (32 bytes each) à l'offset 392+256 = 648
+        // PAYLOAD STATION NAME:1..20 : STRING32 (32 bytes each) à l'offset 472+256 = 728
         let parse_str32 = |offset: usize| {
             let bytes = std::slice::from_raw_parts(ptr.add(offset), 32);
             let end = bytes.iter().position(|&b| b == 0).unwrap_or(32);
             String::from_utf8_lossy(&bytes[..end]).to_string()
         };
-        const NAMES_BASE: usize = 49 * 8 + 256; // 648
+        // 35 champs f64 avant stations + 20 poids + 3 warnings = 58 f64 + count = 59 f64 total
+        const NAMES_BASE: usize = 59 * 8 + 256; // 472 + 256 = 728
 
 
         SimData {
@@ -424,9 +445,19 @@ impl SimConnectService {
             payload_station_weight_8:   r(43),
             payload_station_weight_9:   r(44),
             payload_station_weight_10:  r(45),
-            stall_warning:              r(46) != 0.0,
-            overspeed_warning:          r(47) != 0.0,
-            gear_handle_position:       r(48) != 0.0,
+            payload_station_weight_11:  r(46),
+            payload_station_weight_12:  r(47),
+            payload_station_weight_13:  r(48),
+            payload_station_weight_14:  r(49),
+            payload_station_weight_15:  r(50),
+            payload_station_weight_16:  r(51),
+            payload_station_weight_17:  r(52),
+            payload_station_weight_18:  r(53),
+            payload_station_weight_19:  r(54),
+            payload_station_weight_20:  r(55),
+            stall_warning:              r(56) != 0.0,
+            overspeed_warning:          r(57) != 0.0,
+            gear_handle_position:       r(58) != 0.0,
             payload_station_name_1:     parse_str32(NAMES_BASE),
             payload_station_name_2:     parse_str32(NAMES_BASE + 32),
             payload_station_name_3:     parse_str32(NAMES_BASE + 64),
@@ -437,6 +468,16 @@ impl SimConnectService {
             payload_station_name_8:     parse_str32(NAMES_BASE + 224),
             payload_station_name_9:     parse_str32(NAMES_BASE + 256),
             payload_station_name_10:    parse_str32(NAMES_BASE + 288),
+            payload_station_name_11:    parse_str32(NAMES_BASE + 320),
+            payload_station_name_12:    parse_str32(NAMES_BASE + 352),
+            payload_station_name_13:    parse_str32(NAMES_BASE + 384),
+            payload_station_name_14:    parse_str32(NAMES_BASE + 416),
+            payload_station_name_15:    parse_str32(NAMES_BASE + 448),
+            payload_station_name_16:    parse_str32(NAMES_BASE + 480),
+            payload_station_name_17:    parse_str32(NAMES_BASE + 512),
+            payload_station_name_18:    parse_str32(NAMES_BASE + 544),
+            payload_station_name_19:    parse_str32(NAMES_BASE + 576),
+            payload_station_name_20:    parse_str32(NAMES_BASE + 608),
         }
     }
 

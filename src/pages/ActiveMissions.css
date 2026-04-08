@@ -292,6 +292,7 @@
 
 .pax-row span:first-child { flex: 1; color: #7f8c8d; }
 .pax-baggage { color: #e67e22; }
+.pax-total { font-weight: 700; color: #2c3e50; }
 
 /* Payload mode toggle */
 .payload-mode-toggle {
@@ -429,7 +430,7 @@
 
 .pax-assignment-header {
   display: grid;
-  grid-template-columns: 1fr 70px auto;
+  grid-template-columns: 1fr 55px 45px 55px auto;
   gap: 0.5rem;
   padding: 0.3rem 0.6rem;
   background: #f0f0f0;
@@ -440,7 +441,7 @@
 
 .pax-assignment-row {
   display: grid;
-  grid-template-columns: 1fr 70px auto;
+  grid-template-columns: 1fr 55px 45px 55px auto;
   gap: 0.5rem;
   align-items: center;
   padding: 0.35rem 0.6rem;
