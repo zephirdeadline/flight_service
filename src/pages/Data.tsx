@@ -172,20 +172,20 @@ export default function Data() {
             <section className="data-section">
               <h2>📦 Payload Stations ({data.payload_station_count.toFixed(0)})</h2>
               <div className="payload-list">
-                {[
-                  data.payload_station_weight_1,
-                  data.payload_station_weight_2,
-                  data.payload_station_weight_3,
-                  data.payload_station_weight_4,
-                  data.payload_station_weight_5,
-                  data.payload_station_weight_6,
-                  data.payload_station_weight_7,
-                  data.payload_station_weight_8,
-                  data.payload_station_weight_9,
-                  data.payload_station_weight_10,
-                ].slice(0, data.payload_station_count).map((weight, i) => (
+                {([
+                  [data.payload_station_weight_1,  data.payload_station_name_1],
+                  [data.payload_station_weight_2,  data.payload_station_name_2],
+                  [data.payload_station_weight_3,  data.payload_station_name_3],
+                  [data.payload_station_weight_4,  data.payload_station_name_4],
+                  [data.payload_station_weight_5,  data.payload_station_name_5],
+                  [data.payload_station_weight_6,  data.payload_station_name_6],
+                  [data.payload_station_weight_7,  data.payload_station_name_7],
+                  [data.payload_station_weight_8,  data.payload_station_name_8],
+                  [data.payload_station_weight_9,  data.payload_station_name_9],
+                  [data.payload_station_weight_10, data.payload_station_name_10],
+                ] as [number, string][]).slice(0, data.payload_station_count).map(([weight, name], i) => (
                   <div key={i + 1} className="payload-station">
-                    <span className="station-name">Station {i + 1}</span>
+                    <span className="station-name">{name || `Station ${i + 1}`}</span>
                     <span className="station-weight">{weight.toFixed(1)} kg</span>
                   </div>
                 ))}

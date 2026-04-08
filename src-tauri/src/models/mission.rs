@@ -15,8 +15,14 @@ pub struct CargoDetails {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Passenger {
+    pub weight: i32,   // poids corporel en kg
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PassengerDetails {
     pub count: i32,
+    pub list: Vec<Passenger>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,8 +53,9 @@ impl Mission {
         to_airport: Airport,
         distance: i32,
         reward: i64,
-        passenger_count: i32,
+        passenger_list: Vec<Passenger>,
     ) -> Self {
+        let count = passenger_list.len() as i32;
         Self {
             id,
             mission_type: MissionType::Passenger,
@@ -58,7 +65,8 @@ impl Mission {
             reward,
             cargo: None,
             passengers: Some(PassengerDetails {
-                count: passenger_count,
+                count,
+                list: passenger_list,
             }),
             deadline: None,
             required_aircraft_type: Some("passenger".to_string()),

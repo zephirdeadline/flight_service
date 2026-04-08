@@ -37,6 +37,14 @@ impl Database {
             self.mark_migration_applied(1)?;
         }
 
+        // Migration 2 : Ajout passengers_json dans active_missions
+        if !self.migration_applied(2)? {
+            self.conn.execute_batch(
+                "ALTER TABLE active_missions ADD COLUMN passengers_json TEXT;"
+            )?;
+            self.mark_migration_applied(2)?;
+        }
+
         Ok(())
     }
 

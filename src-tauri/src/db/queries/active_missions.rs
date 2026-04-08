@@ -1,6 +1,6 @@
 use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
-use crate::models::{ActiveMission, ActiveMissionStatus, Mission};
+use crate::models::{ActiveMission, ActiveMissionStatus, Mission, mission::Passenger};
 use super::airports::get_airport_by_id;
 use super::player::{update_player_money, update_player_airport};
 
@@ -15,6 +15,7 @@ pub fn accept_mission(
     cargo_weight: Option<i32>,
     cargo_description: Option<String>,
     passenger_count: Option<i32>,
+    passengers_json: Option<String>,
     aircraft_id: &str,
 ) -> Result<String> {
     let active_count: i64 = conn.query_row(
@@ -33,8 +34,8 @@ pub fn accept_mission(
     conn.execute(
         "INSERT INTO active_missions
          (id, player_id, from_airport_id, to_airport_id, type, distance, reward,
-          cargo_weight, cargo_description, passenger_count, aircraft_id, accepted_at, status)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 'in_progress')",
+          cargo_weight, cargo_description, passenger_count, passengers_json, aircraft_id, accepted_at, status)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 'in_progress')",
         params![
             active_mission_id,
             player_id,
@@ -46,6 +47,7 @@ pub fn accept_mission(
             cargo_weight,
             cargo_description,
             passenger_count,
+            passengers_json,
             aircraft_id,
             now,
         ],
@@ -57,7 +59,7 @@ pub fn accept_mission(
 pub fn get_active_missions(conn: &Connection, player_id: &str) -> Result<Vec<ActiveMission>> {
     let mut stmt = conn.prepare(
         "SELECT id, from_airport_id, to_airport_id, type, distance, reward,
-                cargo_weight, cargo_description, passenger_count, aircraft_id, accepted_at, status
+                cargo_weight, cargo_description, passenger_count, passengers_json, aircraft_id, accepted_at, status
          FROM active_missions
          WHERE player_id = ?1
          ORDER BY accepted_at DESC"
@@ -73,9 +75,10 @@ pub fn get_active_missions(conn: &Connection, player_id: &str) -> Result<Vec<Act
         let cargo_weight: Option<i32> = row.get(6)?;
         let cargo_description: Option<String> = row.get(7)?;
         let passenger_count: Option<i32> = row.get(8)?;
-        let aircraft_id: String = row.get(9)?;
-        let accepted_at: String = row.get(10)?;
-        let status_str: String = row.get(11)?;
+        let passengers_json: Option<String> = row.get(9)?;
+        let aircraft_id: String = row.get(10)?;
+        let accepted_at: String = row.get(11)?;
+        let status_str: String = row.get(12)?;
 
         let from_airport = get_airport_by_id(conn, &from_airport_id)?
             .ok_or_else(|| rusqlite::Error::QueryReturnedNoRows)?;
@@ -83,13 +86,21 @@ pub fn get_active_missions(conn: &Connection, player_id: &str) -> Result<Vec<Act
             .ok_or_else(|| rusqlite::Error::QueryReturnedNoRows)?;
 
         let mission = if mission_type == "passenger" {
+            let passengers: Vec<Passenger> = passengers_json
+                .as_deref()
+                .and_then(|j| serde_json::from_str(j).ok())
+                .unwrap_or_else(|| {
+                    // Fallback pour les anciennes missions sans JSON
+                    let count = passenger_count.unwrap_or(1) as usize;
+                    vec![Passenger { weight: 80 }; count]
+                });
             Mission::new_passenger(
                 format!("active-{}", active_mission_id),
                 from_airport,
                 to_airport,
                 distance,
                 reward,
-                passenger_count.unwrap_or(0),
+                passengers,
             )
         } else {
             Mission::new_cargo(

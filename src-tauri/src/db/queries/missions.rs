@@ -1,7 +1,7 @@
 use rusqlite::{params, Connection, Result};
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
-use crate::models::Mission;
+use crate::models::{Mission, mission::Passenger};
 use super::airports::get_airport_by_id;
 use super::geo::{calculate_distance, generate_mission_seed};
 use super::player::update_player_money;
@@ -51,6 +51,9 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
 
         if rng.gen_bool(0.5) {
             let passenger_count = rng.gen_range(1..=8);
+            let passengers: Vec<Passenger> = (0..passenger_count).map(|_| Passenger {
+                weight: rng.gen_range(55..=110),
+            }).collect();
             let reward = (distance as i64) * 20 * (passenger_count as i64);
 
             missions.push(Mission::new_passenger(
@@ -59,7 +62,7 @@ pub fn get_missions_by_airport(conn: &Connection, airport_id: &str) -> Result<Ve
                 dest.clone(),
                 distance,
                 reward,
-                passenger_count,
+                passengers,
             ));
         } else {
             let cargo_weight = rng.gen_range(20..=800) as i32;

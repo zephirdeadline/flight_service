@@ -244,6 +244,7 @@ pub fn accept_mission(
     cargo_weight: Option<i32>,
     cargo_description: Option<String>,
     passenger_count: Option<i32>,
+    passengers_json: Option<String>,
     aircraft_id: String,
 ) -> Result<String, String> {
     with_db(&db, |conn| {
@@ -258,6 +259,7 @@ pub fn accept_mission(
             cargo_weight,
             cargo_description,
             passenger_count,
+            passengers_json,
             &aircraft_id,
         )
     })

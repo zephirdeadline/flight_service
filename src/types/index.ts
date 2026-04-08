@@ -67,6 +67,7 @@ export interface Mission {
   };
   passengers?: {
     count: number;
+    list: Array<{ weight: number }>;
   };
   deadline?: string; // ISO date
   requiredAircraftType?: 'passenger' | 'cargo' | 'both';

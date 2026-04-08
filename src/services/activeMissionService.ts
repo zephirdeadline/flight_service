@@ -18,6 +18,7 @@ export const activeMissionService = {
       cargoWeight: mission.cargo?.weight || null,
       cargoDescription: mission.cargo?.description || null,
       passengerCount: mission.passengers?.count || null,
+      passengersJson: mission.passengers ? JSON.stringify(mission.passengers.list) : null,
       aircraftId,
     });
   },

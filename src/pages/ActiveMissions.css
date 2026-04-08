@@ -228,6 +228,11 @@
   opacity: 0.8;
 }
 
+.preflight-sub--expected {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 /* Payload */
 .payload-summary {
   display: flex;
@@ -266,6 +271,27 @@
 .payload-chip strong { color: #e67e22; font-size: 0.8rem; }
 .payload-chip--pilot strong { color: #3498db; }
 .payload-chip--blocked strong { color: #bbb; }
+
+/* Passenger list */
+.pax-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+
+.pax-row {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #2c3e50;
+}
+
+.pax-row span:first-child { flex: 1; color: #7f8c8d; }
+.pax-baggage { color: #e67e22; }
 
 /* Payload mode toggle */
 .payload-mode-toggle {
@@ -389,6 +415,95 @@
 
 .payload-custom-total.ok { color: #27ae60; background: #eafaf1; font-weight: 600; }
 .payload-custom-total.over { color: #e74c3c; background: #fdf2f2; font-weight: 600; }
+
+.payload-custom-totals { display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* Pax assignment (custom mode passenger) */
+.pax-assignment {
+  margin: 0.5rem 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+.pax-assignment-header {
+  display: grid;
+  grid-template-columns: 1fr 70px auto;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  background: #f0f0f0;
+  font-weight: 600;
+  color: #7f8c8d;
+  font-size: 0.75rem;
+}
+
+.pax-assignment-row {
+  display: grid;
+  grid-template-columns: 1fr 70px auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pax-seat-btns { display: flex; gap: 0.25rem; }
+
+.pax-seat-btn {
+  width: 26px;
+  height: 24px;
+  border: 1px solid #dde;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #7f8c8d;
+  padding: 0;
+  transition: all 0.12s;
+}
+
+.pax-seat-btn.active {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
+}
+
+.pax-seat-btn:hover:not(.active) { background: #eaf4fb; border-color: #3498db; }
+
+/* Baggage distribution */
+.baggage-distribution {
+  margin: 0.6rem 0 0.4rem;
+  border: 1px solid #fde8c8;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  background: #fffaf4;
+}
+
+.baggage-dist-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e67e22;
+  margin-bottom: 0.4rem;
+}
+
+/* Station summary */
+.payload-station-summary {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.station-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  color: #2c3e50;
+}
 
 .payload-btn {
   width: 100%;
