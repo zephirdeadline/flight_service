@@ -66,6 +66,17 @@ pub struct SimData {
     pub stall_warning: bool,
     pub overspeed_warning: bool,
     pub gear_handle_position: bool,
+    // Station names (STRING32 each)
+    pub payload_station_name_1: String,
+    pub payload_station_name_2: String,
+    pub payload_station_name_3: String,
+    pub payload_station_name_4: String,
+    pub payload_station_name_5: String,
+    pub payload_station_name_6: String,
+    pub payload_station_name_7: String,
+    pub payload_station_name_8: String,
+    pub payload_station_name_9: String,
+    pub payload_station_name_10: String,
 }
 
 struct SendableSimConnector(simconnect::SimConnector);
@@ -329,9 +340,14 @@ impl SimConnectService {
         sim.add_data_definition(DEF_ID, "STALL WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "OVERSPEED WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GEAR HANDLE POSITION", "number", f64_type, UNUSED, 0.0);
-        // TITLE à la fin — STRING256 (256 bytes) à l'offset 49*8 = 392
-        let str_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
-        sim.add_data_definition(DEF_ID, "TITLE", "", str_type, UNUSED, 0.0);
+        // TITLE — STRING256 (256 bytes) à l'offset 49*8 = 392
+        let str256_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
+        sim.add_data_definition(DEF_ID, "TITLE", "", str256_type, UNUSED, 0.0);
+        // PAYLOAD STATION NAME:1..10 — STRING32 (32 bytes each) à l'offset 392+256 = 648
+        let str32_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING32;
+        for i in 1..=10 {
+            sim.add_data_definition(DEF_ID, &format!("PAYLOAD STATION NAME:{}", i), "", str32_type, UNUSED, 0.0);
+        }
 
         // DEF_IDs 1-10 : variables d'écriture pour les payload stations
         for i in 1u32..=10 {
@@ -339,8 +355,7 @@ impl SimConnectService {
         }
 
         // DEF_ID 11 : TITLE (string256) — DEF_ID séparé car type différent
-        let str_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
-        sim.add_data_definition(11, "TITLE", "", str_type, UNUSED, 0.0);
+        sim.add_data_definition(11, "TITLE", "", str256_type, UNUSED, 0.0);
     }
 
     unsafe fn parse_data(ptr: *const u8) -> SimData {
@@ -351,6 +366,14 @@ impl SimConnectService {
         let title_bytes = std::slice::from_raw_parts(ptr.add(49 * 8), 256);
         let title_end = title_bytes.iter().position(|&b| b == 0).unwrap_or(256);
         let aircraft_title = String::from_utf8_lossy(&title_bytes[..title_end]).to_string();
+
+        // PAYLOAD STATION NAME:1..10 : STRING32 (32 bytes each) à l'offset 392+256 = 648
+        let parse_str32 = |offset: usize| {
+            let bytes = std::slice::from_raw_parts(ptr.add(offset), 32);
+            let end = bytes.iter().position(|&b| b == 0).unwrap_or(32);
+            String::from_utf8_lossy(&bytes[..end]).to_string()
+        };
+        const NAMES_BASE: usize = 49 * 8 + 256; // 648
 
 
         SimData {
@@ -404,6 +427,16 @@ impl SimConnectService {
             stall_warning:              r(46) != 0.0,
             overspeed_warning:          r(47) != 0.0,
             gear_handle_position:       r(48) != 0.0,
+            payload_station_name_1:     parse_str32(NAMES_BASE),
+            payload_station_name_2:     parse_str32(NAMES_BASE + 32),
+            payload_station_name_3:     parse_str32(NAMES_BASE + 64),
+            payload_station_name_4:     parse_str32(NAMES_BASE + 96),
+            payload_station_name_5:     parse_str32(NAMES_BASE + 128),
+            payload_station_name_6:     parse_str32(NAMES_BASE + 160),
+            payload_station_name_7:     parse_str32(NAMES_BASE + 192),
+            payload_station_name_8:     parse_str32(NAMES_BASE + 224),
+            payload_station_name_9:     parse_str32(NAMES_BASE + 256),
+            payload_station_name_10:    parse_str32(NAMES_BASE + 288),
         }
     }
 

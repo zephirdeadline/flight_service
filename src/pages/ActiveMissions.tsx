@@ -28,6 +28,8 @@ const ActiveMissions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [simPosition, setSimPosition] = useState<SimData | null>(null);
   const [payloadSentMap, setPayloadSentMap] = useState<Record<string, boolean>>({});
+  const [payloadModeMap, setPayloadModeMap] = useState<Record<string, 'equal' | 'custom'>>({});
+  const [customPctMap, setCustomPctMap] = useState<Record<string, number[]>>({});
   const simPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -155,26 +157,90 @@ const ActiveMissions: React.FC = () => {
     );
   };
 
-  const calculatePayloadWeights = (activeMission: ActiveMission, stationCount: number): number[] => {
+  const getMissionPayload = (activeMission: ActiveMission): number => {
     const mission = activeMission.mission;
-    if (stationCount <= 0) return [];
-    if (mission.passengers) {
-      const passengerStations = Math.min(mission.passengers.count, stationCount - 1, 9);
-      return [PILOT_WEIGHT, ...Array.from({ length: passengerStations }, () => PILOT_WEIGHT)];
-    }
-    if (mission.cargo) {
-      const cargoStations = stationCount - 1;
-      if (cargoStations <= 0) return [PILOT_WEIGHT];
-      const perStation = Math.round((mission.cargo.weight / cargoStations) * 10) / 10;
-      return [PILOT_WEIGHT, ...Array.from({ length: cargoStations }, () => perStation)];
-    }
-    return [PILOT_WEIGHT];
+    if (mission.cargo) return mission.cargo.weight;
+    if (mission.passengers) return mission.passengers.count * PILOT_WEIGHT;
+    return 0;
   };
 
-  const handleSendPayload = async (activeMissionId: string, activeMission: ActiveMission) => {
+  const isSeatStationName = (name: string): boolean => {
+    if (!name) return false;
+    return /pax|passenger|seat|crew|pilot|pilote|person|adult|child|infant|occupant|passager|copilote/i.test(name);
+  };
+
+  const getStationTypes = (simPos: typeof simPosition, stationCount: number): ('seat' | 'cargo')[] => {
+    const names = simPos ? [
+      simPos.payload_station_name_1,
+      simPos.payload_station_name_2,
+      simPos.payload_station_name_3,
+      simPos.payload_station_name_4,
+      simPos.payload_station_name_5,
+      simPos.payload_station_name_6,
+      simPos.payload_station_name_7,
+      simPos.payload_station_name_8,
+      simPos.payload_station_name_9,
+      simPos.payload_station_name_10,
+    ] : [];
+    return Array.from({ length: stationCount }, (_, i) =>
+      isSeatStationName(names[i] ?? '') ? 'seat' : 'cargo'
+    ) as ('seat' | 'cargo')[];
+  };
+
+  const calculateEqualWeights = (activeMission: ActiveMission, stationCount: number, _aircraftId: string): number[] => {
+    if (stationCount <= 0) return [];
+    const payload = getMissionPayload(activeMission);
+    const isPassenger = activeMission.mission.type === 'passenger';
+    const stationTypes = getStationTypes(simPosition, stationCount);
+    // For passengers: only seat stations (index > 0); for cargo: all non-pilot stations
+    const eligibleIndices = Array.from({ length: stationCount - 1 }, (_, i) => i + 1)
+      .filter(i => !isPassenger || stationTypes[i] === 'seat');
+    if (eligibleIndices.length === 0) return [PILOT_WEIGHT, ...Array(stationCount - 1).fill(0)];
+    const perStation = Math.round((payload / eligibleIndices.length) * 10) / 10;
+    return Array.from({ length: stationCount }, (_, i) => {
+      if (i === 0) return PILOT_WEIGHT;
+      return eligibleIndices.includes(i) ? perStation : 0;
+    });
+  };
+
+  const getCustomWeights = (activeMissionId: string, activeMission: ActiveMission, stationCount: number, _aircraftId: string): number[] => {
+    const payload = getMissionPayload(activeMission);
+    const isPassenger = activeMission.mission.type === 'passenger';
+    const stationTypes = getStationTypes(simPosition, stationCount);
+    const pcts = customPctMap[activeMissionId] ?? Array(Math.max(0, stationCount - 1)).fill(0);
+    return Array.from({ length: stationCount }, (_, i) => {
+      if (i === 0) return PILOT_WEIGHT;
+      const eligible = !isPassenger || stationTypes[i] === 'seat';
+      if (!eligible) return 0;
+      return Math.round(((pcts[i - 1] ?? 0) / 100) * payload * 10) / 10;
+    });
+  };
+
+  const handleSetPayloadMode = (activeMissionId: string, mode: 'equal' | 'custom', stationCount: number) => {
+    setPayloadModeMap(prev => ({ ...prev, [activeMissionId]: mode }));
+    if (mode === 'custom' && !customPctMap[activeMissionId]) {
+      setCustomPctMap(prev => ({
+        ...prev,
+        [activeMissionId]: Array(Math.max(0, stationCount - 1)).fill(0),
+      }));
+    }
+  };
+
+  const handleCustomPctChange = (activeMissionId: string, stationIndex: number, value: number) => {
+    setCustomPctMap(prev => {
+      const pcts = [...(prev[activeMissionId] ?? [])];
+      pcts[stationIndex] = Math.max(0, Math.min(100, value));
+      return { ...prev, [activeMissionId]: pcts };
+    });
+  };
+
+  const handleSendPayload = async (activeMissionId: string, activeMission: ActiveMission, aircraftId: string) => {
     if (!simConnected || !simPosition) return;
     const stationCount = Math.max(1, Math.floor(simPosition.payload_station_count));
-    const weights = calculatePayloadWeights(activeMission, stationCount);
+    const mode = payloadModeMap[activeMissionId] ?? 'equal';
+    const weights = mode === 'custom'
+      ? getCustomWeights(activeMissionId, activeMission, stationCount, aircraftId)
+      : calculateEqualWeights(activeMission, stationCount, aircraftId);
     const paddedWeights = [
       ...weights,
       ...Array(Math.max(0, stationCount - weights.length)).fill(0),
@@ -213,11 +279,6 @@ const ActiveMissions: React.FC = () => {
             const margin = aircraft ? aircraft.maxTakeoffWeight - total : 0;
             const stationCount = simConnected && simPosition
               ? Math.max(1, Math.floor(simPosition.payload_station_count)) : 0;
-            const payloadWeights = stationCount > 0 ? calculatePayloadWeights(activeMission, stationCount) : [];
-            const displayWeights = [
-              ...payloadWeights,
-              ...Array(Math.max(0, stationCount - payloadWeights.length)).fill(0),
-            ];
             const wasSent = payloadSentMap[activeMission.id] ?? false;
 
             return (
@@ -332,36 +393,158 @@ const ActiveMissions: React.FC = () => {
                     )}
 
                     {/* Payload setup */}
-                    <div className="section-block payload-block">
-                      <div className="section-title">
-                        {mission.type === 'passenger' ? '👥' : '📦'} Payload Setup
-                        {wasSent && <span className="sent-badge">✓ Loaded</span>}
-                      </div>
-                      <div className="payload-summary">
-                        <span>Total: <strong>{expectedPayload} kg</strong></span>
-                        <span className="payload-sub">pilot + {mission.cargo ? `${mission.cargo.weight} kg cargo` : mission.passengers ? `${mission.passengers.count} pax` : '—'}</span>
-                      </div>
-                      {simConnected && simPosition ? (
-                        <>
-                          <div className="payload-stations">
-                            {displayWeights.map((w, i) => (
-                              <div key={i} className={`payload-chip ${w === 0 ? 'payload-chip--empty' : i === 0 ? 'payload-chip--pilot' : ''}`}>
-                                <span>{i === 0 ? '👤' : 'Sta.'} {i === 0 ? '' : i + 1}</span>
-                                <strong>{w} kg</strong>
-                              </div>
-                            ))}
+                    {(() => {
+                      const aircraftId = aircraft?.id ?? '';
+                      const mode = payloadModeMap[activeMission.id] ?? 'equal';
+                      const missionPayload = getMissionPayload(activeMission);
+                      const isPassenger = mission.type === 'passenger';
+                      const stationTypes = stationCount > 0 ? getStationTypes(simPosition, stationCount) : [];
+                      const equalWeights = stationCount > 0 ? calculateEqualWeights(activeMission, stationCount, aircraftId) : [];
+                      const customPcts = customPctMap[activeMission.id] ?? Array(Math.max(0, stationCount - 1)).fill(0);
+                      // Only count eligible stations for custom total
+                      const customTotal = customPcts.reduce((s: number, p: number, i: number) => {
+                        const eligible = !isPassenger || stationTypes[i + 1] === 'seat';
+                        return eligible ? s + p : s;
+                      }, 0);
+                      const displayEqualWeights = [
+                        ...equalWeights,
+                        ...Array(Math.max(0, stationCount - equalWeights.length)).fill(0),
+                      ];
+
+                      return (
+                        <div className="section-block payload-block">
+                          <div className="section-title">
+                            {isPassenger ? '👥' : '📦'} Payload Setup
+                            {wasSent && <span className="sent-badge">✓ Loaded</span>}
                           </div>
-                          <button
-                            className={`payload-btn ${wasSent ? 'payload-btn--sent' : ''}`}
-                            onClick={() => handleSendPayload(activeMission.id, activeMission)}
-                          >
-                            {wasSent ? '✓ Re-send to MSFS' : '📤 Load in MSFS'}
-                          </button>
-                        </>
-                      ) : (
-                        <p className="payload-nosim">Connect MSFS to configure payload</p>
-                      )}
-                    </div>
+                          <div className="payload-summary">
+                            <span>Total: <strong>{expectedPayload} kg</strong></span>
+                            <span className="payload-sub">pilot + {mission.cargo ? `${mission.cargo.weight} kg cargo` : mission.passengers ? `${mission.passengers.count} pax` : '—'}</span>
+                          </div>
+
+                          {simConnected && simPosition ? (
+                            <>
+                              {/* Mode toggle */}
+                              <div className="payload-mode-toggle">
+                                <button
+                                  className={`payload-mode-btn ${mode === 'equal' ? 'active' : ''}`}
+                                  onClick={() => handleSetPayloadMode(activeMission.id, 'equal', stationCount)}
+                                >
+                                  Equal
+                                </button>
+                                <button
+                                  className={`payload-mode-btn ${mode === 'custom' ? 'active' : ''}`}
+                                  onClick={() => handleSetPayloadMode(activeMission.id, 'custom', stationCount)}
+                                >
+                                  Custom
+                                </button>
+                              </div>
+
+                              {/* Equal mode */}
+                              {mode === 'equal' && (
+                                <div className="payload-stations">
+                                  {displayEqualWeights.map((w, i) => {
+                                    const sType = stationTypes[i] ?? 'cargo';
+                                    const isPilot = i === 0;
+                                    const isBlocked = isPassenger && !isPilot && sType === 'cargo';
+                                    return (
+                                      <div
+                                        key={i}
+                                        className={[
+                                          'payload-chip',
+                                          isPilot ? 'payload-chip--pilot' : '',
+                                          isBlocked ? 'payload-chip--blocked' : w === 0 ? 'payload-chip--empty' : '',
+                                        ].join(' ')}
+                                        title={isPilot ? 'Pilot' : `${sType === 'seat' ? 'Seat' : 'Cargo'} station`}
+                                      >
+                                        <span className="payload-chip-type">{isPilot ? '👤' : sType === 'seat' ? '🪑' : '📦'}</span>
+                                        <span>{isPilot ? 'Pilot' : `Sta. ${i}`}</span>
+                                        <strong>{isBlocked ? '—' : `${w} kg`}</strong>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Custom mode */}
+                              {mode === 'custom' && (
+                                <div className="payload-custom">
+                                  <div className="payload-chip payload-chip--pilot">
+                                    <span className="payload-chip-type">👤</span>
+                                    <span>Pilot</span>
+                                    <strong>{PILOT_WEIGHT} kg</strong>
+                                  </div>
+                                  <div className="payload-custom-stations">
+                                    {customPcts.map((pct: number, i: number) => {
+                                      const sType = stationTypes[i + 1] ?? 'cargo';
+                                      const eligible = !isPassenger || sType === 'seat';
+                                      const kg = eligible ? Math.round((pct / 100) * missionPayload * 10) / 10 : 0;
+                                      return (
+                                        <div key={i} className={`payload-custom-row ${!eligible ? 'payload-custom-row--blocked' : ''}`}>
+                                          <span className={`station-type-icon station-type-icon--${sType}`} title={sType === 'seat' ? 'Seat station' : 'Cargo station'}>
+                                            {sType === 'seat' ? '🪑' : '📦'}
+                                          </span>
+                                          <span className="payload-custom-label">Sta. {i + 1}</span>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={eligible ? pct : 0}
+                                            disabled={!eligible}
+                                            className="payload-custom-input"
+                                            onChange={e => handleCustomPctChange(activeMission.id, i, Number(e.target.value))}
+                                          />
+                                          <span className="payload-custom-unit">%</span>
+                                          <span className={`payload-custom-kg ${!eligible ? 'payload-custom-kg--blocked' : ''}`}>
+                                            {eligible ? `${kg} kg` : isPassenger ? 'cargo only' : '—'}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className={`payload-custom-total ${customTotal > 100 ? 'over' : customTotal === 100 ? 'ok' : ''}`}>
+                                    Total: {customTotal}% ({Math.round(customTotal / 100 * missionPayload)} / {missionPayload} kg)
+                                  </div>
+                                </div>
+                              )}
+
+                              {simPosition && stationCount > 0 && (
+                                <details className="payload-station-names-debug">
+                                  <summary>Noms bruts SimConnect</summary>
+                                  {[
+                                    simPosition.payload_station_name_1,
+                                    simPosition.payload_station_name_2,
+                                    simPosition.payload_station_name_3,
+                                    simPosition.payload_station_name_4,
+                                    simPosition.payload_station_name_5,
+                                    simPosition.payload_station_name_6,
+                                    simPosition.payload_station_name_7,
+                                    simPosition.payload_station_name_8,
+                                    simPosition.payload_station_name_9,
+                                    simPosition.payload_station_name_10,
+                                  ].slice(0, stationCount).map((name, i) => (
+                                    <div key={i}><code>Sta. {i + 1}: "{name}"</code></div>
+                                  ))}
+                                </details>
+                              )}
+                              {isPassenger && stationCount > 1 && (
+                                <p className="payload-station-hint">🪑 siège · 📦 cargo (depuis SimConnect)</p>
+                              )}
+
+                              <button
+                                className={`payload-btn ${wasSent ? 'payload-btn--sent' : ''}`}
+                                disabled={mode === 'custom' && customTotal > 100}
+                                onClick={() => handleSendPayload(activeMission.id, activeMission, aircraftId)}
+                              >
+                                {wasSent ? '✓ Re-send to MSFS' : '📤 Load in MSFS'}
+                              </button>
+                            </>
+                          ) : (
+                            <p className="payload-nosim">Connect MSFS to configure payload</p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Actions */}
                     <div className="mission-actions">

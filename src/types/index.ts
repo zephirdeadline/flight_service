@@ -166,6 +166,16 @@ export interface SimData {
   payload_station_weight_8: number;
   payload_station_weight_9: number;
   payload_station_weight_10: number;
+  payload_station_name_1: string;
+  payload_station_name_2: string;
+  payload_station_name_3: string;
+  payload_station_name_4: string;
+  payload_station_name_5: string;
+  payload_station_name_6: string;
+  payload_station_name_7: string;
+  payload_station_name_8: string;
+  payload_station_name_9: string;
+  payload_station_name_10: string;
   stall_warning: boolean;
   overspeed_warning: boolean;
   gear_handle_position: boolean;
