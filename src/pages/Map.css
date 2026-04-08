@@ -33,6 +33,43 @@
   white-space: nowrap;
 }
 
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  display: inline-block;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.legend-large {
+  width: 10px;
+  height: 10px;
+  background: #2980b9;
+}
+
+.legend-medium {
+  width: 7px;
+  height: 7px;
+  background: #27ae60;
+}
+
+.legend-small {
+  width: 5px;
+  height: 5px;
+  background: #7f8c8d;
+}
+
+.legend-label {
+  font-size: 10px;
+  color: #5a7a9a;
+  margin-right: 4px;
+}
+
 .map-trail-count {
   font-size: 10px;
   color: #e74c3c;
@@ -79,6 +116,35 @@
   flex-shrink: 0;
 }
 
+.map-follow-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #2a3f5a;
+  border-radius: 4px;
+  color: #6a8aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.map-follow-btn:hover {
+  background: #252e42;
+  color: #b0c8e0;
+  border-color: #3498db;
+}
+
+.map-follow-btn--active {
+  background: rgba(52, 152, 219, 0.15);
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.map-follow-btn--active:hover {
+  background: rgba(52, 152, 219, 0.25);
+  color: #5dade2;
+}
+
 .map-hint {
   font-size: 11px;
   color: #3a5070;
@@ -107,6 +173,10 @@
   position: relative;
   overflow: hidden;
   cursor: crosshair;
+}
+
+.map-canvas-container--dragging {
+  cursor: grabbing;
 }
 
 .map-canvas {
