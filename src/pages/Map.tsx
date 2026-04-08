@@ -52,6 +52,11 @@ const NAVAID_COLORS: Record<string, string> = {
 };
 const navaidColor = (type: string) => NAVAID_COLORS[type] ?? '#7f8c8d';
 
+const formatNavaidFreq = (nav: Navaid): string => {
+  if (nav.frequencyKhz === 0) return '—';
+  return nav.type.includes('NDB') ? `${nav.frequencyKhz} kHz` : `${(nav.frequencyKhz / 1000).toFixed(3)} MHz`;
+};
+
 const lon2tile = (lon: number, z: number) => ((lon + 180) / 360) * Math.pow(2, z);
 const lat2tile = (lat: number, z: number) => {
   const r = (lat * Math.PI) / 180;
@@ -102,6 +107,8 @@ const FlightMap: React.FC = () => {
   const mapCenterRef = useRef({ lat: 46.0, lon: 2.0 });
   const followRef = useRef(true);
   const [isFollowing, setIsFollowing] = useState(true);
+  const [navaidPopup, setNavaidPopup] = useState<{ navaid: Navaid; x: number; y: number } | null>(null);
+  const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
 
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
@@ -640,13 +647,58 @@ const FlightMap: React.FC = () => {
     }
   };
 
-  // Left click: add waypoint (only in edit mode)
+  // Left click: navaid popup (always) or add waypoint (edit mode)
   const handleClick = (e: React.MouseEvent) => {
     if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
-    if (e.button !== 0 || !isEditingPlanRef.current) return;
+    if (e.button !== 0) return;
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
+
+    // Always: check click on a navaid marker
+    if (navaidsCache) {
+      const proj = getProjector();
+      const zoom = zoomRef.current;
+      if (proj) {
+        const HIT = 14;
+        for (const nav of navaidsCache) {
+          const isVor = nav.type.startsWith('VOR') || nav.type === 'VORTAC' || nav.type === 'TACAN';
+          if (zoom < 8.5 && !isVor) continue;
+          if (zoom < 6) continue;
+          const { x, y } = proj(nav.latitude, nav.longitude);
+          if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
+            setNavaidPopup({ navaid: nav, x: px, y: py });
+            return;
+          }
+        }
+      }
+    }
+
+    // Always: check click on an airport marker
+    if (airportsCache) {
+      const proj = getProjector();
+      const zoom = zoomRef.current;
+      if (proj) {
+        const HIT = 14;
+        for (const airport of airportsCache) {
+          if (zoom < 7 && airport.type !== 'large_airport') continue;
+          if (zoom < 8.5 && airport.type === 'small_airport') continue;
+          const { x, y } = proj(airport.latitude, airport.longitude);
+          if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
+            setAirportPopup({ airport, x: px, y: py });
+            setNavaidPopup(null);
+            return;
+          }
+        }
+      }
+    }
+
+    // Close any open popup on click elsewhere
+    if (navaidPopup) { setNavaidPopup(null); return; }
+    if (airportPopup) { setAirportPopup(null); return; }
+
+    if (!isEditingPlanRef.current) return;
 
     const snapped = findNearestSnap(px, py);
     let wp: Waypoint;
@@ -988,6 +1040,101 @@ const FlightMap: React.FC = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <canvas ref={canvasRef} className="map-canvas" />
+
+        {navaidPopup && (() => {
+          const { navaid: nav, x, y } = navaidPopup;
+          const color = navaidColor(nav.type);
+          // Clamp so popup doesn't go off-screen (approx popup size 220x260)
+          const containerW = containerRef.current?.clientWidth ?? 800;
+          const containerH = containerRef.current?.clientHeight ?? 600;
+          const left = Math.min(x + 14, containerW - 235);
+          const top = Math.min(y - 10, containerH - 280);
+          return (
+            <div className="navaid-popup" style={{ left, top }}>
+              <button className="navaid-popup-close" onClick={() => setNavaidPopup(null)}>✕</button>
+              <div className="navaid-popup-header" style={{ borderColor: color }}>
+                <span className="navaid-popup-ident" style={{ background: color }}>{nav.ident}</span>
+                <span className="navaid-popup-type" style={{ color }}>{nav.type}</span>
+              </div>
+              <div className="navaid-popup-name">{nav.name}</div>
+              <div className="navaid-popup-rows">
+                <div className="navaid-popup-row">
+                  <span>📡 Freq</span>
+                  <strong style={{ color }}>{formatNavaidFreq(nav)}</strong>
+                </div>
+                {nav.associatedAirport && (
+                  <div className="navaid-popup-row">
+                    <span>🛬 Airport</span><strong>{nav.associatedAirport}</strong>
+                  </div>
+                )}
+                <div className="navaid-popup-row">
+                  <span>🗺️ Coords</span>
+                  <span>{nav.latitude.toFixed(4)}°, {nav.longitude.toFixed(4)}°</span>
+                </div>
+                {nav.elevationFt != null && (
+                  <div className="navaid-popup-row">
+                    <span>⛰️ Elev</span><span>{nav.elevationFt} ft</span>
+                  </div>
+                )}
+                {nav.magneticVariationDeg != null && (
+                  <div className="navaid-popup-row">
+                    <span>🧭 Var</span><span>{nav.magneticVariationDeg.toFixed(1)}°</span>
+                  </div>
+                )}
+                {nav.usageType && (
+                  <div className="navaid-popup-row">
+                    <span>📶 Usage</span><span>{nav.usageType}</span>
+                  </div>
+                )}
+                {nav.power && (
+                  <div className="navaid-popup-row">
+                    <span>⚡ Power</span><span>{nav.power}</span>
+                  </div>
+                )}
+                <div className="navaid-popup-row">
+                  <span>🌍 Country</span><span>{nav.isoCountry}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {airportPopup && (() => {
+          const { airport: ap, x, y } = airportPopup;
+          const containerW = containerRef.current?.clientWidth ?? 800;
+          const containerH = containerRef.current?.clientHeight ?? 600;
+          const left = Math.min(x + 14, containerW - 235);
+          const top = Math.min(y - 10, containerH - 260);
+          const typeColor = ap.type === 'large_airport' ? '#af0909' : ap.type === 'medium_airport' ? '#005f28' : '#0300be';
+          const typeLabel = ap.type === 'large_airport' ? 'Large' : ap.type === 'medium_airport' ? 'Medium' : 'Small';
+          return (
+            <div className="navaid-popup" style={{ left, top }}>
+              <button className="navaid-popup-close" onClick={() => setAirportPopup(null)}>✕</button>
+              <div className="navaid-popup-header" style={{ borderColor: typeColor }}>
+                <span className="navaid-popup-ident" style={{ background: typeColor }}>{ap.icao || ap.id}</span>
+                {ap.iataCode && <span className="navaid-popup-ident" style={{ background: '#2980b9' }}>{ap.iataCode}</span>}
+                <span className="navaid-popup-type" style={{ color: typeColor }}>{typeLabel}</span>
+              </div>
+              <div className="navaid-popup-name">{ap.name}</div>
+              <div className="navaid-popup-rows">
+                <div className="navaid-popup-row">
+                  <span>📍 City</span><strong>{ap.city}, {ap.country}</strong>
+                </div>
+                <div className="navaid-popup-row">
+                  <span>🗺️ Coords</span>
+                  <span>{ap.latitude.toFixed(4)}°, {ap.longitude.toFixed(4)}°</span>
+                </div>
+                <div className="navaid-popup-row">
+                  <span>⛰️ Elev</span><span>{ap.elevation} ft</span>
+                </div>
+                <div className="navaid-popup-row">
+                  <span>✈️ Scheduled</span><span>{ap.scheduledService ? '✅ Yes' : '❌ No'}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {isEditingPlan && (
           <div className="map-edit-hint">
             Clic gauche pour ajouter un waypoint · Snap automatique sur les aéroports

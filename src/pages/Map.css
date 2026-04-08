@@ -214,6 +214,94 @@
   cursor: crosshair;
 }
 
+.navaid-popup {
+  position: absolute;
+  width: 220px;
+  background: #1a2535;
+  border: 1px solid #2a3f5a;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  overflow: hidden;
+  pointer-events: all;
+}
+
+.navaid-popup-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: #5a7a9a;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.navaid-popup-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.navaid-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 2px solid;
+}
+
+.navaid-popup-ident {
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.navaid-popup-type {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.navaid-popup-name {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #b0c8e0;
+  font-weight: 500;
+  border-bottom: 1px solid #1e2e42;
+}
+
+.navaid-popup-rows {
+  padding: 6px 0 8px;
+}
+
+.navaid-popup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 12px;
+  font-size: 11px;
+  color: #7a9ab8;
+  gap: 8px;
+}
+
+.navaid-popup-row span:first-child {
+  flex-shrink: 0;
+}
+
+.navaid-popup-row span:last-child,
+.navaid-popup-row strong {
+  color: #c0d8f0;
+  font-family: monospace;
+  font-size: 11px;
+  text-align: right;
+}
+
 .map-edit-hint {
   position: absolute;
   bottom: 24px;
