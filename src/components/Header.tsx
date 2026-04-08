@@ -57,6 +57,9 @@ const Header: React.FC = () => {
           <Link to="/aircraft" className={isActive('/aircraft') ? 'nav-link active' : 'nav-link'}>
             ✈️ Aircraft
           </Link>
+          <Link to="/map" className={isActive('/map') ? 'nav-link active' : 'nav-link'}>
+            Map
+          </Link>
           <Link to="/data" className={isActive('/data') ? 'nav-link active' : 'nav-link'}>
             Data
           </Link>

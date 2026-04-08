@@ -14,6 +14,7 @@ import Airports from './pages/Airports';
 import Cheat from './pages/Cheat';
 import Data from './pages/Data';
 import AircraftCatalog from './pages/AircraftCatalog';
+import Map from './pages/Map';
 import './App.css';
 
 const AppContent: React.FC = () => {
@@ -60,6 +61,7 @@ const AppContent: React.FC = () => {
           <Route path="/airports" element={<Airports />} />
           <Route path="/data" element={<Data />} />
           <Route path="/aircraft" element={<AircraftCatalog />} />
+          <Route path="/map" element={<Map />} />
           <Route path="/cheat" element={<Cheat />} />
           <Route path="/setup" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

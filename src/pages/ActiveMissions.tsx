@@ -330,7 +330,10 @@ const ActiveMissions: React.FC = () => {
             const total = simConnected && simPosition
               ? Math.round(simPosition.total_weight)
               : aircraft ? aircraft.emptyWeight + expectedPayload : 0;
-            const margin = aircraft ? aircraft.maxTakeoffWeight - total : 0;
+            const mtow = simConnected && simPosition && simPosition.max_gross_weight > 0
+              ? Math.round(simPosition.max_gross_weight)
+              : aircraft?.maxTakeoffWeight ?? 0;
+            const margin = mtow - total;
             const stationCount = simConnected && simPosition
               ? Math.max(1, Math.floor(simPosition.payload_station_count)) : 0;
             const wasSent = payloadSentMap[activeMission.id] ?? false;
@@ -547,7 +550,6 @@ const ActiveMissions: React.FC = () => {
                               {/* Custom mode */}
                               {mode === 'custom' && (() => {
                                 const seatIndices = Array.from({ length: stationCount - 1 }, (_, i) => i + 1).filter(i => stationTypes[i] === 'seat');
-                                const allNonPilotIndices = Array.from({ length: stationCount - 1 }, (_, i) => i + 1);
                                 const paxList = mission.passengers?.list ?? [];
                                 const assignment = getPaxAssignment(activeMission.id, paxList.length, seatIndices.length);
 
@@ -561,49 +563,45 @@ const ActiveMissions: React.FC = () => {
 
                                     {isPassenger ? (
                                       <>
-                                        {/* Assignation passager → siège */}
-                                        <div className="pax-assignment">
-                                          <div className="pax-assignment-header">
-                                            <span>Passager</span>
-                                            <span>Corps</span>
-                                            <span>🧳</span>
-                                            <span>Total</span>
-                                            <span>Siège</span>
-                                          </div>
+                                        {/* Liste passagers compacte */}
+                                        <div className="pax-list-compact">
                                           {paxList.map((pax, i) => (
-                                            <div key={i} className="pax-assignment-row">
-                                              <span>Pax {i + 1}</span>
-                                              <span>{pax.weight} kg</span>
-                                              <span className="pax-baggage">{pax.baggage} kg</span>
-                                              <span className="pax-total">{pax.weight + pax.baggage} kg</span>
-                                              <div className="pax-seat-btns">
-                                                {seatIndices.map((si, slot) => (
-                                                  <button
-                                                    key={slot}
-                                                    className={`pax-seat-btn ${assignment[i] === slot ? 'active' : ''}`}
-                                                    onClick={() => handlePaxStationChange(activeMission.id, i, slot, paxList.length, seatIndices.length)}
-                                                    title={`Station ${si}`}
-                                                  >
-                                                    {si}
-                                                  </button>
-                                                ))}
-                                              </div>
+                                            <div key={i} className="pax-list-compact-row">
+                                              <span className="plc-name">Pax {i + 1}</span>
+                                              <span className="plc-weight">{pax.weight} kg</span>
+                                              <span className="plc-baggage">🧳 {pax.baggage} kg</span>
+                                              <span className="plc-total">{pax.weight + pax.baggage} kg</span>
                                             </div>
                                           ))}
                                         </div>
-                                        {/* Récapitulatif par station */}
-                                        <div className="payload-station-summary">
-                                          {allNonPilotIndices.filter(si => seatIndices.includes(si)).map((si) => {
-                                            const slot = seatIndices.indexOf(si);
-                                            const paxHere = paxList.filter((_, i) => assignment[i] === slot);
-                                            const paxW = paxHere.reduce((s, p) => s + p.weight + p.baggage, 0);
-                                            return (
-                                              <div key={si} className="station-summary-row">
-                                                <span>🪑 Sta. {si}</span>
-                                                <span>{paxHere.length > 0 ? `${paxHere.length} pax · ${paxW} kg` : '—'}</span>
-                                              </div>
-                                            );
-                                          })}
+
+                                        {/* Assignation sièges — pleine largeur */}
+                                        <div className="seat-assignment-grid">
+                                          <div className="seat-assignment-title">Assignation des sièges</div>
+                                          <div className="seat-slots">
+                                            {seatIndices.map((si, slot) => {
+                                              const paxHere = paxList.filter((_, i) => assignment[i] === slot);
+                                              const totalW = paxHere.reduce((s, p) => s + p.weight + p.baggage, 0);
+                                              return (
+                                                <div key={si} className="seat-slot">
+                                                  <div className="seat-slot-label">🪑 Sta. {si}</div>
+                                                  <div className="seat-slot-pax">
+                                                    {paxList.map((_, i) => (
+                                                      <button
+                                                        key={i}
+                                                        className={`seat-pax-btn ${assignment[i] === slot ? 'assigned' : ''}`}
+                                                        onClick={() => handlePaxStationChange(activeMission.id, i, slot, paxList.length, seatIndices.length)}
+                                                        title={`Assigner Pax ${i + 1} ici`}
+                                                      >
+                                                        {i + 1}
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                  {totalW > 0 && <div className="seat-slot-weight">{totalW} kg</div>}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
                                       </>
                                     ) : (
@@ -773,11 +771,11 @@ const ActiveMissions: React.FC = () => {
                           </div>
                           <div className="live-metric">
                             <span>Max Takeoff</span>
-                            <strong>{aircraft.maxTakeoffWeight.toLocaleString()} kg</strong>
+                            <strong>{mtow.toLocaleString()} kg</strong>
                           </div>
                           <div className="live-metric weight-margin">
                             <span>Margin</span>
-                            <strong style={{ color: margin < 0 ? '#e74c3c' : margin < aircraft.maxTakeoffWeight * 0.05 ? '#e67e22' : '#27ae60' }}>
+                            <strong style={{ color: margin < 0 ? '#e74c3c' : margin < mtow * 0.05 ? '#e67e22' : '#27ae60' }}>
                               {margin >= 0 ? '+' : ''}{margin.toLocaleString()} kg
                             </strong>
                           </div>

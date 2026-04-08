@@ -14,11 +14,16 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
   background: #f5f7fa;
 }
 
 .app-main {
+  flex: 1;
+  overflow-y: auto;
   padding-top: 2rem;
   padding-bottom: 2rem;
 }

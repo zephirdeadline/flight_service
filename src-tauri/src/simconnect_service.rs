@@ -76,6 +76,7 @@ pub struct SimData {
     pub stall_warning: bool,
     pub overspeed_warning: bool,
     pub gear_handle_position: bool,
+    pub max_gross_weight: f64,
     // Station names (STRING32 each, stations 1-20)
     pub payload_station_name_1: String,
     pub payload_station_name_2: String,
@@ -360,7 +361,8 @@ impl SimConnectService {
         sim.add_data_definition(DEF_ID, "STALL WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "OVERSPEED WARNING", "number", f64_type, UNUSED, 0.0);
         sim.add_data_definition(DEF_ID, "GEAR HANDLE POSITION", "number", f64_type, UNUSED, 0.0);
-        // TITLE — STRING256 (256 bytes) à l'offset 59*8 = 472 (35 champs avant + 20 poids + 3 warnings + 1 count = 59 f64)
+        sim.add_data_definition(DEF_ID, "MAX GROSS WEIGHT", "kilograms", f64_type, UNUSED, 0.0);
+        // TITLE — STRING256 (256 bytes) à l'offset 60*8 = 480 (35 champs avant + 20 poids + 3 warnings + 1 count = 59 f64)
         let str256_type = simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_STRING256;
         sim.add_data_definition(DEF_ID, "TITLE", "", str256_type, UNUSED, 0.0);
         // PAYLOAD STATION NAME:1..20 — STRING32 (32 bytes each) à l'offset 472+256 = 728
@@ -382,8 +384,8 @@ impl SimConnectService {
         // Tout est FLOAT64 : 8 bytes par champ, même ordre que setup_data_definitions
         let r = |i: usize| std::ptr::read_unaligned(ptr.add(i * 8) as *const f64);
 
-        // TITLE : STRING256 à l'offset 59*8 = 472
-        let title_bytes = std::slice::from_raw_parts(ptr.add(59 * 8), 256);
+        // TITLE : STRING256 à l'offset 60*8 = 480
+        let title_bytes = std::slice::from_raw_parts(ptr.add(60 * 8), 256);
         let title_end = title_bytes.iter().position(|&b| b == 0).unwrap_or(256);
         let aircraft_title = String::from_utf8_lossy(&title_bytes[..title_end]).to_string();
 
@@ -393,8 +395,8 @@ impl SimConnectService {
             let end = bytes.iter().position(|&b| b == 0).unwrap_or(32);
             String::from_utf8_lossy(&bytes[..end]).to_string()
         };
-        // 35 champs f64 avant stations + 20 poids + 3 warnings = 58 f64 + count = 59 f64 total
-        const NAMES_BASE: usize = 59 * 8 + 256; // 472 + 256 = 728
+        // 35 champs f64 avant stations + 20 poids + 3 warnings + 1 max_gross = 60 f64 total
+        const NAMES_BASE: usize = 60 * 8 + 256; // 480 + 256 = 736
 
 
         SimData {
@@ -458,6 +460,7 @@ impl SimConnectService {
             stall_warning:              r(56) != 0.0,
             overspeed_warning:          r(57) != 0.0,
             gear_handle_position:       r(58) != 0.0,
+            max_gross_weight:           r(59),
             payload_station_name_1:     parse_str32(NAMES_BASE),
             payload_station_name_2:     parse_str32(NAMES_BASE + 32),
             payload_station_name_3:     parse_str32(NAMES_BASE + 64),

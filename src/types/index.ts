@@ -200,6 +200,7 @@ export interface SimData {
   stall_warning: boolean;
   overspeed_warning: boolean;
   gear_handle_position: boolean;
+  max_gross_weight: number;
 }
 
 export type PopupType = 'info' | 'warning' | 'error' | 'success' | 'confirm';

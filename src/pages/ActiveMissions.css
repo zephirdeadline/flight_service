@@ -420,57 +420,98 @@
 .payload-custom-totals { display: flex; flex-direction: column; gap: 0.25rem; }
 
 /* Pax assignment (custom mode passenger) */
-.pax-assignment {
-  margin: 0.5rem 0;
-  border: 1px solid #e8e8e8;
+/* Passenger list compact (custom mode) */
+.pax-list-compact {
+  margin: 0.4rem 0;
+  border: 1px solid #eee;
   border-radius: 6px;
   overflow: hidden;
   font-size: 0.8rem;
 }
 
-.pax-assignment-header {
-  display: grid;
-  grid-template-columns: 1fr 55px 45px 55px auto;
-  gap: 0.5rem;
-  padding: 0.3rem 0.6rem;
-  background: #f0f0f0;
+.pax-list-compact-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.pax-list-compact-row:last-child { border-bottom: none; }
+.plc-name { flex: 1; color: #7f8c8d; }
+.plc-weight { min-width: 50px; text-align: right; }
+.plc-baggage { color: #e67e22; min-width: 55px; text-align: right; }
+.plc-total { font-weight: 700; min-width: 55px; text-align: right; }
+
+/* Seat assignment grid (full width) */
+.seat-assignment-grid {
+  margin-top: 0.6rem;
+}
+
+.seat-assignment-title {
+  font-size: 0.78rem;
   font-weight: 600;
   color: #7f8c8d;
-  font-size: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
-.pax-assignment-row {
-  display: grid;
-  grid-template-columns: 1fr 55px 45px 55px auto;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.35rem 0.6rem;
-  border-top: 1px solid #f0f0f0;
+.seat-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
-.pax-seat-btns { display: flex; gap: 0.25rem; }
+.seat-slot {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  background: white;
+  min-width: 70px;
+  flex: 0 0 auto;
+}
 
-.pax-seat-btn {
-  width: 26px;
-  height: 24px;
+.seat-slot-label {
+  font-size: 0.72rem;
+  color: #7f8c8d;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+}
+
+.seat-slot-pax {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.seat-pax-btn {
+  width: 22px;
+  height: 22px;
   border: 1px solid #dde;
   border-radius: 4px;
-  background: white;
-  font-size: 0.75rem;
+  background: #f8f8f8;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  color: #7f8c8d;
+  color: #aaa;
   padding: 0;
   transition: all 0.12s;
 }
 
-.pax-seat-btn.active {
+.seat-pax-btn.assigned {
   background: #3498db;
   border-color: #3498db;
   color: white;
 }
 
-.pax-seat-btn:hover:not(.active) { background: #eaf4fb; border-color: #3498db; }
+.seat-pax-btn:hover:not(.assigned) { background: #eaf4fb; border-color: #3498db; color: #3498db; }
+
+.seat-slot-weight {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e67e22;
+  margin-top: 0.2rem;
+  text-align: center;
+}
 
 /* Baggage distribution */
 .baggage-distribution {
