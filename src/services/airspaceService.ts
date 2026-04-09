@@ -33,6 +33,30 @@ export const formatLimit = (l: AirspaceLimit): string => {
   return `${Math.round(l.value).toLocaleString()} ft`;
 };
 
+export interface AirspaceCrossing {
+  name: string;
+  airspaceType: number;
+  icaoClass: number;
+  entryDistNm: number;
+  exitDistNm: number;
+  lowerFt: number;
+  upperFt: number;
+  color: string;
+}
+
+const ASP_COLORS: Record<number, string> = {
+  1: '#ff6400', 2: '#ffaa00', 3: '#dc0000',
+  4: '#3498db', 5: '#8250c8', 6: '#8250c8',
+  8: '#2980b9', 27: '#2980b9', 11: '#666666',
+};
+export const airspaceColor = (type: number) => ASP_COLORS[type] ?? '#446688';
+
+export const limitToFt = (l: AirspaceLimit): number => {
+  if (l.datum === 2) return l.value * 100;           // FL → ft
+  if (l.unit === 0) return Math.round(l.value * 3.28084); // m → ft
+  return Math.round(l.value);                         // ft
+};
+
 export const getAirspaces = (
   lat1: number, lon1: number, lat2: number, lon2: number,
 ): Promise<Airspace[]> =>

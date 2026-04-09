@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import type { AirspaceCrossing } from '../services/airspaceService';
+import { AIRSPACE_TYPE_NAMES, ICAO_CLASS_NAMES } from '../services/airspaceService';
 import './ElevationProfile.css';
 
 export interface ProfilePoint {
@@ -14,12 +16,13 @@ export interface WaypointMarker {
 interface Props {
   points: ProfilePoint[];
   waypoints: WaypointMarker[];
+  crossings: AirspaceCrossing[];
   loading: boolean;
   onClose: () => void;
   onRegenerate: () => void;
 }
 
-const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose, onRegenerate }) => {
+const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loading, onClose, onRegenerate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +108,43 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose
       ctx.fillText(truncated, x, PAD.top + chartH + 13);
     });
 
+    // Airspace crossing bands
+    for (const c of crossings) {
+      const x1 = xS(c.entryDistNm);
+      const x2 = xS(c.exitDistNm);
+      const yTop = Math.max(PAD.top, yS(Math.min(c.upperFt, yMax)));
+      const yBot = Math.min(PAD.top + chartH, yS(Math.max(c.lowerFt, yMin)));
+      if (yBot <= yTop) continue;
+
+      // Fill
+      ctx.fillStyle = c.color + '28';
+      ctx.fillRect(x1, yTop, x2 - x1, yBot - yTop);
+
+      // Border top & bottom
+      ctx.strokeStyle = c.color + 'aa';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x1, yTop); ctx.lineTo(x2, yTop);
+      ctx.moveTo(x1, yBot); ctx.lineTo(x2, yBot);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label centré dans la bande
+      const bandH = yBot - yTop;
+      if (bandH > 14 && x2 - x1 > 20) {
+        const typeName = AIRSPACE_TYPE_NAMES[c.airspaceType] ?? '';
+        const cls = ICAO_CLASS_NAMES[c.icaoClass] ? `${typeName} ${ICAO_CLASS_NAMES[c.icaoClass]}` : typeName;
+        const label = c.name.length > 18 ? cls || c.name.slice(0, 14) + '…' : c.name;
+        ctx.font = `bold ${Math.min(9, bandH * 0.45)}px monospace`;
+        ctx.fillStyle = c.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, (x1 + x2) / 2, (yTop + yBot) / 2);
+        ctx.textBaseline = 'alphabetic';
+      }
+    }
+
     // Area gradient
     const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + chartH);
     grad.addColorStop(0, 'rgba(52,152,219,0.45)');
@@ -185,7 +225,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose
     }
     ctx.fillText('NM', PAD.left + chartW, PAD.top + chartH + 25);
 
-  }, [points, waypoints, loading]);
+  }, [points, waypoints, crossings, loading]);
 
   const validPoints = points.filter(p => p.elevFt !== null);
   const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;

@@ -4,8 +4,8 @@ import { airportService } from '../services/airportService';
 import { navaidService } from '../services/navaidService';
 import { exportFlightPlanPDF } from '../services/flightPlanExport';
 import { getElevation } from '../services/elevationService';
-import { getAirspaces, formatLimit, AIRSPACE_TYPE_NAMES, ICAO_CLASS_NAMES } from '../services/airspaceService';
-import type { Airspace } from '../services/airspaceService';
+import { getAirspaces, formatLimit, AIRSPACE_TYPE_NAMES, ICAO_CLASS_NAMES, airspaceColor, limitToFt } from '../services/airspaceService';
+import type { Airspace, AirspaceCrossing } from '../services/airspaceService';
 import ElevationProfile from '../components/ElevationProfile';
 import type { ProfilePoint, WaypointMarker } from '../components/ElevationProfile';
 import { flightPlanModule, saveFlightPlan } from '../utils/flightPlanStore';
@@ -83,6 +83,7 @@ const FlightMap: React.FC = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profilePoints, setProfilePoints] = useState<ProfilePoint[]>([]);
   const [profileWaypoints, setProfileWaypoints] = useState<WaypointMarker[]>([]);
+  const [profileCrossings, setProfileCrossings] = useState<AirspaceCrossing[]>([]);
   const profileAbortRef = useRef(false);
 
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -168,6 +169,47 @@ const FlightMap: React.FC = () => {
 
     setProfileWaypoints(markers);
 
+    // Calculer les croisements d'espaces aériens le long de la route
+    const crossings: AirspaceCrossing[] = [];
+    for (const asp of airspacesModule) {
+      const ring = asp.coordinates[0] as [number, number][];
+      if (!ring || ring.length < 3) continue;
+      let entryDist: number | null = null;
+      for (let i = 0; i < samples.length; i++) {
+        const s = samples[i];
+        const inside = pointInPolygon(s.lon, s.lat, ring);
+        if (inside && entryDist === null) {
+          entryDist = s.distNm;
+        } else if (!inside && entryDist !== null) {
+          crossings.push({
+            name: asp.name,
+            airspaceType: asp.airspaceType,
+            icaoClass: asp.icaoClass,
+            entryDistNm: entryDist,
+            exitDistNm: s.distNm,
+            lowerFt: asp.lower.datum === 0 ? 0 : limitToFt(asp.lower),
+            upperFt: limitToFt(asp.upper) > 60000 ? 60000 : limitToFt(asp.upper),
+            color: airspaceColor(asp.airspaceType),
+          });
+          entryDist = null;
+        }
+      }
+      // Route se termine à l'intérieur de l'espace
+      if (entryDist !== null) {
+        crossings.push({
+          name: asp.name,
+          airspaceType: asp.airspaceType,
+          icaoClass: asp.icaoClass,
+          entryDistNm: entryDist,
+          exitDistNm: samples[samples.length - 1].distNm,
+          lowerFt: asp.lower.datum === 0 ? 0 : limitToFt(asp.lower),
+          upperFt: limitToFt(asp.upper) > 60000 ? 60000 : limitToFt(asp.upper),
+          color: airspaceColor(asp.airspaceType),
+        });
+      }
+    }
+    setProfileCrossings(crossings);
+
     const results: ProfilePoint[] = [];
     for (let i = 0; i < samples.length; i++) {
       if (profileAbortRef.current) break;
@@ -184,6 +226,7 @@ const FlightMap: React.FC = () => {
     profileAbortRef.current = true;
     setProfileOpen(false);
     setProfileLoading(false);
+    setProfileCrossings([]);
   };
 
   const updatePlanInfo = () => {
@@ -1564,6 +1607,7 @@ const FlightMap: React.FC = () => {
           <ElevationProfile
             points={profilePoints}
             waypoints={profileWaypoints}
+            crossings={profileCrossings}
             loading={profileLoading}
             onClose={closeProfile}
             onRegenerate={generateProfile}
