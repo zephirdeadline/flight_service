@@ -716,37 +716,42 @@ const FlightMap: React.FC = () => {
       return h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`;
     };
 
-    let cumulNm = 0;
-    let cumulMin = 0;
+    // Each row shows the leg departing FROM that waypoint toward the next
     const rows = wp.map((w, i) => {
-      const legNm = i === 0 ? 0 : haversineNm(wp[i - 1].lat, wp[i - 1].lon, w.lat, w.lon);
-      const brg = i === 0 ? null : bearingDeg(wp[i - 1].lat, wp[i - 1].lon, w.lat, w.lon);
-      cumulNm += legNm;
-      cumulMin += i === 0 ? 0 : (legNm / spd) * 60;
-      return { w, i, legNm, brg, cumulNm, cumulMin };
+      const isLast = i === wp.length - 1;
+      const legNm = isLast ? 0 : haversineNm(w.lat, w.lon, wp[i + 1].lat, wp[i + 1].lon);
+      const brg = isLast ? null : bearingDeg(w.lat, w.lon, wp[i + 1].lat, wp[i + 1].lon);
+      return { w, i, legNm, brg, isLast };
     });
 
-    const totalNm = cumulNm;
+    const totalNm = rows.reduce((s, r) => s + r.legNm, 0);
     const totalKm = (totalNm * 1.852).toFixed(1);
-    const totalH = Math.floor(cumulMin / 60);
-    const totalM = Math.round(cumulMin % 60);
+    const totalMin = (totalNm / spd) * 60;
+    const totalH = Math.floor(totalMin / 60);
+    const totalM = Math.round(totalMin % 60);
     const totalTime = totalH > 0 ? `${totalH}h${totalM.toString().padStart(2, '0')}` : `${totalM} min`;
     const now = new Date();
     const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-    const tableRows = rows.map(({ w, i, legNm, brg, cumulNm: cumul }) => `
+    let runningNm = 0;
+    const tableRows = rows.map(({ w, i, legNm, brg, isLast }) => {
+      const cumulBefore = runningNm;
+      runningNm += legNm;
+      const cumulAfter = runningNm;
+      return `
       <tr>
         <td class="center">${i + 1}</td>
         <td class="bold">${w.name}</td>
         <td class="mono">${formatCoord(w.lat, 'N', 'S')}</td>
         <td class="mono">${formatCoord(w.lon, 'E', 'W')}</td>
         <td class="center">${brg !== null ? `${Math.round(brg).toString().padStart(3, '0')}°` : '—'}</td>
-        <td class="center">${i === 0 ? '—' : legNm.toFixed(1)}</td>
-        <td class="center">${i === 0 ? '—' : formatDuration(legNm)}</td>
-        <td class="center">${cumul.toFixed(1)}</td>
-        <td class="center">${i === 0 ? '—' : formatDuration(cumul)}</td>
+        <td class="center">${isLast ? '—' : legNm.toFixed(1)}</td>
+        <td class="center">${isLast ? '—' : formatDuration(legNm)}</td>
+        <td class="center">${cumulBefore === 0 && isLast ? totalNm.toFixed(1) : isLast ? cumulAfter.toFixed(1) : cumulAfter.toFixed(1)}</td>
+        <td class="center">${isLast ? formatDuration(totalNm) : formatDuration(cumulAfter)}</td>
         <td class="note">${w.note ?? ''}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -833,11 +838,11 @@ const FlightMap: React.FC = () => {
       <th style="width:72px">Waypoint</th>
       <th style="width:120px">Latitude</th>
       <th style="width:120px">Longitude</th>
-      <th class="center" style="width:48px">Route</th>
+      <th class="center" style="width:48px">Cap suivant</th>
       <th class="center" style="width:58px">Leg (NM)</th>
-      <th class="center" style="width:58px">ETE leg</th>
-      <th class="center" style="width:58px">Total (NM)</th>
-      <th class="center" style="width:58px">ETE total</th>
+      <th class="center" style="width:58px">Durée leg</th>
+      <th class="center" style="width:58px">Dist. cumul.</th>
+      <th class="center" style="width:58px">Temps cumul.</th>
       <th>Notes</th>
     </tr>
   </thead>
@@ -855,7 +860,6 @@ const FlightMap: React.FC = () => {
 </table>
 
 <footer>Généré par Flight Service · ${dateStr} · Vitesse de croisière ${spd} kts</footer>
-<script>window.onload = () => { window.print(); }</script>
 </body>
 </html>`;
 
