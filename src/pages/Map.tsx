@@ -66,6 +66,9 @@ const FlightMap: React.FC = () => {
   const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
   const [popupElevation, setPopupElevation] = useState<number | null | 'loading'>('loading');
   const [hoveredAirspaces, setHoveredAirspaces] = useState<Airspace[]>([]);
+  const [mapScale, setMapScale] = useState(1.4);
+  const mapScaleRef = useRef(1.4);
+
   const [showAirspaces, setShowAirspaces] = useState(true);
   const showAirspacesRef = useRef(true);
   const [hiddenAirspaceTypes, setHiddenAirspaceTypes] = useState<Set<number>>(new Set());
@@ -327,6 +330,8 @@ const FlightMap: React.FC = () => {
     ctx.fillStyle = '#aad3df';
     ctx.fillRect(0, 0, W, H);
 
+    const sc = mapScaleRef.current;
+
     // OSM tiles
     const maxTile = Math.pow(2, tz);
     const startTX = Math.floor(cTileX - W / (2 * ts));
@@ -387,7 +392,7 @@ const FlightMap: React.FC = () => {
         const { x, y } = project(airport.latitude, airport.longitude);
         if (x < -margin || x > W + margin || y < -margin || y > H + margin) continue;
 
-        const dotRadius = zoom >= 9 ? 9 : 7;
+        const dotRadius = (zoom >= 9 ? 9 : 7) * sc;
         let dotColor: string;
         let strokeColor: string;
         if (airport.type === 'large_airport') {
@@ -409,7 +414,7 @@ const FlightMap: React.FC = () => {
         ctx.fill();
         ctx.stroke();
 
-        ctx.font = `bold ${airport.type === 'large_airport' ? 11 : 10}px monospace`;
+        ctx.font = `bold ${Math.round((airport.type === 'large_airport' ? 11 : 10) * sc)}px monospace`;
         ctx.fillStyle = '#1a2535';
         ctx.strokeStyle = 'rgba(255,255,255,0.8)';
         ctx.lineWidth = 2.5;
@@ -430,7 +435,7 @@ const FlightMap: React.FC = () => {
         if (x < -margin || x > W + margin || y < -margin || y > H + margin) continue;
 
         const color = navaidColor(nav.type);
-        const r = 7;
+        const r = 7 * sc;
 
         ctx.save();
         ctx.translate(x, y);
@@ -479,7 +484,7 @@ const FlightMap: React.FC = () => {
         ctx.restore();
 
         // Ident label
-        ctx.font = 'bold 10px monospace';
+        ctx.font = `bold ${Math.round(10 * sc)}px monospace`;
         ctx.strokeStyle = 'rgba(255,255,255,0.85)';
         ctx.lineWidth = 2.5;
         ctx.strokeText(nav.ident, x + r + 2, y + 4);
@@ -519,7 +524,9 @@ const FlightMap: React.FC = () => {
         ctx.restore();
 
         // Distance + bearing + durée label on each leg
-        ctx.font = 'bold 11px sans-serif';
+        const legFs = Math.round(11 * sc);
+        const legLh = Math.round(13 * sc);
+        ctx.font = `bold ${legFs}px sans-serif`;
         for (let i = 1; i < wp.length; i++) {
           const nm = haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
           const brg = bearingDeg(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
@@ -534,15 +541,15 @@ const FlightMap: React.FC = () => {
           const line3 = h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`;
           ctx.strokeStyle = 'rgba(255,255,255,0.9)';
           ctx.lineWidth = 3;
-          ctx.strokeText(line1, mx + 4, my - 12);
+          ctx.strokeText(line1, mx + 4, my - legLh);
           ctx.strokeText(line2, mx + 4, my + 1);
-          ctx.strokeText(line3, mx + 4, my + 14);
+          ctx.strokeText(line3, mx + 4, my + legLh);
           ctx.fillStyle = '#e67e22';
-          ctx.fillText(line1, mx + 4, my - 12);
+          ctx.fillText(line1, mx + 4, my - legLh);
           ctx.fillStyle = '#f5cba7';
           ctx.fillText(line2, mx + 4, my + 1);
           ctx.fillStyle = '#85c1e9';
-          ctx.fillText(line3, mx + 4, my + 14);
+          ctx.fillText(line3, mx + 4, my + legLh);
         }
       }
 
@@ -552,17 +559,20 @@ const FlightMap: React.FC = () => {
         const isMovePreview = dm !== null && i === dm.wpIndex;
         ctx.globalAlpha = isInsertPreview ? 0.55 : 1;
 
+        const wpR = Math.round(8 * sc);
+        const wpOff = wpR + 3;
+
         // Circle
         ctx.beginPath();
         ctx.fillStyle = isInsertPreview ? '#3498db' : isMovePreview ? '#2ecc71' : '#f39c12';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
-        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, wpR, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
         // Index number inside circle
-        ctx.font = 'bold 9px sans-serif';
+        ctx.font = `bold ${Math.round(9 * sc)}px sans-serif`;
         ctx.fillStyle = '#1a1a1a';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -571,22 +581,22 @@ const FlightMap: React.FC = () => {
         ctx.textBaseline = 'alphabetic';
 
         // Name label
-        ctx.font = 'bold 11px monospace';
+        ctx.font = `bold ${Math.round(11 * sc)}px monospace`;
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 3;
-        ctx.strokeText(wp[i].name, p.x + 11, p.y - 6);
+        ctx.strokeText(wp[i].name, p.x + wpOff, p.y - Math.round(6 * sc));
         ctx.fillStyle = '#e67e22';
-        ctx.fillText(wp[i].name, p.x + 11, p.y - 6);
+        ctx.fillText(wp[i].name, p.x + wpOff, p.y - Math.round(6 * sc));
 
         // Elevation label
         if (wp[i].elevationM !== undefined) {
           const elevText = `${wp[i].elevationM} m / ${Math.round(wp[i].elevationM! * 3.28084).toLocaleString()} ft`;
-          ctx.font = '9px monospace';
+          ctx.font = `${Math.round(9 * sc)}px monospace`;
           ctx.strokeStyle = 'rgba(255,255,255,0.8)';
           ctx.lineWidth = 2;
-          ctx.strokeText(elevText, p.x + 11, p.y + 6);
+          ctx.strokeText(elevText, p.x + wpOff, p.y + Math.round(6 * sc));
           ctx.fillStyle = '#1abc9c';
-          ctx.fillText(elevText, p.x + 11, p.y + 6);
+          ctx.fillText(elevText, p.x + wpOff, p.y + Math.round(6 * sc));
         }
 
         // Note indicator: small amber dot top-right + truncated note text
@@ -595,12 +605,12 @@ const FlightMap: React.FC = () => {
           // Dot
           ctx.beginPath();
           ctx.fillStyle = '#f1c40f';
-          ctx.arc(p.x + 7, p.y - 7, 3, 0, Math.PI * 2);
+          ctx.arc(p.x + Math.round(7 * sc), p.y - Math.round(7 * sc), Math.round(3 * sc), 0, Math.PI * 2);
           ctx.fill();
           // Text
           const noteText = wp[i].note!.length > 22 ? wp[i].note!.slice(0, 22) + '…' : wp[i].note!;
-          const noteY = wp[i].elevationM !== undefined ? p.y + 16 : p.y + 7;
-          ctx.font = 'italic 9px sans-serif';
+          const noteY = wp[i].elevationM !== undefined ? p.y + Math.round(16 * sc) : p.y + Math.round(7 * sc);
+          ctx.font = `italic ${Math.round(9 * sc)}px sans-serif`;
           ctx.strokeStyle = 'rgba(255,255,255,0.8)';
           ctx.lineWidth = 2;
           ctx.strokeText(noteText, p.x + 11, noteY);
@@ -701,7 +711,7 @@ const FlightMap: React.FC = () => {
     if (data) {
       const { x: cx, y: cy } = project(data.latitude, data.longitude);
       const headingRad = (data.heading * Math.PI) / 180;
-      const size = 14;
+      const size = 14 * sc;
 
       ctx.save();
       ctx.translate(cx, cy);
@@ -1581,6 +1591,26 @@ const FlightMap: React.FC = () => {
           <button className="map-clear-btn" onClick={clearTrail}>
             Effacer trace
           </button>
+
+          <div className="map-scale-control">
+            <span className="map-scale-label">A</span>
+            <input
+              type="range"
+              className="map-scale-slider"
+              min={0.6}
+              max={2.0}
+              step={0.1}
+              value={mapScale}
+              onChange={e => {
+                const v = Number(e.target.value);
+                mapScaleRef.current = v;
+                setMapScale(v);
+                draw();
+              }}
+              title={`Taille des marqueurs : ${mapScale.toFixed(1)}×`}
+            />
+            <span className="map-scale-label map-scale-label--big">A</span>
+          </div>
         </div>
       </div>
 
@@ -1769,6 +1799,7 @@ const FlightMap: React.FC = () => {
             waypoints={profileWaypoints}
             crossings={filteredProfileCrossings}
             loading={profileLoading}
+            scale={mapScale}
             onClose={closeProfile}
             onRegenerate={generateProfile}
             onHoverDist={handleProfileHover}

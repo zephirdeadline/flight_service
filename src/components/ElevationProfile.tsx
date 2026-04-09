@@ -18,12 +18,13 @@ interface Props {
   waypoints: WaypointMarker[];
   crossings: AirspaceCrossing[];
   loading: boolean;
+  scale: number;
   onClose: () => void;
   onRegenerate: () => void;
   onHoverDist?: (distNm: number | null) => void;
 }
 
-const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loading, onClose, onRegenerate, onHoverDist }) => {
+const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loading, scale, onClose, onRegenerate, onHoverDist }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,10 +57,13 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     ctx.fillStyle = '#0d1117';
     ctx.fillRect(0, 0, W, H);
 
+    const sc = scale;
+    const fs = (n: number) => `${Math.round(n * sc)}px`;
+
     const validPoints = points.filter((p): p is { distNm: number; elevFt: number } => p.elevFt !== null);
     if (validPoints.length < 2) {
       ctx.fillStyle = '#2a3548';
-      ctx.font = '13px sans-serif';
+      ctx.font = `${fs(13)} sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(loading ? 'Chargement des données d\'élévation…' : 'Pas assez de données', W / 2, H / 2);
       return;
@@ -90,7 +94,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
       ctx.lineTo(PAD.left + chartW, y);
       ctx.stroke();
       ctx.fillStyle = '#3a5070';
-      ctx.font = '9px monospace';
+      ctx.font = `${fs(9)} monospace`;
       ctx.textAlign = 'right';
       const label = ft >= 1000 ? `${(ft / 1000).toFixed(1)}k ft` : `${Math.round(ft)} ft`;
       ctx.fillText(label, PAD.left - 5, y + 3);
@@ -108,7 +112,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#f39c12';
-      ctx.font = 'bold 9px monospace';
+      ctx.font = `bold ${fs(9)} monospace`;
       ctx.textAlign = 'center';
       const truncated = name.length > 6 ? name.slice(0, 6) : name;
       ctx.fillText(truncated, x, PAD.top + chartH + 13);
@@ -142,7 +146,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
         const typeName = AIRSPACE_TYPE_NAMES[c.airspaceType] ?? '';
         const cls = ICAO_CLASS_NAMES[c.icaoClass] ? `${typeName} ${ICAO_CLASS_NAMES[c.icaoClass]}` : typeName;
         const label = c.name.length > 18 ? cls || c.name.slice(0, 14) + '…' : c.name;
-        ctx.font = `bold ${Math.min(9, bandH * 0.45)}px monospace`;
+        ctx.font = `bold ${Math.min(Math.round(9 * sc), Math.round(bandH * 0.45))}px monospace`;
         ctx.fillStyle = c.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -206,7 +210,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
       ctx.arc(minX, minY, 3, 0, Math.PI * 2);
       ctx.fillStyle = '#27ae60';
       ctx.fill();
-      ctx.font = '9px monospace';
+      ctx.font = `${fs(9)} monospace`;
       ctx.fillStyle = '#27ae60';
       ctx.textAlign = minX > W - 80 ? 'right' : 'center';
       ctx.fillText(`${minPt.elevFt.toLocaleString()} ft`, minX, minY + 13);
@@ -231,7 +235,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     }
     ctx.fillText('NM', PAD.left + chartW, PAD.top + chartH + 25);
 
-  }, [points, waypoints, crossings, loading, customMin, customMax]);
+  }, [points, waypoints, crossings, loading, customMin, customMax, scale]);
 
   const validPoints = points.filter(p => p.elevFt !== null);
   const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;
@@ -289,11 +293,12 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
       <div ref={containerRef} className="elevation-profile-canvas-wrap"
         onMouseMove={(e) => {
           const overlay = overlayRef.current;
-          const scale = scaleRef.current;
-          if (!overlay || !scale) return;
+          const mapSc = scale;
+          const chartScale = scaleRef.current;
+          if (!overlay || !chartScale) return;
           const rect = overlay.getBoundingClientRect();
           const py = e.clientY - rect.top;
-          const { yMin, yMax, padTop, padLeft, chartH, chartW } = scale;
+          const { yMin, yMax, padTop, padLeft, chartH, chartW } = chartScale;
           if (py < padTop || py > padTop + chartH) { overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height); return; }
           const ft = yMin + (yMax - yMin) * (1 - (py - padTop) / chartH);
           const m = Math.round(ft / 3.28084);
@@ -312,7 +317,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
           // Label flottant à côté du curseur
           const px = e.clientX - rect.left;
           const label = `${Math.round(ft).toLocaleString()} ft / ${m.toLocaleString()} m`;
-          ctx.font = 'bold 10px monospace';
+          ctx.font = `bold ${Math.round(10 * mapSc)}px monospace`;
           const tw = ctx.measureText(label).width;
           const lw = tw + 10;
           const lh = 16;

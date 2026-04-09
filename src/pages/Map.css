@@ -580,6 +580,31 @@
   border-color: #27ae60;
 }
 
+.map-scale-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.map-scale-label {
+  font-size: 9px;
+  color: #3a5070;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.map-scale-label--big {
+  font-size: 13px;
+}
+
+.map-scale-slider {
+  width: 70px;
+  accent-color: #3498db;
+  cursor: pointer;
+  height: 3px;
+}
+
 .map-airspace-filter-wrap {
   position: relative;
 }
