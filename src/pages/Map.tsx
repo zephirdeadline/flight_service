@@ -4,6 +4,8 @@ import { airportService } from '../services/airportService';
 import { navaidService } from '../services/navaidService';
 import { exportFlightPlanPDF } from '../services/flightPlanExport';
 import { getElevation } from '../services/elevationService';
+import ElevationProfile from '../components/ElevationProfile';
+import type { ProfilePoint, WaypointMarker } from '../components/ElevationProfile';
 import { flightPlanModule, saveFlightPlan } from '../utils/flightPlanStore';
 import type { Waypoint } from '../utils/flightPlanStore';
 import { navaidColor, formatNavaidFreq } from '../utils/mapNavaid';
@@ -55,6 +57,12 @@ const FlightMap: React.FC = () => {
   const [measureResult, setMeasureResult] = useState<{ nm: number; km: number; bearing: number } | null>(null);
   const [measureElevations, setMeasureElevations] = useState<{ a: number | null | 'loading'; b: number | null | 'loading' }>({ a: null, b: null });
 
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profilePoints, setProfilePoints] = useState<ProfilePoint[]>([]);
+  const [profileWaypoints, setProfileWaypoints] = useState<WaypointMarker[]>([]);
+  const profileAbortRef = useRef(false);
+
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -102,6 +110,58 @@ const FlightMap: React.FC = () => {
         draw();
       }
     }).catch(() => {});
+  };
+
+  const generateProfile = async () => {
+    const wp = flightPlanRef.current;
+    if (wp.length < 2) return;
+
+    profileAbortRef.current = false;
+    setProfileOpen(true);
+    setProfileLoading(true);
+    setProfilePoints([]);
+
+    const STEP_NM = 5;
+    const samples: { distNm: number; lat: number; lon: number }[] = [];
+    const markers: WaypointMarker[] = [];
+    let cumul = 0;
+
+    markers.push({ distNm: 0, name: wp[0].name });
+    samples.push({ distNm: 0, lat: wp[0].lat, lon: wp[0].lon });
+
+    for (let i = 0; i < wp.length - 1; i++) {
+      const legNm = haversineNm(wp[i].lat, wp[i].lon, wp[i + 1].lat, wp[i + 1].lon);
+      const n = Math.max(2, Math.round(legNm / STEP_NM));
+      for (let j = 1; j <= n; j++) {
+        const t = j / n;
+        samples.push({
+          distNm: cumul + legNm * t,
+          lat: wp[i].lat + (wp[i + 1].lat - wp[i].lat) * t,
+          lon: wp[i].lon + (wp[i + 1].lon - wp[i].lon) * t,
+        });
+      }
+      cumul += legNm;
+      markers.push({ distNm: cumul, name: wp[i + 1].name });
+    }
+
+    setProfileWaypoints(markers);
+
+    const results: ProfilePoint[] = [];
+    for (let i = 0; i < samples.length; i++) {
+      if (profileAbortRef.current) break;
+      const s = samples[i];
+      const elev = await getElevation(s.lat, s.lon).catch(() => null);
+      results.push({ distNm: s.distNm, elevFt: elev !== null ? Math.round(elev * 3.28084) : null });
+      if (i % 4 === 0 || i === samples.length - 1) setProfilePoints([...results]);
+    }
+
+    setProfileLoading(false);
+  };
+
+  const closeProfile = () => {
+    profileAbortRef.current = true;
+    setProfileOpen(false);
+    setProfileLoading(false);
   };
 
   const updatePlanInfo = () => {
@@ -1150,6 +1210,9 @@ const FlightMap: React.FC = () => {
                     <button className="map-plan-export" onClick={handleExportPDF} title="Exporter le plan de vol en PDF">
                       📄 PDF
                     </button>
+                    <button className="map-plan-export" onClick={generateProfile} title="Profil d'élévation">
+                      📊 Profil
+                    </button>
                   </>
                 )}
                 <button className="map-plan-clear" onClick={clearPlan}>
@@ -1360,6 +1423,16 @@ const FlightMap: React.FC = () => {
               {isConnected ? 'En attente des données SimConnect...' : 'Connectez-vous à Flight Simulator pour voir la carte'}
             </div>
           </div>
+        )}
+
+        {profileOpen && (
+          <ElevationProfile
+            points={profilePoints}
+            waypoints={profileWaypoints}
+            loading={profileLoading}
+            onClose={closeProfile}
+            onRegenerate={generateProfile}
+          />
         )}
       </div>
     </div>
