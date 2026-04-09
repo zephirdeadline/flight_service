@@ -63,7 +63,7 @@
   font-weight: 700;
 }
 
-.current-location {
+.cheat-section .current-location {
   margin-bottom: var(--space-4);
   color: var(--color-text-secondary);
   font-size: var(--font-sm);

@@ -1,215 +1,168 @@
 .aircraft-card {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition), box-shadow var(--transition);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
   position: relative;
-  border: 1.5px solid var(--color-border);
+  transition: box-shadow var(--transition), transform var(--transition);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .aircraft-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
 }
+
+.aircraft-card.passenger { border-top: 2px solid var(--color-primary); }
+.aircraft-card.cargo     { border-top: 2px solid var(--color-warning); }
+.aircraft-card.both      { border-top: 2px solid var(--color-purple); }
 
 .aircraft-card.selected {
   border-color: var(--color-success);
-  background: #f0faf4;
+  border-top-color: var(--color-success);
 }
 
-.aircraft-card.passenger { border-top: 3px solid var(--color-primary); }
-.aircraft-card.cargo     { border-top: 3px solid var(--color-warning); }
-.aircraft-card.both      { border-top: 3px solid var(--color-purple); }
-
-/* ── Selected badge ───────────────────────────────── */
+/* ── Badge ───────────────────────────────────────────── */
 .selected-badge {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: var(--space-3);
+  right: var(--space-3);
   background: var(--color-success);
   color: white;
   padding: 0.2rem 0.65rem;
   border-radius: var(--radius-pill);
   font-size: var(--font-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* ── Header ───────────────────────────────────────── */
+/* ── Header ─────────────────────────────────────────── */
 .aircraft-header {
-  margin-bottom: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .aircraft-name {
   font-size: var(--font-lg);
   font-weight: 700;
   color: var(--color-text);
-  margin: 0 0 0.2rem 0;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.01em;
 }
 
 .aircraft-manufacturer {
-  font-size: var(--font-sm);
-  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* ── Type badge ───────────────────────────────────── */
+/* ── Type badge ─────────────────────────────────────── */
 .aircraft-type {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-pill);
-  margin-bottom: var(--space-5);
+  padding: var(--space-2) var(--space-5);
 }
 
-.type-icon  { font-size: 1rem; }
-.type-label { font-size: var(--font-sm); font-weight: 600; color: var(--color-text); }
+.type-icon  { font-size: 0.9rem; }
+.type-label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
 
-/* ── Specs ────────────────────────────────────────── */
+/* ── Specs — grille 3 colonnes ──────────────────────── */
 .aircraft-specs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: var(--space-5) 0;
-  padding: var(--space-4);
-  background: var(--color-surface-2);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-light);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-border-light);
 }
 
 .spec-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-3);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.spec-item:not(:last-child) {
+  border-right: 1px solid var(--color-border-light);
 }
 
 .spec-icon {
-  font-size: 1.2rem;
-  width: 1.8rem;
-  text-align: center;
-  flex-shrink: 0;
+  font-size: 1rem;
+  opacity: 0.5;
 }
 
 .spec-info {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  flex: 1;
+  gap: 2px;
 }
 
-.spec-label { font-size: var(--font-xs); color: var(--color-text-muted); font-weight: 500; }
-.spec-value { font-size: var(--font-base); color: var(--color-text); font-weight: 600; }
-
-/* ── Price ────────────────────────────────────────── */
-.aircraft-price {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: var(--space-5) 0;
-  padding: var(--space-3) var(--space-4);
-  background: #fff8f0;
-  border: 1px solid #f5cfa0;
-  border-radius: var(--radius-md);
-}
-
-.price-label  { font-size: var(--font-sm); font-weight: 600; color: var(--color-warning-dark); }
-.price-amount { font-size: var(--font-lg); font-weight: 700; color: var(--color-warning-dark); }
-
-/* ── Actions ──────────────────────────────────────── */
-.aircraft-actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.select-button,
-.sell-button,
-.buy-button {
-  flex: 1;
-  padding: 0.6rem var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-base);
+.spec-label {
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
   font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.select-button               { background: var(--color-primary); color: white; }
-.select-button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.select-button.selected      { background: var(--color-success); cursor: default; transform: none; box-shadow: none; }
-
-.sell-button               { background: var(--color-danger); color: white; }
-.sell-button:hover         { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-md); }
-
-.buy-button                { background: var(--color-success); color: white; }
-.buy-button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.buy-button:disabled       { background: var(--color-text-muted); cursor: not-allowed; opacity: 0.55; }
-
-.maintenance-button {
-  background: var(--color-warning);
-  color: white;
+.spec-value {
+  font-size: var(--font-sm);
+  color: var(--color-text);
+  font-weight: 700;
 }
-.maintenance-button:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.maintenance-button:disabled { background: var(--color-text-muted); cursor: not-allowed; opacity: 0.55; }
 
-/* ── Maintenance section ──────────────────────────── */
+/* ── Maintenance ─────────────────────────────────────── */
 .aircraft-maintenance {
-  margin: var(--space-5) 0;
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
   background: var(--color-surface-2);
-  border: 1.5px solid var(--color-border);
 }
 
-.aircraft-maintenance.under-maintenance {
-  background: #eff6ff;
-  border-color: #93c5fd;
-}
-
-.aircraft-maintenance.critical {
-  background: #fff1f0;
-  border-color: #fca5a5;
-}
-
-.aircraft-maintenance.warning {
-  background: #fffbeb;
-  border-color: #fcd34d;
-}
-
-.aircraft-maintenance.good {
-  background: #f0fdf4;
-  border-color: #86efac;
-}
+.aircraft-maintenance.under-maintenance { background: rgba(37,99,235,0.04); }
+.aircraft-maintenance.critical          { background: rgba(220,38,38,0.04); }
+.aircraft-maintenance.warning           { background: rgba(217,119,6,0.04); }
+.aircraft-maintenance.good              { background: rgba(22,163,74,0.04); }
 
 .maintenance-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
 }
 
-.maintenance-icon  { font-size: 1rem; }
-.maintenance-label { font-size: var(--font-sm); font-weight: 600; color: var(--color-text); }
+.maintenance-icon  { font-size: 0.8rem; }
+.maintenance-label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
 
 .maintenance-details {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .condition-bar {
   flex: 1;
-  height: 8px;
+  height: 6px;
   background: var(--color-border);
   border-radius: var(--radius-pill);
   overflow: hidden;
@@ -217,25 +170,100 @@
 
 .condition-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-danger) 0%, var(--color-gold) 50%, var(--color-success) 100%);
+  background: linear-gradient(90deg, var(--color-danger) 0%, var(--color-warning) 50%, var(--color-success) 100%);
   transition: width 0.3s ease;
   border-radius: var(--radius-pill);
 }
 
 .condition-text {
-  font-size: var(--font-sm);
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--color-text);
-  min-width: 42px;
+  min-width: 38px;
   text-align: right;
 }
 
 .flight-hours-text {
   font-size: var(--font-xs);
   color: var(--color-text-muted);
-  text-align: center;
 }
 
+/* ── Prix ────────────────────────────────────────────── */
+.aircraft-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.price-label {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.price-amount {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--color-warning-dark);
+}
+
+/* ── Actions — bande horizontale ────────────────────── */
+.aircraft-actions {
+  display: flex;
+  gap: 1px;
+  background: var(--color-border-light);
+}
+
+.select-button,
+.sell-button,
+.buy-button,
+.maintenance-button {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 0;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.select-button:first-child, .sell-button:first-child,
+.buy-button:first-child, .maintenance-button:first-child {
+  border-radius: 0 0 0 var(--radius-lg);
+}
+
+.select-button:last-child, .sell-button:last-child,
+.buy-button:last-child, .maintenance-button:last-child {
+  border-radius: 0 0 var(--radius-lg) 0;
+}
+
+.aircraft-actions > *:only-child {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.select-button:hover:not(:disabled) { background: var(--color-primary); color: white; }
+.select-button.selected             { background: var(--color-success); color: white; cursor: default; }
+
+.sell-button:hover    { background: var(--color-danger); color: white; }
+
+.buy-button:hover:not(:disabled)    { background: var(--color-success); color: white; }
+.buy-button:disabled { color: var(--color-text-muted); cursor: not-allowed; }
+
+.maintenance-button:hover:not(:disabled) { background: var(--color-warning); color: white; }
+.maintenance-button:disabled             { color: var(--color-text-muted); cursor: not-allowed; }
+
 @media (max-width: 768px) {
-  .aircraft-actions { flex-direction: column; }
+  .aircraft-actions { flex-direction: column; background: none; gap: 0; }
+  .aircraft-actions > * { border-radius: 0; border-top: 1px solid var(--color-border-light); }
+  .aircraft-actions > *:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .aircraft-actions > *:first-child { border-radius: 0; }
 }

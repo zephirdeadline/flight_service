@@ -1,24 +1,24 @@
 /* ── Design Tokens ──────────────────────────────────────────── */
 :root {
   /* Colors */
-  --color-primary:       #3498db;
-  --color-primary-dark:  #2980b9;
-  --color-success:       #27ae60;
-  --color-success-dark:  #229954;
-  --color-danger:        #e74c3c;
-  --color-danger-dark:   #c0392b;
-  --color-warning:       #e67e22;
-  --color-warning-dark:  #d35400;
-  --color-purple:        #9b59b6;
-  --color-gold:          #f39c12;
+  --color-primary:       #2563eb;
+  --color-primary-dark:  #1d4ed8;
+  --color-success:       #16a34a;
+  --color-success-dark:  #15803d;
+  --color-danger:        #dc2626;
+  --color-danger-dark:   #b91c1c;
+  --color-warning:       #d97706;
+  --color-warning-dark:  #b45309;
+  --color-purple:        #7c3aed;
+  --color-gold:          #d97706;
 
-  --color-text:          #2c3e50;
-  --color-text-secondary:#64748b;
+  --color-text:          #0f172a;
+  --color-text-secondary:#475569;
   --color-text-muted:    #94a3b8;
 
   --color-border:        #e2e8f0;
   --color-border-light:  #f1f5f9;
-  --color-bg:            #f5f7fa;
+  --color-bg:            #f8fafc;
   --color-surface:       #ffffff;
   --color-surface-2:     #f8fafc;
 
@@ -90,8 +90,6 @@ body {
 .app-main {
   flex: 1;
   overflow-y: auto;
-  padding-top: var(--space-8);
-  padding-bottom: var(--space-8);
 }
 
 /* ── Loading screen ─────────────────────────────────────────── */

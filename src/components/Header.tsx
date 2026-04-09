@@ -15,7 +15,7 @@ const Header: React.FC = () => {
     <header className="app-header">
       <div className="header-content">
         <div className="header-left">
-          <h1 className="app-title">Flight Service Career</h1>
+
           {currentAirport && (
             <div className="current-location">
               <span className="location-icon">📍</span>
