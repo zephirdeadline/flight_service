@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::db::{Database, queries};
 use crate::models::*;
 use crate::simconnect_service::{SimConnectService, SimData};
+use tauri::Manager;
 
 // ============= EXEMPLE : Get All Airports =============
 
@@ -623,6 +624,25 @@ pub fn set_player_airport(
     airport_id: String,
 ) -> Result<(), String> {
     with_db(&db, |conn| queries::set_player_airport(conn, &player_id, &airport_id))
+}
+
+// ============= Élévation terrain (SRTM) =============
+
+#[tauri::command]
+pub async fn get_elevation(
+    lat: f64,
+    lon: f64,
+    app: tauri::AppHandle,
+) -> Result<Option<i16>, String> {
+    let cache_dir = app.path().app_data_dir()
+        .map_err(|e: tauri::Error| e.to_string())?
+        .join("srtm");
+
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::elevation::get_elevation_m(lat, lon, &cache_dir)
+    })
+    .await
+    .map_err(|e: tauri::Error| e.to_string())?
 }
 
 // ============= NOTE : Enregistrement des commandes =============

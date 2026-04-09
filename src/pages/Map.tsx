@@ -2,6 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSimConnect } from '../context/SimConnectContext';
 import { airportService } from '../services/airportService';
 import { navaidService } from '../services/navaidService';
+import { exportFlightPlanPDF } from '../services/flightPlanExport';
+import { getElevation } from '../services/elevationService';
+import { flightPlanModule, saveFlightPlan } from '../utils/flightPlanStore';
+import type { Waypoint } from '../utils/flightPlanStore';
+import { navaidColor, formatNavaidFreq } from '../utils/mapNavaid';
+import { lon2tile, lat2tile, tile2lat, tile2lon, pointToSegmentDist, bearingDeg, haversineNm } from '../utils/mapGeo';
+import { getTile } from '../utils/tileCache';
 import type { Airport, Navaid } from '../types';
 import './Map.css';
 
@@ -10,91 +17,16 @@ interface TrailPoint {
   lon: number;
 }
 
-interface Waypoint {
-  lat: number;
-  lon: number;
-  name: string;
-  note?: string;
-}
-
 const TILE_SIZE = 256;
 const MIN_ZOOM = 2;
 const MAX_ZOOM = 15;
 const MAX_TRAIL = 2000;
-const SNAP_PX = 18; // pixels radius to snap to an airport
+const SNAP_PX = 18;
 
-const tileCache = new Map<string, HTMLImageElement>();
 let airportsCache: Airport[] | null = null;
 let airportsFetching = false;
 let navaidsCache: Navaid[] | null = null;
 let navaidsFetching = false;
-
-const FLIGHT_PLAN_KEY = 'flightPlan';
-let flightPlanModule: Waypoint[] = (() => {
-  try {
-    const saved = localStorage.getItem(FLIGHT_PLAN_KEY);
-    return saved ? (JSON.parse(saved) as Waypoint[]) : [];
-  } catch {
-    return [];
-  }
-})();
-const saveFlightPlan = () => {
-  try { localStorage.setItem(FLIGHT_PLAN_KEY, JSON.stringify(flightPlanModule)); } catch {}
-};
-
-const NAVAID_COLORS: Record<string, string> = {
-  'VOR':     '#8e44ad',
-  'VOR-DME': '#8e44ad',
-  'VORTAC':  '#8e44ad',
-  'TACAN':   '#1a5276',
-  'NDB':     '#e67e22',
-  'NDB-DME': '#e67e22',
-  'DME':     '#7d3c98',
-};
-const navaidColor = (type: string) => NAVAID_COLORS[type] ?? '#7f8c8d';
-
-const formatNavaidFreq = (nav: Navaid): string => {
-  if (nav.frequencyKhz === 0) return '—';
-  return nav.type.includes('NDB') ? `${nav.frequencyKhz} kHz` : `${(nav.frequencyKhz / 1000).toFixed(3)} MHz`;
-};
-
-const lon2tile = (lon: number, z: number) => ((lon + 180) / 360) * Math.pow(2, z);
-const lat2tile = (lat: number, z: number) => {
-  const r = (lat * Math.PI) / 180;
-  return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * Math.pow(2, z);
-};
-const tile2lat = (y: number, z: number) => {
-  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
-  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-};
-const tile2lon = (x: number, z: number) => (x / Math.pow(2, z)) * 360 - 180;
-
-// Distance from point (px,py) to segment (ax,ay)-(bx,by) in pixels
-const pointToSegmentDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number): number => {
-  const dx = bx - ax, dy = by - ay;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
-  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
-  return Math.sqrt((px - ax - t * dx) ** 2 + (py - ay - t * dy) ** 2);
-};
-
-const bearingDeg = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLon = toRad(lon2 - lon1);
-  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
-};
-
-const haversineNm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 3440.065;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
 
 const FlightMap: React.FC = () => {
   const { lastData, isConnected } = useSimConnect();
@@ -111,6 +43,7 @@ const FlightMap: React.FC = () => {
   const [navaidPopup, setNavaidPopup] = useState<{ navaid: Navaid; x: number; y: number } | null>(null);
   const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
   const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
+  const [popupElevation, setPopupElevation] = useState<number | null | 'loading'>('loading');
 
   const [cruiseSpeed, setCruiseSpeed] = useState(120);
   const speedInitializedRef = useRef(false);
@@ -120,6 +53,7 @@ const FlightMap: React.FC = () => {
   const measurePointsRef = useRef<{ lat: number; lon: number }[]>([]);
   const [measurePointCount, setMeasurePointCount] = useState(0);
   const [measureResult, setMeasureResult] = useState<{ nm: number; km: number; bearing: number } | null>(null);
+  const [measureElevations, setMeasureElevations] = useState<{ a: number | null | 'loading'; b: number | null | 'loading' }>({ a: null, b: null });
 
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
@@ -156,35 +90,29 @@ const FlightMap: React.FC = () => {
     }
   }, [lastData]);
 
+  const fmtElev = (e: number | null | 'loading') =>
+    e === 'loading' ? '…' : e === null ? '—' : `${e} m / ${Math.round(e * 3.28084).toLocaleString()} ft`;
+
+  const fetchWaypointElevation = (index: number) => {
+    const wp = flightPlanRef.current[index];
+    if (!wp) return;
+    getElevation(wp.lat, wp.lon).then((elev) => {
+      if (flightPlanRef.current[index]) {
+        flightPlanRef.current[index] = { ...flightPlanRef.current[index], elevationM: elev ?? undefined };
+        draw();
+      }
+    }).catch(() => {});
+  };
+
   const updatePlanInfo = () => {
     const wp = flightPlanRef.current;
-    flightPlanModule = wp; // keep module in sync
-    saveFlightPlan();      // persist to localStorage
+    saveFlightPlan(wp);
     let total = 0;
     for (let i = 1; i < wp.length; i++) {
       total += haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
     }
     setPlanInfo({ count: wp.length, totalNm: Math.round(total) });
   };
-
-  const getTile = useCallback(
-    (tx: number, ty: number, tz: number, scheduleRedraw: () => void): HTMLImageElement | null => {
-      const key = `${tz}/${tx}/${ty}`;
-      const cached = tileCache.get(key);
-      if (cached) return cached.complete && cached.naturalWidth > 0 ? cached : null;
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = `https://tile.openstreetmap.org/${tz}/${tx}/${ty}.png`;
-      img.onload = () => {
-        tileCache.set(key, img);
-        scheduleRedraw();
-      };
-      tileCache.set(key, img);
-      return null;
-    },
-    [],
-  );
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -440,6 +368,17 @@ const FlightMap: React.FC = () => {
         ctx.fillStyle = '#e67e22';
         ctx.fillText(wp[i].name, p.x + 11, p.y - 6);
 
+        // Elevation label
+        if (wp[i].elevationM !== undefined) {
+          const elevText = `${wp[i].elevationM} m / ${Math.round(wp[i].elevationM! * 3.28084).toLocaleString()} ft`;
+          ctx.font = '9px monospace';
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+          ctx.lineWidth = 2;
+          ctx.strokeText(elevText, p.x + 11, p.y + 6);
+          ctx.fillStyle = '#1abc9c';
+          ctx.fillText(elevText, p.x + 11, p.y + 6);
+        }
+
         // Note indicator: small amber dot top-right + truncated note text
         if (wp[i].note) {
           ctx.globalAlpha = isInsertPreview ? 0.55 : 1;
@@ -450,12 +389,13 @@ const FlightMap: React.FC = () => {
           ctx.fill();
           // Text
           const noteText = wp[i].note!.length > 22 ? wp[i].note!.slice(0, 22) + '…' : wp[i].note!;
+          const noteY = wp[i].elevationM !== undefined ? p.y + 16 : p.y + 7;
           ctx.font = 'italic 9px sans-serif';
           ctx.strokeStyle = 'rgba(255,255,255,0.8)';
           ctx.lineWidth = 2;
-          ctx.strokeText(noteText, p.x + 11, p.y + 7);
+          ctx.strokeText(noteText, p.x + 11, noteY);
           ctx.fillStyle = '#b8860b';
-          ctx.fillText(noteText, p.x + 11, p.y + 7);
+          ctx.fillText(noteText, p.x + 11, noteY);
         }
 
         ctx.globalAlpha = 1;
@@ -578,7 +518,7 @@ const FlightMap: React.FC = () => {
     ctx.fillStyle = '#333';
     ctx.font = '10px sans-serif';
     ctx.fillText('© OpenStreetMap contributors', W - 188, H - 4);
-  }, [getTile]);
+  }, []);
 
   // Returns a project() function based on current map state
   const getProjector = useCallback(() => {
@@ -694,187 +634,15 @@ const FlightMap: React.FC = () => {
     const next = !isEditingPlanRef.current;
     isEditingPlanRef.current = next;
     setIsEditingPlan(next);
+    if (next) {
+      setNavaidPopup(null);
+      setAirportPopup(null);
+      setNoteEditor(null);
+    }
   };
 
-  const exportFlightPlanPDF = () => {
-    const wp = flightPlanRef.current;
-    if (wp.length === 0) return;
-
-    const spd = cruiseSpeed > 0 ? cruiseSpeed : 120;
-
-    const formatCoord = (val: number, pos: string, neg: string) => {
-      const d = Math.abs(val);
-      const deg = Math.floor(d);
-      const min = ((d - deg) * 60).toFixed(2);
-      return `${deg}° ${min}' ${val >= 0 ? pos : neg}`;
-    };
-
-    const formatDuration = (nm: number): string => {
-      const totalMin = (nm / spd) * 60;
-      const h = Math.floor(totalMin / 60);
-      const m = Math.round(totalMin % 60);
-      return h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`;
-    };
-
-    // Each row shows the leg departing FROM that waypoint toward the next
-    const rows = wp.map((w, i) => {
-      const isLast = i === wp.length - 1;
-      const legNm = isLast ? 0 : haversineNm(w.lat, w.lon, wp[i + 1].lat, wp[i + 1].lon);
-      const brg = isLast ? null : bearingDeg(w.lat, w.lon, wp[i + 1].lat, wp[i + 1].lon);
-      return { w, i, legNm, brg, isLast };
-    });
-
-    const totalNm = rows.reduce((s, r) => s + r.legNm, 0);
-    const totalKm = (totalNm * 1.852).toFixed(1);
-    const totalMin = (totalNm / spd) * 60;
-    const totalH = Math.floor(totalMin / 60);
-    const totalM = Math.round(totalMin % 60);
-    const totalTime = totalH > 0 ? `${totalH}h${totalM.toString().padStart(2, '0')}` : `${totalM} min`;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-    let runningNm = 0;
-    const tableRows = rows.map(({ w, i, legNm, brg, isLast }) => {
-      const cumulBefore = runningNm;
-      runningNm += legNm;
-      const cumulAfter = runningNm;
-      return `
-      <tr>
-        <td class="center">${i + 1}</td>
-        <td class="bold">${w.name}</td>
-        <td class="mono">${formatCoord(w.lat, 'N', 'S')}</td>
-        <td class="mono">${formatCoord(w.lon, 'E', 'W')}</td>
-        <td class="center">${brg !== null ? `${Math.round(brg).toString().padStart(3, '0')}°` : '—'}</td>
-        <td class="center">${isLast ? '—' : legNm.toFixed(1)}</td>
-        <td class="center">${isLast ? '—' : formatDuration(legNm)}</td>
-        <td class="center">${cumulBefore === 0 && isLast ? totalNm.toFixed(1) : isLast ? cumulAfter.toFixed(1) : cumulAfter.toFixed(1)}</td>
-        <td class="center">${isLast ? formatDuration(totalNm) : formatDuration(cumulAfter)}</td>
-        <td class="note">${w.note ?? ''}</td>
-      </tr>`;
-    }).join('');
-
-    const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Plan de vol</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background: #fff; padding: 20px; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 2px solid #1a3a5a; padding-bottom: 10px; }
-  .header-left h1 { font-size: 20px; font-weight: 700; color: #1a3a5a; letter-spacing: 1px; }
-  .header-left p { font-size: 11px; color: #555; margin-top: 2px; }
-  .header-right { text-align: right; font-size: 11px; color: #555; }
-  .summary { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
-  .summary-item { background: #f0f4f8; border-left: 3px solid #1a3a5a; padding: 6px 12px; border-radius: 0 4px 4px 0; }
-  .summary-label { font-size: 9px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-  .summary-value { font-size: 14px; font-weight: 700; color: #1a3a5a; margin-top: 1px; }
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: #1a3a5a; color: #fff; }
-  thead th { padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  thead th.center { text-align: center; }
-  tbody tr:nth-child(even) { background: #f5f8fb; }
-  tbody tr:first-child td { border-top: none; }
-  td { padding: 6px 8px; border-bottom: 1px solid #dde4ed; vertical-align: middle; }
-  td.center { text-align: center; }
-  td.bold { font-weight: 700; color: #1a3a5a; }
-  td.mono { font-family: monospace; font-size: 10px; }
-  td.note { font-style: italic; color: #555; font-size: 10px; max-width: 120px; }
-  td.time { color: #1a6a3a; font-weight: 600; }
-  tfoot tr { background: #1a3a5a; color: #fff; font-weight: 700; }
-  tfoot td { padding: 7px 8px; border: none; text-align: center; }
-  tfoot td.left { text-align: left; }
-  .dep-arr { display: flex; gap: 8px; font-size: 13px; font-weight: 700; color: #1a3a5a; margin-bottom: 12px; align-items: center; }
-  .dep-arr .arrow { color: #888; font-size: 16px; }
-  footer { margin-top: 16px; font-size: 9px; color: #999; text-align: center; border-top: 1px solid #dde; padding-top: 8px; }
-  @media print { body { padding: 10px; } @page { margin: 10mm; size: A4 landscape; } }
-</style>
-</head>
-<body>
-<header>
-  <div class="header-left">
-    <h1>✈ PLAN DE VOL</h1>
-    <p>Tableau de route — Flight Service</p>
-  </div>
-  <div class="header-right">
-    <div>${dateStr}</div>
-    <div style="margin-top:4px;font-weight:700;color:#1a3a5a;">Vitesse de croisière : ${spd} kts</div>
-  </div>
-</header>
-
-<div class="dep-arr">
-  <span>${wp[0].name}</span>
-  <span class="arrow">→</span>
-  <span>${wp[wp.length - 1].name}</span>
-</div>
-
-<div class="summary">
-  <div class="summary-item">
-    <div class="summary-label">Waypoints</div>
-    <div class="summary-value">${wp.length}</div>
-  </div>
-  <div class="summary-item">
-    <div class="summary-label">Distance totale</div>
-    <div class="summary-value">${totalNm.toFixed(1)} NM</div>
-  </div>
-  <div class="summary-item">
-    <div class="summary-label">Distance (km)</div>
-    <div class="summary-value">${totalKm} km</div>
-  </div>
-  <div class="summary-item">
-    <div class="summary-label">Temps de vol estimé</div>
-    <div class="summary-value">${totalTime}</div>
-  </div>
-  <div class="summary-item">
-    <div class="summary-label">Vitesse de croisière</div>
-    <div class="summary-value">${spd} kts</div>
-  </div>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th class="center" style="width:28px">#</th>
-      <th style="width:72px">Waypoint</th>
-      <th style="width:120px">Latitude</th>
-      <th style="width:120px">Longitude</th>
-      <th class="center" style="width:48px">Cap suivant</th>
-      <th class="center" style="width:58px">Leg (NM)</th>
-      <th class="center" style="width:58px">Durée leg</th>
-      <th class="center" style="width:58px">Dist. cumul.</th>
-      <th class="center" style="width:58px">Temps cumul.</th>
-      <th>Notes</th>
-    </tr>
-  </thead>
-  <tbody>${tableRows}</tbody>
-  <tfoot>
-    <tr>
-      <td class="left" colspan="5">Total</td>
-      <td>${totalNm.toFixed(1)} NM</td>
-      <td>${totalTime}</td>
-      <td></td>
-      <td></td>
-      <td></td>
-    </tr>
-  </tfoot>
-</table>
-
-<footer>Généré par Flight Service · ${dateStr} · Vitesse de croisière ${spd} kts</footer>
-</body>
-</html>`;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:none;';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentWindow?.document;
-    if (!doc) { document.body.removeChild(iframe); return; }
-    doc.open();
-    doc.write(html);
-    doc.close();
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 2000);
-    }, 300);
+  const handleExportPDF = () => {
+    exportFlightPlanPDF(flightPlanRef.current, cruiseSpeed);
   };
 
   const toggleMeasure = () => {
@@ -885,13 +653,14 @@ const FlightMap: React.FC = () => {
       measurePointsRef.current = [];
       setMeasurePointCount(0);
       setMeasureResult(null);
+      setMeasureElevations({ a: null, b: null });
       draw();
     }
   };
 
   const clearPlan = () => {
     flightPlanRef.current = [];
-    flightPlanModule = [];
+    saveFlightPlan([]);
     updatePlanInfo();
     draw();
   };
@@ -965,6 +734,8 @@ const FlightMap: React.FC = () => {
             const { x, y } = proj(nav.latitude, nav.longitude);
             if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
               setNavaidPopup({ navaid: nav, x: px, y: py });
+              setPopupElevation('loading');
+              getElevation(nav.latitude, nav.longitude).then(setPopupElevation).catch(() => setPopupElevation(null));
               return;
             }
           }
@@ -983,6 +754,8 @@ const FlightMap: React.FC = () => {
             if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
               setAirportPopup({ airport, x: px, y: py });
               setNavaidPopup(null);
+              setPopupElevation('loading');
+              getElevation(airport.latitude, airport.longitude).then(setPopupElevation).catch(() => setPopupElevation(null));
               return;
             }
           }
@@ -990,9 +763,10 @@ const FlightMap: React.FC = () => {
       }
     }
 
-    // Close any open popup on click elsewhere
+    // Close any open popup on click elsewhere — jamais créer un wpt dans le même clic
     if (navaidPopup) { setNavaidPopup(null); return; }
     if (airportPopup) { setAirportPopup(null); return; }
+    if (noteEditor) { setNoteEditor(null); return; }
 
     // Measure mode: place A then B
     if (isMeasuringRef.current) {
@@ -1001,18 +775,27 @@ const FlightMap: React.FC = () => {
       if (!ll) return;
       const pts = measurePointsRef.current;
       if (pts.length >= 2) {
+        // Reset : nouveau point A
         measurePointsRef.current = [ll];
         setMeasurePointCount(1);
         setMeasureResult(null);
+        setMeasureElevations({ a: 'loading', b: null });
+        getElevation(ll.lat, ll.lon).then((e) => setMeasureElevations((prev) => ({ ...prev, a: e }))).catch(() => setMeasureElevations((prev) => ({ ...prev, a: null })));
+      } else if (pts.length === 0) {
+        // Premier point A
+        measurePointsRef.current = [ll];
+        setMeasurePointCount(1);
+        setMeasureElevations({ a: 'loading', b: null });
+        getElevation(ll.lat, ll.lon).then((e) => setMeasureElevations((prev) => ({ ...prev, a: e }))).catch(() => setMeasureElevations((prev) => ({ ...prev, a: null })));
       } else {
+        // Deuxième point B
         measurePointsRef.current = [...pts, ll];
-        const newCount = measurePointsRef.current.length;
-        setMeasurePointCount(newCount);
-        if (newCount === 2) {
-          const [a, b] = measurePointsRef.current;
-          const nm = haversineNm(a.lat, a.lon, b.lat, b.lon);
-          setMeasureResult({ nm, km: nm * 1.852, bearing: bearingDeg(a.lat, a.lon, b.lat, b.lon) });
-        }
+        setMeasurePointCount(2);
+        const [a, b] = measurePointsRef.current;
+        const nm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+        setMeasureResult({ nm, km: nm * 1.852, bearing: bearingDeg(a.lat, a.lon, b.lat, b.lon) });
+        setMeasureElevations((prev) => ({ ...prev, b: 'loading' }));
+        getElevation(ll.lat, ll.lon).then((e) => setMeasureElevations((prev) => ({ ...prev, b: e }))).catch(() => setMeasureElevations((prev) => ({ ...prev, b: null })));
       }
       draw();
       return;
@@ -1034,6 +817,7 @@ const FlightMap: React.FC = () => {
     flightPlanRef.current.push(wp);
     updatePlanInfo();
     draw();
+    fetchWaypointElevation(flightPlanRef.current.length - 1);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -1094,6 +878,7 @@ const FlightMap: React.FC = () => {
         dragMoveRef.current = null;
         updatePlanInfo();
         draw();
+        fetchWaypointElevation(dm.wpIndex);
       } else {
         // It was a click → open note editor; suppressNextClickRef stays true so handleClick skips
         dragMoveRef.current = null;
@@ -1116,9 +901,11 @@ const FlightMap: React.FC = () => {
       } else {
         flightPlanRef.current.splice(legIndex + 1, 0, { ...newWp, name: `WPT${flightPlanRef.current.length + 1}` });
       }
+      const insertedIndex = legIndex + 1;
       dragInsertRef.current = null;
       updatePlanInfo();
       draw();
+      fetchWaypointElevation(insertedIndex);
       return;
     }
     if (e.button === 0 && dragInsertRef.current === null) {
@@ -1360,7 +1147,7 @@ const FlightMap: React.FC = () => {
                         title="Vitesse de croisière pour le calcul des temps"
                       />
                     </label>
-                    <button className="map-plan-export" onClick={exportFlightPlanPDF} title="Exporter le plan de vol en PDF">
+                    <button className="map-plan-export" onClick={handleExportPDF} title="Exporter le plan de vol en PDF">
                       📄 PDF
                     </button>
                   </>
@@ -1383,11 +1170,17 @@ const FlightMap: React.FC = () => {
             </button>
             {isMeasuring && (
               <span className="map-measure-status">
-                {measureResult
-                  ? `${measureResult.nm.toFixed(1)} NM · ${measureResult.km.toFixed(1)} km · ${Math.round(measureResult.bearing).toString().padStart(3, '0')}°`
-                  : measurePointCount === 0
-                    ? 'Cliquez sur A'
-                    : 'Cliquez sur B'}
+                {measureResult ? (
+                  <>
+                    {`${measureResult.nm.toFixed(1)} NM · ${measureResult.km.toFixed(1)} km · ${Math.round(measureResult.bearing).toString().padStart(3, '0')}°`}
+                    {' · '}
+                    {`A: ${fmtElev(measureElevations.a)}`}
+                    {' → '}
+                    {`B: ${fmtElev(measureElevations.b)}`}
+                  </>
+                ) : measurePointCount === 0
+                  ? 'Cliquez sur A'
+                  : `Cliquez sur B · A: ${fmtElev(measureElevations.a)}`}
               </span>
             )}
           </div>
@@ -1472,6 +1265,10 @@ const FlightMap: React.FC = () => {
                 <div className="navaid-popup-row">
                   <span>🌍 Country</span><span>{nav.isoCountry}</span>
                 </div>
+                <div className="navaid-popup-row">
+                  <span>⛰️ Sol SRTM</span>
+                  <span>{fmtElev(popupElevation)}</span>
+                </div>
               </div>
             </div>
           );
@@ -1507,6 +1304,10 @@ const FlightMap: React.FC = () => {
                 </div>
                 <div className="navaid-popup-row">
                   <span>✈️ Scheduled</span><span>{ap.scheduledService ? '✅ Yes' : '❌ No'}</span>
+                </div>
+                <div className="navaid-popup-row">
+                  <span>⛰️ Sol SRTM</span>
+                  <span>{fmtElev(popupElevation)}</span>
                 </div>
               </div>
             </div>
