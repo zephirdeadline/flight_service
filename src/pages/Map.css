@@ -207,6 +207,13 @@
   cursor: crosshair;
 }
 
+.map-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 .map-canvas-container--dragging {
   cursor: grabbing;
 }

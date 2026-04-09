@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSimConnect } from '../context/SimConnectContext';
 import { airportService } from '../services/airportService';
 import { navaidService } from '../services/navaidService';
@@ -50,7 +50,9 @@ const AIRSPACE_STYLE_DEFAULT: [string, string] = ['rgba(100,150,200,0.12)', '#44
 const FlightMap: React.FC = () => {
   const { lastData, isConnected } = useSimConnect();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mapOverlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastAirspaceHoverPxRef = useRef({ x: -999, y: -999 });
   const trailRef = useRef<TrailPoint[]>([]);
   const zoomRef = useRef(6);
   const lastDataRef = useRef(lastData);
@@ -232,6 +234,11 @@ const FlightMap: React.FC = () => {
     setProfileLoading(false);
   };
 
+  const filteredProfileCrossings = useMemo(
+    () => showAirspaces ? profileCrossings.filter(c => !hiddenAirspaceTypes.has(c.airspaceType)) : [],
+    [showAirspaces, profileCrossings, hiddenAirspaceTypes],
+  );
+
   const closeProfile = () => {
     profileAbortRef.current = true;
     profileHoverPosRef.current = null;
@@ -249,6 +256,43 @@ const FlightMap: React.FC = () => {
     }
     setPlanInfo({ count: wp.length, totalNm: Math.round(total) });
   };
+
+  const drawProfileMarker = useCallback(() => {
+    const overlay = mapOverlayRef.current;
+    if (!overlay) return;
+    const ctx = overlay.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    const pos = profileHoverPosRef.current;
+    if (!pos) return;
+    const zoom = zoomRef.current;
+    const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+    const ts = TILE_SIZE * Math.pow(2, zoom - tz);
+    const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+    const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+    const W = overlay.width; const H = overlay.height;
+    const hx = (lon2tile(pos.lon, tz) - cTileX) * ts + W / 2;
+    const hy = (lat2tile(pos.lat, tz) - cTileY) * ts + H / 2;
+    ctx.beginPath();
+    ctx.arc(hx, hy, 14, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(26,188,156,0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#1abc9c';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+    const label = `${pos.distNm.toFixed(1)} NM`;
+    ctx.font = 'bold 11px monospace';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(label, hx + 12, hy - 8);
+    ctx.fillStyle = '#1abc9c';
+    ctx.fillText(label, hx + 12, hy - 8);
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -678,47 +722,22 @@ const FlightMap: React.FC = () => {
       ctx.restore();
     }
 
-    // ── Profile hover marker ──────────────────────────────────────────────────
-    const hoverPos = profileHoverPosRef.current;
-    if (hoverPos) {
-      const { x: hx, y: hy } = project(hoverPos.lat, hoverPos.lon);
-      // Outer ring
-      ctx.beginPath();
-      ctx.arc(hx, hy, 14, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(26,188,156,0.4)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // Inner circle
-      ctx.beginPath();
-      ctx.arc(hx, hy, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#1abc9c';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.fill();
-      ctx.stroke();
-      // Distance label
-      const label = `${hoverPos.distNm.toFixed(1)} NM`;
-      ctx.font = 'bold 11px monospace';
-      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(label, hx + 12, hy - 8);
-      ctx.fillStyle = '#1abc9c';
-      ctx.fillText(label, hx + 12, hy - 8);
-    }
-
     // OSM attribution
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.fillRect(W - 192, H - 16, 192, 16);
     ctx.fillStyle = '#333';
     ctx.font = '10px sans-serif';
     ctx.fillText('© OpenStreetMap contributors', W - 188, H - 4);
-  }, []);
+
+    // Sync overlay (profile hover marker)
+    drawProfileMarker();
+  }, [drawProfileMarker]);
 
   // Returns a project() function based on current map state
   const handleProfileHover = useCallback((distNm: number | null) => {
     if (distNm === null) {
       profileHoverPosRef.current = null;
-      draw();
+      drawProfileMarker();
       return;
     }
     const samples = profileSamplesRef.current;
@@ -734,8 +753,8 @@ const FlightMap: React.FC = () => {
       lon: a.lon + (b.lon - a.lon) * t,
       distNm,
     };
-    draw();
-  }, [draw]);
+    drawProfileMarker();
+  }, [drawProfileMarker]);
 
   const fetchAirspacesIfNeeded = useCallback(() => {
     const canvas = canvasRef.current;
@@ -1218,17 +1237,21 @@ const FlightMap: React.FC = () => {
       return;
     }
 
-    // Hover airspace detection
+    // Hover airspace detection — throttlé : seulement si déplacement > 4px
     if (airspacesModule.length > 0 && !isDraggingRef.current) {
-      const ll = pixelToLatLon(px, py);
-      if (ll) {
-        const found = showAirspacesRef.current
-          ? airspacesModule.filter(a =>
-              !hiddenAirspaceTypesRef.current.has(a.airspaceType) &&
-              a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
-            )
-          : [];
-        setHoveredAirspaces(found);
+      const last = lastAirspaceHoverPxRef.current;
+      if (Math.abs(px - last.x) + Math.abs(py - last.y) > 4) {
+        lastAirspaceHoverPxRef.current = { x: px, y: py };
+        const ll = pixelToLatLon(px, py);
+        if (ll) {
+          const found = showAirspacesRef.current
+            ? airspacesModule.filter(a =>
+                !hiddenAirspaceTypesRef.current.has(a.airspaceType) &&
+                a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
+              )
+            : [];
+          setHoveredAirspaces(found);
+        }
       }
     }
 
@@ -1314,15 +1337,18 @@ const FlightMap: React.FC = () => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
+    const overlay = mapOverlayRef.current;
     const observer = new ResizeObserver(() => {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
+      if (overlay) { overlay.width = canvas.width; overlay.height = canvas.height; }
       draw();
       fetchAirspacesIfNeeded();
     });
     observer.observe(container);
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
+    if (overlay) { overlay.width = canvas.width; overlay.height = canvas.height; }
     draw();
     fetchAirspacesIfNeeded();
     return () => observer.disconnect();
@@ -1569,6 +1595,7 @@ const FlightMap: React.FC = () => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <canvas ref={canvasRef} className="map-canvas" />
+        <canvas ref={mapOverlayRef} className="map-canvas map-canvas-overlay" />
 
         {navaidPopup && (() => {
           const { navaid: nav, x, y } = navaidPopup;
@@ -1740,7 +1767,7 @@ const FlightMap: React.FC = () => {
           <ElevationProfile
             points={profilePoints}
             waypoints={profileWaypoints}
-            crossings={showAirspaces ? profileCrossings.filter(c => !hiddenAirspaceTypes.has(c.airspaceType)) : []}
+            crossings={filteredProfileCrossings}
             loading={profileLoading}
             onClose={closeProfile}
             onRegenerate={generateProfile}
