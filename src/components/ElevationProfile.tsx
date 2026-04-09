@@ -21,7 +21,9 @@ interface Props {
 
 const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose, onRegenerate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef<{ yMin: number; yMax: number; padTop: number; padLeft: number; chartH: number; chartW: number } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,6 +34,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose
     const H = 180;
     canvas.width = W;
     canvas.height = H;
+    if (overlayRef.current) { overlayRef.current.width = W; overlayRef.current.height = H; }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -60,6 +63,8 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose
     const elevRange = Math.max(maxElev - minElev, 500);
     const yMin = Math.max(0, minElev - elevRange * 0.12);
     const yMax = maxElev + elevRange * 0.18;
+
+    scaleRef.current = { yMin, yMax, padTop: PAD.top, padLeft: PAD.left, chartH, chartW };
 
     const xS = (nm: number) => PAD.left + (nm / totalNm) * chartW;
     const yS = (ft: number) => PAD.top + chartH - ((ft - yMin) / (yMax - yMin)) * chartH;
@@ -207,8 +212,53 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, loading, onClose
         <button className="elevation-profile-btn" onClick={onRegenerate} title="Recalculer">↻</button>
         <button className="elevation-profile-btn" onClick={onClose} title="Fermer">✕</button>
       </div>
-      <div ref={containerRef} className="elevation-profile-canvas-wrap">
+      <div ref={containerRef} className="elevation-profile-canvas-wrap"
+        onMouseMove={(e) => {
+          const overlay = overlayRef.current;
+          const scale = scaleRef.current;
+          if (!overlay || !scale) return;
+          const rect = overlay.getBoundingClientRect();
+          const py = e.clientY - rect.top;
+          const { yMin, yMax, padTop, padLeft, chartH, chartW } = scale;
+          if (py < padTop || py > padTop + chartH) { overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height); return; }
+          const ft = yMin + (yMax - yMin) * (1 - (py - padTop) / chartH);
+          const m = Math.round(ft / 3.28084);
+          const ctx = overlay.getContext('2d');
+          if (!ctx) return;
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          // Ligne horizontale
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(padLeft, py);
+          ctx.lineTo(padLeft + chartW, py);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // Label flottant à côté du curseur
+          const px = e.clientX - rect.left;
+          const label = `${Math.round(ft).toLocaleString()} ft / ${m.toLocaleString()} m`;
+          ctx.font = 'bold 10px monospace';
+          const tw = ctx.measureText(label).width;
+          const lw = tw + 10;
+          const lh = 16;
+          const lx = px + 12 + lw > overlay.width ? px - lw - 8 : px + 12;
+          const ly = py - lh / 2;
+          ctx.fillStyle = 'rgba(15,20,30,0.88)';
+          ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(lx, ly, lw, lh, 3);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#e0eeff';
+          ctx.textAlign = 'left';
+          ctx.fillText(label, lx + 5, py + 4);
+        }}
+        onMouseLeave={() => overlayRef.current?.getContext('2d')?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height)}
+      >
         <canvas ref={canvasRef} className="elevation-profile-canvas" />
+        <canvas ref={overlayRef} className="elevation-profile-overlay" />
       </div>
     </div>
   );
