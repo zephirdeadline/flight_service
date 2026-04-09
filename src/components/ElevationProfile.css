@@ -138,6 +138,14 @@
   display: block;
 }
 
+.elevation-profile-canvas-wrap--zoomed {
+  cursor: grab;
+}
+
+.elevation-profile-canvas-wrap--zoomed:active {
+  cursor: grabbing;
+}
+
 .elevation-profile-overlay {
   position: absolute;
   top: 0;

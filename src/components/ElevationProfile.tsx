@@ -28,7 +28,38 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scaleRef = useRef<{ yMin: number; yMax: number; padTop: number; padLeft: number; chartH: number; chartW: number } | null>(null);
+  const scaleRef = useRef<{ yMin: number; yMax: number; padTop: number; padLeft: number; chartH: number; chartW: number; xOffset: number; xVisible: number; totalNm: number } | null>(null);
+
+  const [xZoom, setXZoom] = useState(1);
+  const [xOffset, setXOffset] = useState(0);
+  const xZoomRef = useRef(1);
+  const xOffsetRef = useRef(0);
+  const dragXRef = useRef<{ startX: number; startOffset: number } | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sc2 = scaleRef.current;
+      if (!sc2) return;
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const frac = Math.max(0, Math.min(1, (mouseX - sc2.padLeft) / sc2.chartW));
+      const distAtMouse = sc2.xOffset + frac * sc2.xVisible;
+      const factor = e.deltaY < 0 ? 1.4 : 1 / 1.4;
+      const newZoom = Math.max(1, Math.min(20, xZoomRef.current * factor));
+      const newVisible = sc2.totalNm / newZoom;
+      const newOffset = Math.max(0, Math.min(sc2.totalNm - newVisible, distAtMouse - frac * newVisible));
+      xZoomRef.current = newZoom;
+      xOffsetRef.current = newOffset;
+      setXZoom(newZoom);
+      setXOffset(newOffset);
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   const [manualMin, setManualMin] = useState<string>('');
   const [manualMax, setManualMax] = useState<string>('');
@@ -77,10 +108,12 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     const yMin = customMin !== null ? customMin : Math.max(0, minElev - elevRange * 0.12);
     const yMax = customMax !== null ? customMax : maxElev + elevRange * 0.18;
 
-    scaleRef.current = { yMin, yMax, padTop: PAD.top, padLeft: PAD.left, chartH, chartW };
-
-    const xS = (nm: number) => PAD.left + (nm / totalNm) * chartW;
+    const xVisible = xZoom > 1 ? totalNm / xZoom : totalNm;
+    const xOff = Math.max(0, Math.min(totalNm - xVisible, xOffset));
+    const xS = (nm: number) => PAD.left + ((nm - xOff) / xVisible) * chartW;
     const yS = (ft: number) => PAD.top + chartH - ((ft - yMin) / (yMax - yMin)) * chartH;
+
+    scaleRef.current = { yMin, yMax, padTop: PAD.top, padLeft: PAD.left, chartH, chartW, xOffset: xOff, xVisible, totalNm };
 
     // Grid
     const numY = 4;
@@ -225,17 +258,34 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     ctx.lineTo(PAD.left + chartW, PAD.top + chartH);
     ctx.stroke();
 
-    // X-axis NM labels
+    // X-axis NM labels (adaptatif au zoom)
     ctx.fillStyle = '#2a3f58';
-    ctx.font = '9px monospace';
+    ctx.font = `${fs(9)} monospace`;
     ctx.textAlign = 'center';
-    const xStep = totalNm <= 50 ? 10 : totalNm <= 150 ? 25 : totalNm <= 400 ? 50 : 100;
-    for (let nm = 0; nm <= totalNm; nm += xStep) {
-      ctx.fillText(`${nm}`, xS(nm), PAD.top + chartH + 25);
+    const xStepRaw = xVisible <= 30 ? 5 : xVisible <= 80 ? 10 : xVisible <= 200 ? 25 : xVisible <= 500 ? 50 : 100;
+    const xStart = Math.ceil(xOff / xStepRaw) * xStepRaw;
+    for (let nm = xStart; nm <= xOff + xVisible; nm += xStepRaw) {
+      const sx = xS(nm);
+      if (sx < PAD.left || sx > PAD.left + chartW) continue;
+      ctx.fillText(`${Math.round(nm)}`, sx, PAD.top + chartH + 25);
     }
+    ctx.fillStyle = '#1a3050';
+    ctx.textAlign = 'right';
     ctx.fillText('NM', PAD.left + chartW, PAD.top + chartH + 25);
 
-  }, [points, waypoints, crossings, loading, customMin, customMax, scale]);
+    // Minimap scrollbar quand zoomé
+    if (xZoom > 1) {
+      const sbY = PAD.top + chartH + 30;
+      const sbH = 3;
+      ctx.fillStyle = '#1a2535';
+      ctx.fillRect(PAD.left, sbY, chartW, sbH);
+      const sbStart = (xOff / totalNm) * chartW;
+      const sbLen = (xVisible / totalNm) * chartW;
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(PAD.left + sbStart, sbY, sbLen, sbH);
+    }
+
+  }, [points, waypoints, crossings, loading, customMin, customMax, scale, xZoom, xOffset]);
 
   const validPoints = points.filter(p => p.elevFt !== null);
   const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;
@@ -287,11 +337,39 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
             >⟳ auto</button>
           )}
         </div>
+        {xZoom > 1 && (
+          <button
+            className="elevation-profile-btn"
+            onClick={() => { xZoomRef.current = 1; xOffsetRef.current = 0; setXZoom(1); setXOffset(0); }}
+            title="Réinitialiser le zoom"
+          >{`×${xZoom.toFixed(1)} ↺`}</button>
+        )}
         <button className="elevation-profile-btn" onClick={onRegenerate} title="Recalculer">↻</button>
         <button className="elevation-profile-btn" onClick={onClose} title="Fermer">✕</button>
       </div>
-      <div ref={containerRef} className="elevation-profile-canvas-wrap"
+      <div ref={containerRef} className={`elevation-profile-canvas-wrap${xZoom > 1 ? ' elevation-profile-canvas-wrap--zoomed' : ''}`}
+        onMouseDown={(e) => {
+          if (e.button !== 0) return;
+          dragXRef.current = { startX: e.clientX, startOffset: xOffsetRef.current };
+        }}
+        onMouseUp={() => { dragXRef.current = null; }}
+        onMouseLeave={() => {
+          dragXRef.current = null;
+          overlayRef.current?.getContext('2d')?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+          onHoverDist?.(null);
+        }}
         onMouseMove={(e) => {
+          // Drag-to-pan
+          if (dragXRef.current && xZoomRef.current > 1) {
+            const sc2 = scaleRef.current;
+            if (sc2) {
+              const dx = e.clientX - dragXRef.current.startX;
+              const nmPerPx = sc2.xVisible / sc2.chartW;
+              const newOffset = Math.max(0, Math.min(sc2.totalNm - sc2.xVisible, dragXRef.current.startOffset - dx * nmPerPx));
+              xOffsetRef.current = newOffset;
+              setXOffset(newOffset);
+            }
+          }
           const overlay = overlayRef.current;
           const mapSc = scale;
           const chartScale = scaleRef.current;
@@ -335,9 +413,9 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
           ctx.fillText(label, lx + 5, py + 4);
 
           // Ligne verticale + callback distNm
-          const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;
-          if (totalNm > 0 && px >= padLeft && px <= padLeft + chartW) {
-            const distNm = ((px - padLeft) / chartW) * totalNm;
+          const { xOffset: xOff2, xVisible: xVis2 } = chartScale;
+          if (xVis2 > 0 && px >= padLeft && px <= padLeft + chartW) {
+            const distNm = xOff2 + ((px - padLeft) / chartW) * xVis2;
             onHoverDist?.(distNm);
             ctx.strokeStyle = 'rgba(26,188,156,0.5)';
             ctx.lineWidth = 1;
@@ -353,10 +431,6 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
             ctx.fillStyle = '#1abc9c';
             ctx.fill();
           }
-        }}
-        onMouseLeave={() => {
-          overlayRef.current?.getContext('2d')?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
-          onHoverDist?.(null);
         }}
       >
         <canvas ref={canvasRef} className="elevation-profile-canvas" />
