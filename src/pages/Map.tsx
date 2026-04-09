@@ -4,6 +4,8 @@ import { airportService } from '../services/airportService';
 import { navaidService } from '../services/navaidService';
 import { exportFlightPlanPDF } from '../services/flightPlanExport';
 import { getElevation } from '../services/elevationService';
+import { getAirspaces, formatLimit, AIRSPACE_TYPE_NAMES, ICAO_CLASS_NAMES } from '../services/airspaceService';
+import type { Airspace } from '../services/airspaceService';
 import ElevationProfile from '../components/ElevationProfile';
 import type { ProfilePoint, WaypointMarker } from '../components/ElevationProfile';
 import { flightPlanModule, saveFlightPlan } from '../utils/flightPlanStore';
@@ -29,6 +31,21 @@ let airportsCache: Airport[] | null = null;
 let airportsFetching = false;
 let navaidsCache: Navaid[] | null = null;
 let navaidsFetching = false;
+let airspacesModule: Airspace[] = [];
+
+// Couleurs par type d'espace aérien (fill, stroke)
+const AIRSPACE_STYLE: Record<number, [string, string]> = {
+  1:  ['rgba(255,100,0,0.18)',  '#ff6400'],  // Restricted
+  2:  ['rgba(255,170,0,0.18)',  '#ffaa00'],  // Danger
+  3:  ['rgba(220,0,0,0.22)',    '#dc0000'],  // Prohibited
+  4:  ['rgba(52,152,219,0.18)', '#3498db'],  // CTR
+  5:  ['rgba(130,80,200,0.15)', '#8250c8'],  // TMZ
+  6:  ['rgba(130,80,200,0.15)', '#8250c8'],  // RMZ
+  8:  ['rgba(52,152,219,0.12)', '#2980b9'],  // TMA
+  27: ['rgba(52,152,219,0.12)', '#2980b9'],  // CTA
+  11: ['rgba(100,100,100,0.08)','#666666'],  // FIR
+};
+const AIRSPACE_STYLE_DEFAULT: [string, string] = ['rgba(100,150,200,0.12)', '#446688'];
 
 const FlightMap: React.FC = () => {
   const { lastData, isConnected } = useSimConnect();
@@ -46,6 +63,11 @@ const FlightMap: React.FC = () => {
   const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
   const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
   const [popupElevation, setPopupElevation] = useState<number | null | 'loading'>('loading');
+  const [hoveredAirspace, setHoveredAirspace] = useState<Airspace | null>(null);
+  const [showAirspaces, setShowAirspaces] = useState(true);
+  const showAirspacesRef = useRef(true);
+  const airspaceFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAirspaceBbox = useRef<string>('');
 
   const [cruiseSpeed, setCruiseSpeed] = useState(120);
   const speedInitializedRef = useRef(false);
@@ -232,6 +254,28 @@ const FlightMap: React.FC = () => {
         const clampedY = Math.max(0, Math.min(maxTile - 1, ty));
         const img = getTile(wrappedX, clampedY, tz, scheduleRedraw);
         if (img) ctx.drawImage(img, px, py, ts, ts);
+      }
+    }
+
+    // ── Airspaces ─────────────────────────────────────────────────────────────
+    if (zoom >= 5 && airspacesModule.length > 0 && showAirspacesRef.current) {
+      for (const asp of airspacesModule) {
+        const ring = asp.coordinates[0];
+        if (!ring || ring.length < 3) continue;
+        const [fill, stroke] = AIRSPACE_STYLE[asp.airspaceType] ?? AIRSPACE_STYLE_DEFAULT;
+        ctx.beginPath();
+        ring.forEach(([lon, lat], idx) => {
+          const { x, y } = project(lat, lon);
+          if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([5, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
 
@@ -581,6 +625,45 @@ const FlightMap: React.FC = () => {
   }, []);
 
   // Returns a project() function based on current map state
+  const fetchAirspacesIfNeeded = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const zoom = zoomRef.current;
+    if (zoom < 5) return;
+    const tz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom)));
+    const ts = TILE_SIZE * Math.pow(2, zoom - tz);
+    const cTileX = lon2tile(mapCenterRef.current.lon, tz);
+    const cTileY = lat2tile(mapCenterRef.current.lat, tz);
+    const W = canvas.width; const H = canvas.height;
+    const lat1 = tile2lat(cTileY + H / (2 * ts), tz);
+    const lat2v = tile2lat(cTileY - H / (2 * ts), tz);
+    const lon1 = tile2lon(cTileX - W / (2 * ts), tz);
+    const lon2v = tile2lon(cTileX + W / (2 * ts), tz);
+    const bboxKey = `${lat1.toFixed(1)},${lon1.toFixed(1)},${lat2v.toFixed(1)},${lon2v.toFixed(1)}`;
+    if (bboxKey === lastAirspaceBbox.current) return;
+    lastAirspaceBbox.current = bboxKey;
+    if (airspaceFetchTimer.current) clearTimeout(airspaceFetchTimer.current);
+    airspaceFetchTimer.current = setTimeout(() => {
+      getAirspaces(lat1, lon1, lat2v, lon2v).then((data) => {
+        console.log(`[airspaces] ${data.length} espaces chargés pour bbox ${bboxKey}`);
+        airspacesModule = data;
+        draw();
+      }).catch((e) => console.error('[airspaces] erreur:', e));
+    }, 600);
+  }, [draw]);
+
+  const pointInPolygon = (lon: number, lat: number, ring: [number, number][]): boolean => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1];
+      const xj = ring[j][0], yj = ring[j][1];
+      if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  };
+
   const getProjector = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -1022,6 +1105,17 @@ const FlightMap: React.FC = () => {
       return;
     }
 
+    // Hover airspace detection
+    if (airspacesModule.length > 0 && !isDraggingRef.current) {
+      const ll = pixelToLatLon(px, py);
+      if (ll) {
+        const found = airspacesModule.find(a =>
+          a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
+        ) ?? null;
+        setHoveredAirspace(found);
+      }
+    }
+
     // Pan
     if (!isDraggingRef.current) return;
     const dx = e.clientX - dragStartRef.current.x;
@@ -1029,9 +1123,10 @@ const FlightMap: React.FC = () => {
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     panByPixels(dx, dy);
     draw();
+    fetchAirspacesIfNeeded();
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1069,8 +1164,10 @@ const FlightMap: React.FC = () => {
       }
     }
 
+    lastAirspaceBbox.current = '';
     draw();
-  };
+    fetchAirspacesIfNeeded();
+  }, [draw, fetchAirspacesIfNeeded]);
 
   const clearTrail = () => {
     trailRef.current = [];
@@ -1105,13 +1202,26 @@ const FlightMap: React.FC = () => {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       draw();
+      fetchAirspacesIfNeeded();
     });
     observer.observe(container);
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     draw();
+    fetchAirspacesIfNeeded();
     return () => observer.disconnect();
   }, [draw]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
+  useEffect(() => {
+    fetchAirspacesIfNeeded();
+  }, [fetchAirspacesIfNeeded]);
 
   useEffect(() => {
     if (!lastData) { draw(); return; }
@@ -1251,6 +1361,20 @@ const FlightMap: React.FC = () => {
           <div className="map-toolbar-sep" />
 
           <button
+            className={`map-follow-btn ${showAirspaces ? 'map-follow-btn--active' : ''}`}
+            onClick={() => {
+              showAirspacesRef.current = !showAirspacesRef.current;
+              setShowAirspaces(showAirspacesRef.current);
+              draw();
+            }}
+            title="Afficher/masquer les espaces aériens"
+          >
+            {showAirspaces ? '🛡️ Espaces ON' : '🛡️ Espaces OFF'}
+          </button>
+
+          <div className="map-toolbar-sep" />
+
+          <button
             className={`map-follow-btn ${isFollowing ? 'map-follow-btn--active' : ''}`}
             onClick={toggleFollow}
           >
@@ -1265,7 +1389,6 @@ const FlightMap: React.FC = () => {
       <div
         ref={containerRef}
         className={`map-canvas-container ${cursorClass}`}
-        onWheel={handleWheel}
         onClick={handleClick}
         onMouseDown={(e) => { handleLeftMouseDown(e); handleMouseDown(e); }}
         onMouseMove={handleMouseMove}
@@ -1410,6 +1533,18 @@ const FlightMap: React.FC = () => {
             </div>
           );
         })()}
+
+        {hoveredAirspace && showAirspaces && !isEditingPlanRef.current && (
+          <div className="map-airspace-tooltip">
+            <span className="map-airspace-name">{hoveredAirspace.name}</span>
+            <span className="map-airspace-meta">
+              {AIRSPACE_TYPE_NAMES[hoveredAirspace.airspaceType] ?? `Type ${hoveredAirspace.airspaceType}`}
+              {ICAO_CLASS_NAMES[hoveredAirspace.icaoClass] ? ` · Class ${ICAO_CLASS_NAMES[hoveredAirspace.icaoClass]}` : ''}
+              {' · '}
+              {formatLimit(hoveredAirspace.lower)} – {formatLimit(hoveredAirspace.upper)}
+            </span>
+          </div>
+        )}
 
         {isEditingPlan && (
           <div className="map-edit-hint">

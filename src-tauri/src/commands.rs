@@ -626,6 +626,39 @@ pub fn set_player_airport(
     with_db(&db, |conn| queries::set_player_airport(conn, &player_id, &airport_id))
 }
 
+// ============= Espaces aériens (OpenAIP bucket) =============
+
+#[tauri::command]
+pub async fn get_airspaces(
+    lat1: f64, lon1: f64, lat2: f64, lon2: f64,
+    db: tauri::State<'_, Arc<Mutex<Database>>>,
+    app: tauri::AppHandle,
+) -> Result<Vec<crate::airspace::Airspace>, String> {
+    // Détecter les pays visibles via les aéroports en DB
+    let countries: Vec<String> = with_db(&db, |conn| {
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT country FROM airports
+             WHERE latitude BETWEEN ?1 AND ?2 AND longitude BETWEEN ?3 AND ?4
+             AND country IS NOT NULL AND country != ''
+             LIMIT 15"
+        )?;
+        stmt.query_map(rusqlite::params![lat1, lat2, lon1, lon2], |row| row.get(0))
+            .map(|iter| iter.filter_map(|r| r.ok()).collect())
+    })?;
+
+    if countries.is_empty() { return Ok(vec![]); }
+
+    let cache_dir = app.path().app_data_dir()
+        .map_err(|e: tauri::Error| e.to_string())?
+        .join("airspaces");
+
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::airspace::get_airspaces(&countries, lat1, lon1, lat2, lon2, &cache_dir)
+    })
+    .await
+    .map_err(|e: tauri::Error| e.to_string())?
+}
+
 // ============= Élévation terrain (SRTM) =============
 
 #[tauri::command]

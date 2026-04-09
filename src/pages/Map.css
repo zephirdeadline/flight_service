@@ -573,6 +573,37 @@
   border-color: #27ae60;
 }
 
+.map-airspace-tooltip {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 15, 25, 0.88);
+  border: 1px solid #2a3f5a;
+  border-radius: 6px;
+  padding: 5px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 4;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.map-airspace-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c8dff0;
+}
+
+.map-airspace-meta {
+  font-size: 10px;
+  font-family: monospace;
+  color: #5a8aaa;
+}
+
 .map-toolbar-sep {
   width: 1px;
   height: 20px;

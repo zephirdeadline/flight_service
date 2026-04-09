@@ -4,6 +4,7 @@ pub mod db;
 pub mod commands;
 pub mod simconnect_service;
 pub mod elevation;
+pub mod airspace;
 
 use std::sync::{Arc, Mutex};
 use db::Database;
@@ -108,6 +109,8 @@ pub fn run() {
             commands::set_player_airport,
             // Commandes Élévation terrain
             commands::get_elevation,
+            // Commandes Espaces aériens
+            commands::get_airspaces,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
