@@ -63,7 +63,7 @@ const FlightMap: React.FC = () => {
   const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
   const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
   const [popupElevation, setPopupElevation] = useState<number | null | 'loading'>('loading');
-  const [hoveredAirspace, setHoveredAirspace] = useState<Airspace | null>(null);
+  const [hoveredAirspaces, setHoveredAirspaces] = useState<Airspace[]>([]);
   const [showAirspaces, setShowAirspaces] = useState(true);
   const showAirspacesRef = useRef(true);
   const airspaceFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1152,10 +1152,12 @@ const FlightMap: React.FC = () => {
     if (airspacesModule.length > 0 && !isDraggingRef.current) {
       const ll = pixelToLatLon(px, py);
       if (ll) {
-        const found = airspacesModule.find(a =>
-          a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
-        ) ?? null;
-        setHoveredAirspace(found);
+        const found = showAirspacesRef.current
+          ? airspacesModule.filter(a =>
+              a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
+            )
+          : [];
+        setHoveredAirspaces(found);
       }
     }
 
@@ -1577,15 +1579,19 @@ const FlightMap: React.FC = () => {
           );
         })()}
 
-        {hoveredAirspace && showAirspaces && !isEditingPlanRef.current && (
+        {hoveredAirspaces.length > 0 && showAirspaces && !isEditingPlanRef.current && (
           <div className="map-airspace-tooltip">
-            <span className="map-airspace-name">{hoveredAirspace.name}</span>
-            <span className="map-airspace-meta">
-              {AIRSPACE_TYPE_NAMES[hoveredAirspace.airspaceType] ?? `Type ${hoveredAirspace.airspaceType}`}
-              {ICAO_CLASS_NAMES[hoveredAirspace.icaoClass] ? ` · Class ${ICAO_CLASS_NAMES[hoveredAirspace.icaoClass]}` : ''}
-              {' · '}
-              {formatLimit(hoveredAirspace.lower)} – {formatLimit(hoveredAirspace.upper)}
-            </span>
+            {hoveredAirspaces.map((asp, i) => (
+              <div key={i} className="map-airspace-row">
+                <span className="map-airspace-name">{asp.name}</span>
+                <span className="map-airspace-meta">
+                  {AIRSPACE_TYPE_NAMES[asp.airspaceType] ?? `Type ${asp.airspaceType}`}
+                  {ICAO_CLASS_NAMES[asp.icaoClass] ? ` · Class ${ICAO_CLASS_NAMES[asp.icaoClass]}` : ''}
+                  {' · '}
+                  {formatLimit(asp.lower)} – {formatLimit(asp.upper)}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
