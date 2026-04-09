@@ -58,6 +58,7 @@ const AircraftCard: React.FC<AircraftCardProps> = ({
       <div className="aircraft-header">
         <h3 className="aircraft-name">{aircraft.name}</h3>
         <div className="aircraft-manufacturer">{aircraft.manufacturer}</div>
+        <div className="aircraft-simconnect-title" title="SimConnect title">{aircraft.id}</div>
       </div>
 
       <div className="aircraft-type">

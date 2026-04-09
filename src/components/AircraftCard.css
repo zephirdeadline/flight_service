@@ -59,6 +59,17 @@
   letter-spacing: 0.06em;
 }
 
+.aircraft-simconnect-title {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+  margin-top: 4px;
+  opacity: 0.65;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Type badge ─────────────────────────────────────── */
 .aircraft-type {
   display: inline-flex;

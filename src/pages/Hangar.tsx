@@ -206,6 +206,7 @@ const Hangar: React.FC = () => {
             return (
               <div
                 key={enriched.id}
+                title={`${enriched.aircraft.manufacturer} ${enriched.aircraft.name}`}
                 className={`aircraft-card-container ${isDisabled ? 'disabled' : ''}`}
               >
                 <AircraftCard
