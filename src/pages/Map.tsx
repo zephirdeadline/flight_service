@@ -66,10 +66,15 @@ const FlightMap: React.FC = () => {
   const [hoveredAirspaces, setHoveredAirspaces] = useState<Airspace[]>([]);
   const [showAirspaces, setShowAirspaces] = useState(true);
   const showAirspacesRef = useRef(true);
+  const [hiddenAirspaceTypes, setHiddenAirspaceTypes] = useState<Set<number>>(new Set());
+  const hiddenAirspaceTypesRef = useRef<Set<number>>(new Set());
+  const [showAirspaceFilter, setShowAirspaceFilter] = useState(false);
+  const [loadedAirspaceTypes, setLoadedAirspaceTypes] = useState<number[]>([]);
   const airspaceFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAirspaceBbox = useRef<string>('');
 
   const [cruiseSpeed, setCruiseSpeed] = useState(120);
+  const cruiseSpeedRef = useRef(120);
   const speedInitializedRef = useRef(false);
 
   const [isMeasuring, setIsMeasuring] = useState(false);
@@ -117,7 +122,9 @@ const FlightMap: React.FC = () => {
   useEffect(() => {
     if (!speedInitializedRef.current && lastData?.airspeed_indicated && lastData.airspeed_indicated > 10) {
       speedInitializedRef.current = true;
-      setCruiseSpeed(Math.round(lastData.airspeed_indicated));
+      const spd = Math.round(lastData.airspeed_indicated);
+      cruiseSpeedRef.current = spd;
+      setCruiseSpeed(spd);
     }
   }, [lastData]);
 
@@ -169,9 +176,9 @@ const FlightMap: React.FC = () => {
 
     setProfileWaypoints(markers);
 
-    // Calculer les croisements d'espaces aériens le long de la route
+    // Calculer les croisements d'espaces aériens le long de la route (en respectant les filtres actifs)
     const crossings: AirspaceCrossing[] = [];
-    for (const asp of airspacesModule) {
+    for (const asp of airspacesModule.filter(a => !hiddenAirspaceTypesRef.current.has(a.airspaceType))) {
       const ring = asp.coordinates[0] as [number, number][];
       if (!ring || ring.length < 3) continue;
       let entryDist: number | null = null;
@@ -302,7 +309,7 @@ const FlightMap: React.FC = () => {
 
     // ── Airspaces ─────────────────────────────────────────────────────────────
     if (zoom >= 5 && airspacesModule.length > 0 && showAirspacesRef.current) {
-      for (const asp of airspacesModule) {
+      for (const asp of airspacesModule.filter(a => !hiddenAirspaceTypesRef.current.has(a.airspaceType))) {
         const ring = asp.coordinates[0];
         if (!ring || ring.length < 3) continue;
         const [fill, stroke] = AIRSPACE_STYLE[asp.airspaceType] ?? AIRSPACE_STYLE_DEFAULT;
@@ -463,23 +470,31 @@ const FlightMap: React.FC = () => {
         ctx.setLineDash([]);
         ctx.restore();
 
-        // Distance + bearing label on each leg
+        // Distance + bearing + durée label on each leg
         ctx.font = 'bold 11px sans-serif';
         for (let i = 1; i < wp.length; i++) {
           const nm = haversineNm(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
           const brg = bearingDeg(wp[i - 1].lat, wp[i - 1].lon, wp[i].lat, wp[i].lon);
           const mx = (pts[i - 1].x + pts[i].x) / 2;
           const my = (pts[i - 1].y + pts[i].y) / 2;
+          const spd = cruiseSpeedRef.current > 0 ? cruiseSpeedRef.current : 120;
+          const totalMin = (nm / spd) * 60;
+          const h = Math.floor(totalMin / 60);
+          const m = Math.round(totalMin % 60);
           const line1 = `${Math.round(nm)} NM`;
           const line2 = `${Math.round(brg).toString().padStart(3, '0')}°`;
+          const line3 = h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`;
           ctx.strokeStyle = 'rgba(255,255,255,0.9)';
           ctx.lineWidth = 3;
-          ctx.strokeText(line1, mx + 4, my - 5);
-          ctx.strokeText(line2, mx + 4, my + 8);
+          ctx.strokeText(line1, mx + 4, my - 12);
+          ctx.strokeText(line2, mx + 4, my + 1);
+          ctx.strokeText(line3, mx + 4, my + 14);
           ctx.fillStyle = '#e67e22';
-          ctx.fillText(line1, mx + 4, my - 5);
+          ctx.fillText(line1, mx + 4, my - 12);
           ctx.fillStyle = '#f5cba7';
-          ctx.fillText(line2, mx + 4, my + 8);
+          ctx.fillText(line2, mx + 4, my + 1);
+          ctx.fillStyle = '#85c1e9';
+          ctx.fillText(line3, mx + 4, my + 14);
         }
       }
 
@@ -688,8 +703,9 @@ const FlightMap: React.FC = () => {
     if (airspaceFetchTimer.current) clearTimeout(airspaceFetchTimer.current);
     airspaceFetchTimer.current = setTimeout(() => {
       getAirspaces(lat1, lon1, lat2v, lon2v).then((data) => {
-        console.log(`[airspaces] ${data.length} espaces chargés pour bbox ${bboxKey}`);
         airspacesModule = data;
+        const types = [...new Set(data.map(a => a.airspaceType))].sort((a, b) => a - b);
+        setLoadedAirspaceTypes(types);
         draw();
       }).catch((e) => console.error('[airspaces] erreur:', e));
     }, 600);
@@ -1154,6 +1170,7 @@ const FlightMap: React.FC = () => {
       if (ll) {
         const found = showAirspacesRef.current
           ? airspacesModule.filter(a =>
+              !hiddenAirspaceTypesRef.current.has(a.airspaceType) &&
               a.coordinates[0] && pointInPolygon(ll.lon, ll.lat, a.coordinates[0] as [number, number][])
             )
           : [];
@@ -1268,6 +1285,7 @@ const FlightMap: React.FC = () => {
     fetchAirspacesIfNeeded();
   }, [fetchAirspacesIfNeeded]);
 
+
   useEffect(() => {
     if (!lastData) { draw(); return; }
     const { latitude, longitude } = lastData;
@@ -1358,7 +1376,7 @@ const FlightMap: React.FC = () => {
                         min={10}
                         max={999}
                         value={cruiseSpeed}
-                        onChange={(e) => setCruiseSpeed(Math.max(10, Math.min(999, Number(e.target.value))))}
+                        onChange={(e) => { const v = Math.max(10, Math.min(999, Number(e.target.value))); cruiseSpeedRef.current = v; setCruiseSpeed(v); draw(); }}
                         title="Vitesse de croisière pour le calcul des temps"
                       />
                     </label>
@@ -1410,12 +1428,67 @@ const FlightMap: React.FC = () => {
             onClick={() => {
               showAirspacesRef.current = !showAirspacesRef.current;
               setShowAirspaces(showAirspacesRef.current);
+              if (!showAirspacesRef.current) setShowAirspaceFilter(false);
               draw();
             }}
             title="Afficher/masquer les espaces aériens"
           >
             {showAirspaces ? '🛡️ Espaces ON' : '🛡️ Espaces OFF'}
           </button>
+
+          {showAirspaces && loadedAirspaceTypes.length > 0 && (
+            <div className="map-airspace-filter-wrap">
+              <button
+                className={`map-follow-btn ${showAirspaceFilter ? 'map-follow-btn--active' : ''}`}
+                onClick={() => setShowAirspaceFilter(v => !v)}
+                title="Filtrer les types d'espaces aériens"
+              >
+                ⚙️ Filtres {hiddenAirspaceTypes.size > 0 ? `(${hiddenAirspaceTypes.size} masqués)` : ''}
+              </button>
+              {showAirspaceFilter && (
+                <div className="map-airspace-filter-panel" onClick={e => e.stopPropagation()}>
+                  <div className="map-airspace-filter-header">
+                    <span>Types d'espaces</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => {
+                        hiddenAirspaceTypesRef.current = new Set();
+                        setHiddenAirspaceTypes(new Set());
+                        draw();
+                      }}>Tous</button>
+                      <button onClick={() => {
+                        const all = new Set(loadedAirspaceTypes);
+                        hiddenAirspaceTypesRef.current = all;
+                        setHiddenAirspaceTypes(new Set(all));
+                        draw();
+                      }}>Aucun</button>
+                    </div>
+                  </div>
+                  {loadedAirspaceTypes.map(type => {
+                    const hidden = hiddenAirspaceTypes.has(type);
+                    const color = airspaceColor(type);
+                    const name = AIRSPACE_TYPE_NAMES[type] ?? `Type ${type}`;
+                    return (
+                      <label key={type} className="map-airspace-filter-row">
+                        <input
+                          type="checkbox"
+                          checked={!hidden}
+                          onChange={() => {
+                            const next = new Set(hiddenAirspaceTypesRef.current);
+                            if (hidden) next.delete(type); else next.add(type);
+                            hiddenAirspaceTypesRef.current = next;
+                            setHiddenAirspaceTypes(next);
+                            draw();
+                          }}
+                        />
+                        <span className="map-airspace-filter-dot" style={{ background: color }} />
+                        <span className="map-airspace-filter-name">{name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="map-toolbar-sep" />
 
@@ -1613,7 +1686,7 @@ const FlightMap: React.FC = () => {
           <ElevationProfile
             points={profilePoints}
             waypoints={profileWaypoints}
-            crossings={profileCrossings}
+            crossings={profileCrossings.filter(c => !hiddenAirspaceTypes.has(c.airspaceType))}
             loading={profileLoading}
             onClose={closeProfile}
             onRegenerate={generateProfile}

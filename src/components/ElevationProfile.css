@@ -56,7 +56,6 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-left: auto;
 }
 
 .elev-stat {
@@ -68,6 +67,48 @@
 
 .elev-max { color: #c0392b; }
 .elev-min { color: #27ae60; }
+
+.elevation-profile-scale {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.elevation-profile-scale-label {
+  font-size: 10px;
+  color: #3a5070;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.elevation-profile-scale-input {
+  width: 58px;
+  font-size: 10px;
+  font-family: monospace;
+  padding: 2px 5px;
+  background: #0d1117;
+  border: 1px solid #2a3548;
+  border-radius: 3px;
+  color: #8ab0d0;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.elevation-profile-scale-input::-webkit-outer-spin-button,
+.elevation-profile-scale-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.elevation-profile-scale-input:focus {
+  border-color: #3498db;
+  color: #c8dff0;
+}
+
+.elevation-profile-scale-input::placeholder {
+  color: #2a3f58;
+}
 
 .elevation-profile-btn {
   background: transparent;

@@ -573,6 +573,82 @@
   border-color: #27ae60;
 }
 
+.map-airspace-filter-wrap {
+  position: relative;
+}
+
+.map-airspace-filter-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #1a1f2e;
+  border: 1px solid #2a3548;
+  border-radius: 6px;
+  padding: 8px 0;
+  min-width: 170px;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+
+.map-airspace-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 10px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a6a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a3548;
+  margin-bottom: 4px;
+}
+
+.map-airspace-filter-header button {
+  background: transparent;
+  border: none;
+  color: #3498db;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.map-airspace-filter-header button:hover {
+  text-decoration: underline;
+}
+
+.map-airspace-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.map-airspace-filter-row:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.map-airspace-filter-row input[type="checkbox"] {
+  accent-color: #3498db;
+  cursor: pointer;
+  width: 12px;
+  height: 12px;
+}
+
+.map-airspace-filter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.map-airspace-filter-name {
+  font-size: 11px;
+  color: #b0c8e0;
+}
+
 .map-airspace-tooltip {
   position: absolute;
   bottom: 28px;

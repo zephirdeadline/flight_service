@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { AirspaceCrossing } from '../services/airspaceService';
 import { AIRSPACE_TYPE_NAMES, ICAO_CLASS_NAMES } from '../services/airspaceService';
 import './ElevationProfile.css';
@@ -27,6 +27,11 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scaleRef = useRef<{ yMin: number; yMax: number; padTop: number; padLeft: number; chartH: number; chartW: number } | null>(null);
+
+  const [manualMin, setManualMin] = useState<string>('');
+  const [manualMax, setManualMax] = useState<string>('');
+  const customMin = manualMin !== '' ? Number(manualMin) : null;
+  const customMax = manualMax !== '' ? Number(manualMax) : null;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,8 +69,8 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     const maxElev = Math.max(...elevations);
     const minElev = Math.min(...elevations);
     const elevRange = Math.max(maxElev - minElev, 500);
-    const yMin = Math.max(0, minElev - elevRange * 0.12);
-    const yMax = maxElev + elevRange * 0.18;
+    const yMin = customMin !== null ? customMin : Math.max(0, minElev - elevRange * 0.12);
+    const yMax = customMax !== null ? customMax : maxElev + elevRange * 0.18;
 
     scaleRef.current = { yMin, yMax, padTop: PAD.top, padLeft: PAD.left, chartH, chartW };
 
@@ -225,7 +230,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
     }
     ctx.fillText('NM', PAD.left + chartW, PAD.top + chartH + 25);
 
-  }, [points, waypoints, crossings, loading]);
+  }, [points, waypoints, crossings, loading, customMin, customMax]);
 
   const validPoints = points.filter(p => p.elevFt !== null);
   const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;
@@ -233,7 +238,7 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
   const minElev = validPoints.length > 0 ? Math.min(...validPoints.map(p => p.elevFt!)) : null;
 
   return (
-    <div className="elevation-profile">
+    <div className="elevation-profile" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
       <div className="elevation-profile-header">
         <span className="elevation-profile-title">📊 Profil d'élévation</span>
         {loading && (
@@ -249,6 +254,34 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
             <span className="elev-stat">{totalNm.toFixed(0)} NM · {validPoints.length} pts</span>
           </span>
         )}
+        <div className="elevation-profile-scale">
+          <label className="elevation-profile-scale-label">Min</label>
+          <input
+            className="elevation-profile-scale-input"
+            type="number"
+            placeholder="auto"
+            value={manualMin}
+            onChange={e => setManualMin(e.target.value)}
+            title="Altitude minimale de l'axe Y (ft)"
+          />
+          <label className="elevation-profile-scale-label">Max</label>
+          <input
+            className="elevation-profile-scale-input"
+            type="number"
+            placeholder="auto"
+            value={manualMax}
+            onChange={e => setManualMax(e.target.value)}
+            title="Altitude maximale de l'axe Y (ft)"
+          />
+          <label className="elevation-profile-scale-label">ft</label>
+          {(manualMin !== '' || manualMax !== '') && (
+            <button
+              className="elevation-profile-btn"
+              onClick={() => { setManualMin(''); setManualMax(''); }}
+              title="Réinitialiser l'axe"
+            >⟳ auto</button>
+          )}
+        </div>
         <button className="elevation-profile-btn" onClick={onRegenerate} title="Recalculer">↻</button>
         <button className="elevation-profile-btn" onClick={onClose} title="Fermer">✕</button>
       </div>
