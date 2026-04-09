@@ -214,6 +214,55 @@
   cursor: crosshair;
 }
 
+.map-canvas-container--measuring {
+  cursor: crosshair;
+}
+
+.map-measure-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-measure-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #2a3f5a;
+  border-radius: 4px;
+  color: #6a8aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.map-measure-btn:hover {
+  background: #252e42;
+  color: #b0c8e0;
+  border-color: #1abc9c;
+}
+
+.map-measure-btn--active {
+  background: rgba(26, 188, 156, 0.15);
+  border-color: #1abc9c;
+  color: #1abc9c;
+}
+
+.map-measure-btn--active:hover {
+  background: rgba(26, 188, 156, 0.25);
+  color: #48c9b0;
+}
+
+.map-measure-status {
+  font-size: 11px;
+  font-family: monospace;
+  color: #1abc9c;
+  background: rgba(26, 188, 156, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .navaid-popup {
   position: absolute;
   width: 220px;

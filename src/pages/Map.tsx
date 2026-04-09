@@ -112,6 +112,12 @@ const FlightMap: React.FC = () => {
   const [airportPopup, setAirportPopup] = useState<{ airport: Airport; x: number; y: number } | null>(null);
   const [noteEditor, setNoteEditor] = useState<{ wpIndex: number; x: number; y: number; value: string } | null>(null);
 
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const isMeasuringRef = useRef(false);
+  const measurePointsRef = useRef<{ lat: number; lon: number }[]>([]);
+  const [measurePointCount, setMeasurePointCount] = useState(0);
+  const [measureResult, setMeasureResult] = useState<{ nm: number; km: number; bearing: number } | null>(null);
+
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -446,6 +452,71 @@ const FlightMap: React.FC = () => {
       });
     }
 
+    // ── Measurement ───────────────────────────────────────────────────────────
+    const mpts = measurePointsRef.current;
+    if (mpts.length > 0) {
+      const p0 = project(mpts[0].lat, mpts[0].lon);
+      ctx.beginPath();
+      ctx.arc(p0.x, p0.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#1abc9c';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('A', p0.x, p0.y);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+
+      if (mpts.length === 2) {
+        const p1 = project(mpts[1].lat, mpts[1].lon);
+        ctx.save();
+        ctx.strokeStyle = '#1abc9c';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#1abc9c';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('B', p1.x, p1.y);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        const mnm = haversineNm(mpts[0].lat, mpts[0].lon, mpts[1].lat, mpts[1].lon);
+        const mbrg = bearingDeg(mpts[0].lat, mpts[0].lon, mpts[1].lat, mpts[1].lon);
+        const mmx = (p0.x + p1.x) / 2;
+        const mmy = (p0.y + p1.y) / 2;
+        const ml1 = `${mnm.toFixed(1)} NM`;
+        const ml2 = `${(mnm * 1.852).toFixed(1)} km · ${Math.round(mbrg).toString().padStart(3, '0')}°`;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(ml1, mmx + 6, mmy - 5);
+        ctx.strokeText(ml2, mmx + 6, mmy + 9);
+        ctx.fillStyle = '#1abc9c';
+        ctx.fillText(ml1, mmx + 6, mmy - 5);
+        ctx.fillStyle = '#a8f0e0';
+        ctx.fillText(ml2, mmx + 6, mmy + 9);
+      }
+    }
+
     // ── Trail ─────────────────────────────────────────────────────────────────
     const trail = trailRef.current;
     if (trail.length > 1) {
@@ -615,6 +686,18 @@ const FlightMap: React.FC = () => {
     setIsEditingPlan(next);
   };
 
+  const toggleMeasure = () => {
+    const next = !isMeasuringRef.current;
+    isMeasuringRef.current = next;
+    setIsMeasuring(next);
+    if (!next) {
+      measurePointsRef.current = [];
+      setMeasurePointCount(0);
+      setMeasureResult(null);
+      draw();
+    }
+  };
+
   const clearPlan = () => {
     flightPlanRef.current = [];
     flightPlanModule = [];
@@ -677,39 +760,40 @@ const FlightMap: React.FC = () => {
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
 
-    // Always: check click on a navaid marker
-    if (navaidsCache) {
-      const proj = getProjector();
-      const zoom = zoomRef.current;
-      if (proj) {
-        const HIT = 14;
-        for (const nav of navaidsCache) {
-          const isVor = nav.type.startsWith('VOR') || nav.type === 'VORTAC' || nav.type === 'TACAN';
-          if (zoom < 8.5 && !isVor) continue;
-          if (zoom < 6) continue;
-          const { x, y } = proj(nav.latitude, nav.longitude);
-          if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
-            setNavaidPopup({ navaid: nav, x: px, y: py });
-            return;
+    // Check click on a navaid/airport marker — only open popup when NOT in edit/measure mode
+    if (!isEditingPlanRef.current && !isMeasuringRef.current) {
+      if (navaidsCache) {
+        const proj = getProjector();
+        const zoom = zoomRef.current;
+        if (proj) {
+          const HIT = 14;
+          for (const nav of navaidsCache) {
+            const isVor = nav.type.startsWith('VOR') || nav.type === 'VORTAC' || nav.type === 'TACAN';
+            if (zoom < 8.5 && !isVor) continue;
+            if (zoom < 6) continue;
+            const { x, y } = proj(nav.latitude, nav.longitude);
+            if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
+              setNavaidPopup({ navaid: nav, x: px, y: py });
+              return;
+            }
           }
         }
       }
-    }
 
-    // Always: check click on an airport marker
-    if (airportsCache) {
-      const proj = getProjector();
-      const zoom = zoomRef.current;
-      if (proj) {
-        const HIT = 14;
-        for (const airport of airportsCache) {
-          if (zoom < 7 && airport.type !== 'large_airport') continue;
-          if (zoom < 8.5 && airport.type === 'small_airport') continue;
-          const { x, y } = proj(airport.latitude, airport.longitude);
-          if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
-            setAirportPopup({ airport, x: px, y: py });
-            setNavaidPopup(null);
-            return;
+      if (airportsCache) {
+        const proj = getProjector();
+        const zoom = zoomRef.current;
+        if (proj) {
+          const HIT = 14;
+          for (const airport of airportsCache) {
+            if (zoom < 7 && airport.type !== 'large_airport') continue;
+            if (zoom < 8.5 && airport.type === 'small_airport') continue;
+            const { x, y } = proj(airport.latitude, airport.longitude);
+            if (Math.sqrt((x - px) ** 2 + (y - py) ** 2) <= HIT) {
+              setAirportPopup({ airport, x: px, y: py });
+              setNavaidPopup(null);
+              return;
+            }
           }
         }
       }
@@ -718,6 +802,30 @@ const FlightMap: React.FC = () => {
     // Close any open popup on click elsewhere
     if (navaidPopup) { setNavaidPopup(null); return; }
     if (airportPopup) { setAirportPopup(null); return; }
+
+    // Measure mode: place A then B
+    if (isMeasuringRef.current) {
+      const snapped = findNearestSnap(px, py);
+      const ll = snapped ? { lat: snapped.lat, lon: snapped.lon } : pixelToLatLon(px, py);
+      if (!ll) return;
+      const pts = measurePointsRef.current;
+      if (pts.length >= 2) {
+        measurePointsRef.current = [ll];
+        setMeasurePointCount(1);
+        setMeasureResult(null);
+      } else {
+        measurePointsRef.current = [...pts, ll];
+        const newCount = measurePointsRef.current.length;
+        setMeasurePointCount(newCount);
+        if (newCount === 2) {
+          const [a, b] = measurePointsRef.current;
+          const nm = haversineNm(a.lat, a.lon, b.lat, b.lon);
+          setMeasureResult({ nm, km: nm * 1.852, bearing: bearingDeg(a.lat, a.lon, b.lat, b.lon) });
+        }
+      }
+      draw();
+      return;
+    }
 
     if (!isEditingPlanRef.current) return;
 
@@ -982,9 +1090,11 @@ const FlightMap: React.FC = () => {
 
   const cursorClass = isDragging
     ? 'map-canvas-container--dragging'
-    : isEditingPlan
-      ? 'map-canvas-container--editing'
-      : '';
+    : isMeasuring
+      ? 'map-canvas-container--measuring'
+      : isEditingPlan
+        ? 'map-canvas-container--editing'
+        : '';
 
   return (
     <div className="map-page">
@@ -1050,6 +1160,26 @@ const FlightMap: React.FC = () => {
                   Effacer plan
                 </button>
               </>
+            )}
+          </div>
+
+          {/* Measure tool */}
+          <div className="map-measure-controls">
+            <button
+              className={`map-measure-btn ${isMeasuring ? 'map-measure-btn--active' : ''}`}
+              onClick={toggleMeasure}
+              title="Mesurer la distance entre 2 points"
+            >
+              📏 {isMeasuring ? 'Mesure active' : 'Mesurer'}
+            </button>
+            {isMeasuring && (
+              <span className="map-measure-status">
+                {measureResult
+                  ? `${measureResult.nm.toFixed(1)} NM · ${measureResult.km.toFixed(1)} km · ${Math.round(measureResult.bearing).toString().padStart(3, '0')}°`
+                  : measurePointCount === 0
+                    ? 'Cliquez sur A'
+                    : 'Cliquez sur B'}
+              </span>
             )}
           </div>
 
