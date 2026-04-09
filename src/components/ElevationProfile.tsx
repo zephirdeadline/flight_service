@@ -20,9 +20,10 @@ interface Props {
   loading: boolean;
   onClose: () => void;
   onRegenerate: () => void;
+  onHoverDist?: (distNm: number | null) => void;
 }
 
-const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loading, onClose, onRegenerate }) => {
+const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loading, onClose, onRegenerate, onHoverDist }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -327,8 +328,31 @@ const ElevationProfile: React.FC<Props> = ({ points, waypoints, crossings, loadi
           ctx.fillStyle = '#e0eeff';
           ctx.textAlign = 'left';
           ctx.fillText(label, lx + 5, py + 4);
+
+          // Ligne verticale + callback distNm
+          const totalNm = points.length > 0 ? points[points.length - 1].distNm : 0;
+          if (totalNm > 0 && px >= padLeft && px <= padLeft + chartW) {
+            const distNm = ((px - padLeft) / chartW) * totalNm;
+            onHoverDist?.(distNm);
+            ctx.strokeStyle = 'rgba(26,188,156,0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(px, padTop);
+            ctx.lineTo(px, padTop + chartH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Petite pastille verte sur la ligne verticale au niveau de la souris
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1abc9c';
+            ctx.fill();
+          }
         }}
-        onMouseLeave={() => overlayRef.current?.getContext('2d')?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height)}
+        onMouseLeave={() => {
+          overlayRef.current?.getContext('2d')?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+          onHoverDist?.(null);
+        }}
       >
         <canvas ref={canvasRef} className="elevation-profile-canvas" />
         <canvas ref={overlayRef} className="elevation-profile-overlay" />

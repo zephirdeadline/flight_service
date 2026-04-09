@@ -90,6 +90,8 @@ const FlightMap: React.FC = () => {
   const [profileWaypoints, setProfileWaypoints] = useState<WaypointMarker[]>([]);
   const [profileCrossings, setProfileCrossings] = useState<AirspaceCrossing[]>([]);
   const profileAbortRef = useRef(false);
+  const profileSamplesRef = useRef<{ distNm: number; lat: number; lon: number }[]>([]);
+  const profileHoverPosRef = useRef<{ lat: number; lon: number; distNm: number } | null>(null);
 
   const mousePosRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
@@ -175,6 +177,7 @@ const FlightMap: React.FC = () => {
     }
 
     setProfileWaypoints(markers);
+    profileSamplesRef.current = samples;
 
     // Calculer les croisements d'espaces aériens le long de la route (en respectant les filtres actifs)
     const crossings: AirspaceCrossing[] = [];
@@ -231,6 +234,7 @@ const FlightMap: React.FC = () => {
 
   const closeProfile = () => {
     profileAbortRef.current = true;
+    profileHoverPosRef.current = null;
     setProfileOpen(false);
     setProfileLoading(false);
     setProfileCrossings([]);
@@ -674,6 +678,34 @@ const FlightMap: React.FC = () => {
       ctx.restore();
     }
 
+    // ── Profile hover marker ──────────────────────────────────────────────────
+    const hoverPos = profileHoverPosRef.current;
+    if (hoverPos) {
+      const { x: hx, y: hy } = project(hoverPos.lat, hoverPos.lon);
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(hx, hy, 14, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(26,188,156,0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Inner circle
+      ctx.beginPath();
+      ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#1abc9c';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+      // Distance label
+      const label = `${hoverPos.distNm.toFixed(1)} NM`;
+      ctx.font = 'bold 11px monospace';
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(label, hx + 12, hy - 8);
+      ctx.fillStyle = '#1abc9c';
+      ctx.fillText(label, hx + 12, hy - 8);
+    }
+
     // OSM attribution
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.fillRect(W - 192, H - 16, 192, 16);
@@ -683,6 +715,28 @@ const FlightMap: React.FC = () => {
   }, []);
 
   // Returns a project() function based on current map state
+  const handleProfileHover = useCallback((distNm: number | null) => {
+    if (distNm === null) {
+      profileHoverPosRef.current = null;
+      draw();
+      return;
+    }
+    const samples = profileSamplesRef.current;
+    if (samples.length < 2) return;
+    let idx = samples.findIndex(s => s.distNm >= distNm);
+    if (idx <= 0) idx = 1;
+    if (idx >= samples.length) idx = samples.length - 1;
+    const a = samples[idx - 1];
+    const b = samples[idx];
+    const t = b.distNm === a.distNm ? 0 : (distNm - a.distNm) / (b.distNm - a.distNm);
+    profileHoverPosRef.current = {
+      lat: a.lat + (b.lat - a.lat) * t,
+      lon: a.lon + (b.lon - a.lon) * t,
+      distNm,
+    };
+    draw();
+  }, [draw]);
+
   const fetchAirspacesIfNeeded = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1686,10 +1740,11 @@ const FlightMap: React.FC = () => {
           <ElevationProfile
             points={profilePoints}
             waypoints={profileWaypoints}
-            crossings={profileCrossings.filter(c => !hiddenAirspaceTypes.has(c.airspaceType))}
+            crossings={showAirspaces ? profileCrossings.filter(c => !hiddenAirspaceTypes.has(c.airspaceType)) : []}
             loading={profileLoading}
             onClose={closeProfile}
             onRegenerate={generateProfile}
+            onHoverDist={handleProfileHover}
           />
         )}
       </div>
